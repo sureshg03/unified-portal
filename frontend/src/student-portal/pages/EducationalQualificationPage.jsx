@@ -34,12 +34,12 @@ class ErrorBoundary extends Component {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="p-8 bg-white rounded-2xl shadow-lg text-center">
-            <h2 className="text-3xl font-bold text-red-600 font-montserrat">Something Went Wrong</h2>
-            <p className="mt-3 text-gray-600 text-lg font-semibold font-roboto">Please refresh the page or contact support.</p>
+            <h2 className="text-xl font-semibold text-red-600 font-montserrat">Something Went Wrong</h2>
+            <p className="mt-3 text-gray-600 text-base font-roboto">Please refresh the page or contact support.</p>
             {process.env.NODE_ENV === 'development' && (
               <details className="mt-4 text-left">
-                <summary className="cursor-pointer text-red-500 font-semibold text-lg">Error Details</summary>
-                <pre className="mt-3 text-sm text-gray-700 font-roboto">
+                <summary className="cursor-pointer text-red-500 font-medium text-sm">Error Details</summary>
+                <pre className="mt-3 text-xs text-gray-700 font-roboto">
                   {this.state.error && this.state.error.toString()}
                   <br />
                   {this.state.errorInfo && this.state.errorInfo.componentStack}
@@ -48,7 +48,7 @@ class ErrorBoundary extends Component {
             )}
             <button
               onClick={() => window.location.reload()}
-              className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-lg font-semibold font-roboto transition duration-200"
+              className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-base font-semibold font-roboto transition duration-200"
             >
               Retry
             </button>
@@ -323,11 +323,11 @@ const EducationalQualificationPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="p-8 bg-white rounded-2xl shadow-lg">
-          <h2 className="text-3xl font-bold text-red-600 font-montserrat">Failed to Load Data</h2>
-          <p className="mt-3 text-gray-600 text-lg font-semibold font-roboto">{fetchError}</p>
+          <h2 className="text-xl font-semibold text-red-600 font-montserrat">Failed to Load Data</h2>
+          <p className="mt-3 text-gray-600 text-base font-roboto">{fetchError}</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-lg font-semibold font-roboto transition duration-200"
+            className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-base font-semibold font-roboto transition duration-200"
           >
             Retry
           </button>
@@ -349,7 +349,7 @@ const EducationalQualificationPage = () => {
           <div className="w-full max-w-8xl mx-auto">
             <StepProgressBar currentStep="/application/page3" />
             <div className="bg-white rounded-2xl shadow-lg p-8">
-              <h2 className="text-4xl font-bold font-montserrat text-purple-800 text-center mb-8">
+              <h2 className="text-3xl font-bold font-montserrat text-purple-800 text-center mb-8">
                 Educational Qualifications
               </h2>
               {loading && (
@@ -363,10 +363,10 @@ const EducationalQualificationPage = () => {
               )}
               <div className="mb-8 p-6 bg-gray-100 rounded-lg">
                 <div className="flex items-center mb-4">
-                  <Info className="h-6 w-6 text-purple-600 mr-2" />
-                  <h3 className="text-2xl font-bold font-montserrat text-purple-700">Instructions</h3>
+                  <Info className="h-5 w-5 text-purple-600 mr-2" />
+                  <h3 className="text-xl font-semibold font-montserrat text-purple-700">Instructions</h3>
                 </div>
-                <ul className="list-disc pl-6 space-y-2 text-gray-700 font-roboto text-lg">
+                <ul className="list-disc pl-6 space-y-2 text-gray-700 font-roboto text-base">
                   <li>Enter details for S.S.L.C, HSC, and one additional qualification (e.g., UG/Diploma).</li>
                   <li>Upload marksheets or certificates (PDF, max 2MB) for each qualification.</li>
                   <li>Select Month & Year using the calendar picker.</li>
@@ -377,7 +377,7 @@ const EducationalQualificationPage = () => {
               <div className="space-y-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="space-y-6 bg-gray-50 p-6 rounded-lg">
-                    <h3 className="text-2xl font-bold font-montserrat text-purple-700 mb-6">
+                    <h3 className="text-xl font-semibold font-montserrat text-purple-700 mb-6">
                       Student Information
                     </h3>
                     {[
@@ -385,7 +385,7 @@ const EducationalQualificationPage = () => {
                       { name: 'name_initial', label: 'Name with Initial', type: 'text', placeholder: 'Enter name with initial' },
                     ].map(({ name, label, type, placeholder }) => (
                       <div key={name}>
-                        <label className="block text-lg font-bold text-gray-800 font-roboto mb-2">
+                        <label className="block text-base font-medium text-gray-800 font-roboto mb-2">
                           {label} <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -394,7 +394,7 @@ const EducationalQualificationPage = () => {
                           value={formData[name] || ''}
                           disabled={true}
                           placeholder={placeholder}
-                          className="w-full py-4 px-3 bg-gray-100 rounded-lg border border-purple-300 text-base font-roboto font-semibold text-gray-900 placeholder-gray-400 cursor-not-allowed focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition duration-200"
+                          className="w-full py-3 px-4 bg-gray-100 rounded-lg border border-purple-300 text-base font-roboto font-medium text-gray-900 placeholder-gray-400 cursor-not-allowed focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition duration-200"
                           aria-label={label}
                         />
                       </div>
@@ -408,7 +408,7 @@ const EducationalQualificationPage = () => {
                   errors={formErrors}
                 />
                 <div className="space-y-6 bg-gray-50 p-6 rounded-lg">
-                  <h3 className="text-2xl font-bold font-montserrat text-purple-700 mb-6">
+                  <h3 className="text-xl font-semibold font-montserrat text-purple-700 mb-6">
                     Professional Details
                   </h3>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -419,7 +419,7 @@ const EducationalQualificationPage = () => {
                       { name: 'annual_income', label: 'Annual Income (in Lakhs)', type: 'number', min: 0, step: 0.1, placeholder: 'Enter annual income' },
                     ].map(({ name, label, type, min, step, placeholder }) => (
                       <div key={name} className="relative group">
-                        <label className="block text-lg font-bold text-gray-800 font-roboto mb-2">
+                        <label className="block text-base font-medium text-gray-800 font-roboto mb-2">
                           {label}
                         </label>
                         <input
@@ -432,15 +432,15 @@ const EducationalQualificationPage = () => {
                           min={min}
                           step={step}
                           placeholder={placeholder}
-                          className={`w-full py-4 px-3 bg-white rounded-lg border ${formErrors[name] ? 'border-red-400' : 'border-purple-300'} text-base font-roboto font-semibold text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition duration-200`}
+                          className={`w-full py-3 px-4 bg-white rounded-lg border ${formErrors[name] ? 'border-red-400' : 'border-purple-300'} text-base font-roboto font-medium text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition duration-200`}
                           aria-label={label}
                         />
                         {formErrors[name] && (
-                          <p className="text-red-500 text-base mt-2 font-roboto font-semibold">
+                          <p className="text-red-500 text-sm mt-2 font-roboto font-medium">
                             {Array.isArray(formErrors[name]) ? formErrors[name].join('; ') : formErrors[name]}
                           </p>
                         )}
-                        <span className="absolute hidden group-hover:block bg-purple-600 text-white text-sm rounded px-2 py-1 -top-10 left-0">
+                        <span className="absolute hidden group-hover:block bg-purple-600 text-white text-xs rounded px-2 py-1 -top-10 left-0">
                           {placeholder}
                         </span>
                       </div>
@@ -454,10 +454,10 @@ const EducationalQualificationPage = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     disabled={loading}
-                    className="flex items-center px-6 py-3 bg-gray-500 text-white rounded-lg text-lg font-roboto font-semibold hover:bg-gray-600 disabled:bg-gray-300 transition duration-200"
+                    className="flex items-center px-6 py-3 bg-gray-500 text-white rounded-lg text-base font-roboto font-semibold hover:bg-gray-600 disabled:bg-gray-300 transition duration-200"
                     aria-label="Go back to previous page"
                   >
-                    <ArrowLeft className="h-6 w-6 mr-2" />
+                    <ArrowLeft className="h-5 w-5 mr-2" />
                     Back
                   </motion.button>
                   <motion.button
@@ -465,24 +465,24 @@ const EducationalQualificationPage = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     disabled={loading || !isFormValid}
-                    className={`flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg text-lg font-roboto font-semibold ${isFormValid ? 'hover:bg-purple-700' : 'bg-purple-300 cursor-not-allowed'} transition duration-200`}
+                    className={`flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg text-base font-roboto font-semibold ${isFormValid ? 'hover:bg-purple-700' : 'bg-purple-300 cursor-not-allowed'} transition duration-200`}
                     aria-label="Save and proceed to next page"
                   >
-                    <SparklesIcon className="h-6 w-6 mr-2" />
+                    <SparklesIcon className="h-5 w-5 mr-2" />
                     Save and Next
-                    <ArrowRight className="h-6 w-6 ml-2" />
+                    <ArrowRight className="h-5 w-5 ml-2" />
                   </motion.button>
                 </div>
               </div>
               {Object.keys(formErrors).length > 0 && (
                 <div className="mt-6 p-6 bg-red-50 rounded-lg">
-                  <div className="text-lg font-bold text-red-800 font-roboto mb-4">Form Errors</div>
+                  <div className="text-xl font-bold text-red-800 font-roboto mb-4">Form Errors</div>
                   <ul className="list-disc pl-6 space-y-2">
                     {Object.entries(formErrors).map(([key, errors]) => {
                       // Handle arrays of errors
                       if (Array.isArray(errors)) {
                         return errors.map((error, idx) => (
-                          <li key={`${key}_${idx}`} className="text-red-700 font-roboto text-base font-semibold">
+                          <li key={`${key}_${idx}`} className="text-red-700 font-roboto text-sm font-medium">
                             {typeof error === 'string' ? error : JSON.stringify(error)}
                           </li>
                         ));
@@ -490,14 +490,14 @@ const EducationalQualificationPage = () => {
                       // Handle string errors
                       if (typeof errors === 'string') {
                         return (
-                          <li key={key} className="text-red-700 font-roboto text-base font-semibold">
+                          <li key={key} className="text-red-700 font-roboto text-sm font-medium">
                             {errors}
                           </li>
                         );
                       }
                       // Handle object errors (stringify them)
                       return (
-                        <li key={key} className="text-red-700 font-roboto text-base font-semibold">
+                        <li key={key} className="text-red-700 font-roboto text-sm font-medium">
                           {key}: {JSON.stringify(errors)}
                         </li>
                       );
@@ -522,7 +522,7 @@ const EducationalQualificationPage = () => {
                   className="p-4 bg-purple-600 text-white rounded-full shadow-lg"
                   aria-label="Scroll to top"
                 >
-                  <ArrowUp className="h-6 w-6" />
+                  <ArrowUp className="h-5 w-5" />
                 </motion.button>
               </motion.div>
             )}
@@ -538,3 +538,9 @@ const EducationalQualificationPage = () => {
 };
 
 export default EducationalQualificationPage;
+
+
+
+
+
+
