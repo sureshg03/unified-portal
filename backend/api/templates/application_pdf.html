@@ -1,0 +1,45 @@
+<!-- templates/application_pdf.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Application Form</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .section { margin-bottom: 20px; }
+        .section h2 { color: #2c3e50; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>Periyar University CDOE Application</h1>
+    <div class="section">
+        <h2>Student Details</h2>
+        <table>
+            <tr><th>Name</th><td>{{ student.name }}</td></tr>
+            <tr><th>Email</th><td>{{ student.email }}</td></tr>
+            <tr><th>Phone</th><td>{{ student.phone }}</td></tr>
+        </table>
+    </div>
+    <div class="section">
+        <h2>Application Details</h2>
+        <table>
+            <tr><th>Course</th><td>{{ application.course }}</td></tr>
+            <tr><th>Academic Year</th><td>{{ application.academic_year }}</td></tr>
+            <tr><th>Status</th><td>{{ application.status }}</td></tr>
+        </table>
+    </div>
+    <div class="section">
+        <h2>Student Details</h2>
+        <table>
+            <tr><th>Qualifications</th><td>{{ student_details.qualifications }}</td></tr>
+            <tr><th>Documents</th><td>
+                {% for marksheet in marksheet_uploads %}
+                    {{ marksheet.qualification_type }}: {{ marksheet.file_url }}<br>
+                {% endfor %}
+            </td></tr>
+        </table>
+    </div>
+</body>
+</html>

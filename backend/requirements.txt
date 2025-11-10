@@ -1,0 +1,48 @@
+# Unified Django Backend Requirements
+# Combined dependencies from CDOE LSC Portal and Student Admission Portal
+
+# Django Core
+Django==4.2.16
+djangorestframework==3.14.0
+
+# Database
+mysqlclient==2.2.0
+
+# CORS
+django-cors-headers==4.3.1
+
+# Authentication & JWT
+djangorestframework-simplejwt==5.3.1
+
+# Token Authentication
+# Already included in djangorestframework
+
+# Environment Variables
+python-decouple==3.8
+
+# Google Drive Integration (Student Admission Portal)
+google-api-python-client==2.108.0
+google-auth==2.25.2
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+
+# Payment Gateway Integration
+razorpay==1.4.1
+
+# Email
+# Already included in Django
+
+# PDF Generation (if needed)
+reportlab==4.0.7
+xhtml2pdf==0.2.13
+
+# Additional utilities
+Pillow==10.1.0
+python-dateutil==2.8.2
+
+# Testing
+pytest==7.4.3
+pytest-django==4.7.0
+
+# Development Tools (optional)
+ipython==8.18.1

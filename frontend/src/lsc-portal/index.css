@@ -1,0 +1,466 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Modern Educational Design System for Periyar University LSC Portal
+All colors MUST be HSL for consistency and theming support.
+*/
+
+@layer base {
+  :root {
+    /* Educational Brand Colors */
+    --background: 0 0% 99%;
+    --foreground: 215 25% 27%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 27%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 27%;
+
+    /* University Green Primary */
+    --primary: 142 71% 45%;
+    --primary-foreground: 0 0% 98%;
+    --primary-light: 142 71% 55%;
+    --primary-dark: 142 71% 35%;
+
+    /* Academic Secondary */
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 215 25% 27%;
+
+    /* Subtle UI Elements */
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    /* Interactive Accent */
+    --accent: 142 71% 45%;
+    --accent-foreground: 0 0% 98%;
+
+    /* Educational Highlights */
+    --education-blue: 217 91% 60%;
+    --education-orange: 25 95% 53%;
+    --education-purple: 262 83% 58%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 220 13% 91%;
+    --input: 0 0% 100%;
+    --ring: 142 71% 45%;
+
+    --radius: 0.75rem;
+
+    /* Modern Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(142 71% 45%), hsl(142 71% 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(217 91% 60%), hsl(262 83% 58%));
+    --gradient-background: linear-gradient(180deg, hsl(0 0% 99%), hsl(220 14% 98%));
+    
+    /* Educational Shadows */
+    --shadow-soft: 0 2px 8px -2px hsl(142 71% 45% / 0.1);
+    --shadow-medium: 0 4px 16px -4px hsl(142 71% 45% / 0.15);
+    --shadow-strong: 0 8px 32px -8px hsl(142 71% 45% / 0.2);
+    
+    /* Smooth Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    /* Sidebar Variables - Educational Theme */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 25% 27%;
+    --sidebar-primary: 142 71% 45%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 215 25% 27%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 142 71% 45%;
+  }
+
+  .dark {
+    --background: 215 28% 17%;
+    --foreground: 0 0% 95%;
+
+    --card: 215 28% 17%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 215 28% 17%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 142 71% 45%;
+    --primary-foreground: 0 0% 98%;
+    --primary-light: 142 71% 55%;
+    --primary-dark: 142 71% 35%;
+
+    --secondary: 215 28% 20%;
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 215 28% 20%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 142 71% 45%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 215 28% 20%;
+    --input: 215 28% 18%;
+    --ring: 142 71% 45%;
+
+    --sidebar-background: 215 28% 15%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 142 71% 45%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 215 28% 18%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 215 28% 20%;
+    --sidebar-ring: 142 71% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Premium Animations for Login Page */
+@layer utilities {
+  /* Blob Animation for Background */
+  @keyframes blob {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
+    }
+    25% {
+      transform: translate(20px, -50px) scale(1.1);
+    }
+    50% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+    75% {
+      transform: translate(50px, 50px) scale(1.05);
+    }
+  }
+
+  .animate-blob {
+    animation: blob 15s infinite ease-in-out;
+  }
+
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+
+  /* Fade In Animations */
+  @keyframes fadeInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes fadeInRight {
+    from {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-left {
+    animation: fadeInLeft 0.8s ease-out forwards;
+  }
+
+  .animate-fade-in-right {
+    animation: fadeInRight 0.8s ease-out forwards;
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+
+  /* Pulse Animation for Icons */
+  @keyframes pulse-soft {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.05);
+    }
+  }
+
+  .animate-pulse-soft {
+    animation: pulse-soft 3s ease-in-out infinite;
+  }
+
+  /* Gradient Animation */
+  @keyframes gradient-shift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 8s ease infinite;
+  }
+
+  /* Shimmer Effect */
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 3s infinite;
+  }
+
+  /* Floating Animation */
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  /* Scale on Hover */
+  .hover-scale {
+    transition: transform 0.3s ease;
+  }
+
+  .hover-scale:hover {
+    transform: scale(1.05);
+  }
+
+  /* Glow Effect */
+  .glow {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  }
+
+  .glow-purple {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
+  }
+
+  /* Glass Morphism */
+  .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .glass-dark {
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Premium Toast Animations */
+  @keyframes toast-slide-in {
+    0% {
+      transform: translateX(100%) scale(0.95);
+      opacity: 0;
+    }
+    100% {
+      transform: translateX(0) scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes toast-slide-out {
+    0% {
+      transform: translateX(0) scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(120%) scale(0.95);
+      opacity: 0;
+    }
+  }
+
+  @keyframes toast-bounce-in {
+    0% {
+      transform: translateX(100%) scale(0.9);
+      opacity: 0;
+    }
+    60% {
+      transform: translateX(-5%) scale(1.02);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(0) scale(1);
+      opacity: 1;
+    }
+  }
+
+  /* Toast Icon Animations */
+  @keyframes icon-bounce {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.15);
+    }
+  }
+
+  [data-state="open"] {
+    animation: toast-bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  [data-state="closed"] {
+    animation: toast-slide-out 0.3s ease-in forwards;
+  }
+
+  /* Toast Glow Effects */
+  .toast-glow-success {
+    box-shadow: 0 8px 32px rgba(34, 197, 94, 0.2), 0 0 0 1px rgba(34, 197, 94, 0.1);
+  }
+
+  .toast-glow-error {
+    box-shadow: 0 8px 32px rgba(239, 68, 68, 0.2), 0 0 0 1px rgba(239, 68, 68, 0.1);
+  }
+
+  .toast-glow-info {
+    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.2), 0 0 0 1px rgba(59, 130, 246, 0.1);
+  }
+
+  .toast-glow-warning {
+    box-shadow: 0 8px 32px rgba(245, 158, 11, 0.2), 0 0 0 1px rgba(245, 158, 11, 0.1);
+  }
+
+  /* Modern Admin Portal Scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(233, 213, 255, 0.3);
+    border-radius: 100px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #9333ea;
+    border-radius: 100px;
+    transition: all 0.3s ease;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #7e22ce;
+    box-shadow: 0 0 10px rgba(147, 51, 234, 0.5);
+  }
+
+  /* Ultra-Modern Card Hover Effects */
+  .card-hover-effect {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-hover-effect:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 20px 40px -12px rgba(99, 102, 241, 0.3);
+  }
+
+  /* Animated Borders */
+  @keyframes border-rotate {
+    0% {
+      border-color: #9333ea;
+    }
+    50% {
+      border-color: #eab308;
+    }
+    100% {
+      border-color: #9333ea;
+    }
+  }
+
+  .animate-gradient-border {
+    animation: border-rotate 3s ease infinite;
+  }
+
+  /* Fade In with Delay */
+  @keyframes fadeInWithDelay {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fadeIn {
+    animation: fadeInWithDelay 0.5s ease-out forwards;
+  }
+
+  .delay-500 {
+    animation-delay: 500ms;
+  }
+
+  .delay-1000 {
+    animation-delay: 1000ms;
+  }
+
+  /* Smooth Pulse for Background Elements */
+  @keyframes smooth-pulse {
+    0%, 100% {
+      opacity: 0.3;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.5;
+      transform: scale(1.05);
+    }
+  }
+
+  .animate-smooth-pulse {
+    animation: smooth-pulse 4s ease-in-out infinite;
+  }
+}
