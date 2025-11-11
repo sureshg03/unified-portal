@@ -12,10 +12,11 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 
 django.setup()
 
-from django.db import connection
+from django.db import connections
 
 def create_marksheet_uploads_table():
-    with connection.cursor() as cursor:
+    # Use the online_edu database connection
+    with connections['online_edu'].cursor() as cursor:
         # Switch to the correct database
         cursor.execute("USE online_edu")
 

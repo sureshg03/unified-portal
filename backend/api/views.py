@@ -602,9 +602,11 @@ def verify_dummy_payment(request):
         application.save()
         
         # Generate transaction details
-        txn_id = f"TXN{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        bank_txn_id = f"BANK{datetime.now().strftime('%Y%m%d%H%M%S%f')[:20]}"
-        order_id = f"ORDER{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        from django.utils import timezone
+        now = timezone.now()
+        txn_id = f"TXN{now.strftime('%Y%m%d%H%M%S')}"
+        bank_txn_id = f"BANK{now.strftime('%Y%m%d%H%M%S%f')[:20]}"
+        order_id = f"ORDER{now.strftime('%Y%m%d%H%M%S')}"
         
         # Get amount from course or default
         amount = 236.00  # Default application fee
@@ -638,7 +640,7 @@ def verify_dummy_payment(request):
                 payment_mode='DUMMY',
                 refund_amount='0',
                 mid='MERCHANT001',
-                transaction_date=datetime.now(),
+                transaction_date=now,
                 payment_type='APPLICATION_FEE'
             )
             logger.info(f"Created feepayment record with ID: {fee_payment.id} for application: {application_id}")
@@ -2564,13 +2566,33 @@ def download_application(request):
                 logger.warning(f"Could not extract LSC code from application_id: {e}")
         
         # Prepare complete application data
+        # Resolve photo_url: prefer StudentDetails.photo_url, fall back to Application.photo_url if present
+        resolved_photo_url = ''
+        resolved_signature_url = ''
+        try:
+            if student_details and getattr(student_details, 'photo_url', None):
+                resolved_photo_url = student_details.photo_url or ''
+            elif hasattr(application, 'photo_url') and getattr(application, 'photo_url', None):
+                resolved_photo_url = application.photo_url or ''
+            
+            if student_details and getattr(student_details, 'signature_url', None):
+                resolved_signature_url = student_details.signature_url or ''
+        except Exception:
+            # Be defensive: don't let photo/signature resolution break the endpoint
+            resolved_photo_url = ''
+            resolved_signature_url = ''
+
         application_data = {
             # Basic Info
             'application_id': application.application_id or '',
+            'enrollment_no': application.enrollment_no if hasattr(application, 'enrollment_no') else '',
             'applied_date': application.created_at.strftime('%d-%m-%Y') if hasattr(application, 'created_at') else '',
+            'photo_url': resolved_photo_url,
+            'signature_url': resolved_signature_url,
             
             # Page 1 - Programme Details
             'programme_applied': application.programme_applied or '',
+            'programme': application.programme_applied or 'DIPLOMA',
             'course': application.course or '',
             'medium': application.medium or '',
             'mode_of_study': application.mode_of_study or '',
@@ -2583,6 +2605,7 @@ def download_application(request):
             # Page 2 - Personal Details
             'name_initial': application.name_initial or '',
             'student_name': student.name if student else '',
+            'name': student.name if student else '',
             'dob': application.dob.strftime('%d-%m-%Y') if application.dob else '',
             'gender': application.gender or '',
             'father_name': application.father_name or '',
@@ -2590,60 +2613,98 @@ def download_application(request):
             'guardian_name': application.guardian_name or '',
             'father_occupation': application.father_occupation or '',
             'mother_occupation': application.mother_occupation or '',
+            'parent_occupation': f"{application.father_occupation or 'N/A'} - {application.mother_occupation or 'N/A'}",
             'guardian_occupation': application.guardian_occupation or '',
             'mother_tongue': application.mother_tongue or '',
-            'nationality': application.nationality or '',
+            'nationality': application.nationality or 'Indian',
             'religion': application.religion or '',
             'community': application.community or '',
+            'community_certificate': bool(application.community_certificate) if hasattr(application, 'community_certificate') else False,
             
             # Contact Details
             'email': user.email,
             'phone': student.phone if student else '',
+            'mobile': student.phone if student else '',
             
-            # Address - Communication
+            # Address - Communication (formatted)
             'comm_pincode': application.comm_pincode or '',
             'comm_district': application.comm_district or '',
             'comm_state': application.comm_state or '',
             'comm_country': application.comm_country or '',
             'comm_town': application.comm_town or '',
             'comm_area': application.comm_area or '',
+            'communication_address': f"{application.comm_area or ''}, {application.comm_town or ''}, {application.comm_district or ''}, {application.comm_state or ''} - {application.comm_pincode or ''}, {application.comm_country or ''}".strip(', '),
+            'communication_city': application.comm_district or '',
+            'communication_state': application.comm_state or '',
+            'communication_pincode': application.comm_pincode or '',
+            'communication_country': application.comm_country or '',
             
-            # Address - Permanent
+            # Address - Permanent (formatted)
             'perm_pincode': application.perm_pincode or '',
             'perm_district': application.perm_district or '',
             'perm_state': application.perm_state or '',
             'perm_country': application.perm_country or '',
             'perm_town': application.perm_town or '',
             'perm_area': application.perm_area or '',
+            'permanent_address': f"{application.perm_area or ''}, {application.perm_town or ''}, {application.perm_district or ''}, {application.perm_state or ''} - {application.perm_pincode or ''}, {application.perm_country or ''}".strip(', '),
+            'permanent_city': application.perm_district or '',
+            'permanent_state': application.perm_state or '',
+            'permanent_pincode': application.perm_pincode or '',
+            'permanent_country': application.perm_country or '',
             
             # Other Details
             'aadhaar_no': application.aadhaar_no or '',
+            'aadhaar_number': application.aadhaar_no or '',
             'name_as_aadhaar': application.name_as_aadhaar or '',
+            'aadhaar_name': application.name_as_aadhaar or '',
+            'aadhaar_document': bool(hasattr(application, 'aadhaar_document') and application.aadhaar_document),
             'abc_id': application.abc_id or '',
             'deb_id': application.deb_id or '',
             'differently_abled': application.differently_abled or 'No',
             'disability_type': application.disability_type or '',
             'blood_group': application.blood_group or '',
-            'access_internet': application.access_internet or '',
+            'access_internet': application.access_internet or 'Yes',
+            'internet_access': application.access_internet or 'Yes',
             
             # Page 3 - Education & Experience
             'qualifications': student_details.qualifications if student_details else [],
             'current_designation': student_details.current_designation if student_details else '',
             'current_institute': student_details.current_institute if student_details else '',
+            'current_institution': student_details.current_institute if student_details else '',
             'years_experience': student_details.years_experience if student_details else '',
+            'work_experience_years': student_details.years_experience if student_details else '',
             'annual_income': student_details.annual_income if student_details else '',
             
             # Payment Details
             'payment_status': 'Paid' if application.payment_status == 'P' else 'Not Paid',
+            'payment_status_display': 'TXN_SUCCESS' if application.payment_status == 'P' else 'PENDING',
             'transaction_id': fee_payment.transaction_id if fee_payment else (payment.transaction_id if payment else ''),
+            'bank_transaction_id': fee_payment.bank_transaction_id if fee_payment else '',
             'order_id': fee_payment.order_id if fee_payment else '',
             'amount': str(fee_payment.amount) if fee_payment else (str(payment.amount) if payment else '236.00'),
-            'payment_mode': fee_payment.payment_mode if fee_payment else '',
+            'payment_mode': fee_payment.payment_mode if fee_payment else 'UPI',
+            'bank_name': fee_payment.bank_name if fee_payment else '',
+            'gateway_name': fee_payment.gateway_name if fee_payment else '',
+            'response_code': fee_payment.response_code if fee_payment else '',
+            'response_message': fee_payment.response_message if fee_payment else '',
+            'mid': fee_payment.mid if fee_payment else '',
             'transaction_date': fee_payment.transaction_date.strftime('%Y-%m-%d %H:%M:%S') if fee_payment and fee_payment.transaction_date else '',
             'payment_response': fee_payment.payment_status if fee_payment else (payment.payment_status if payment else ''),
             
+            # Additional payment fields for course fee (if any)
+            'course_fee_order_id': '',
+            'course_fee_amount': '',
+            'course_fee_status': '',
+            'course_fee_bank': '',
+            'course_fee_mode': '',
+            'course_fee_date': '',
+            
             # Application Status
             'status': application.status,
+            
+            # University Details
+            'university': 'Periyar University',
+            'university_address': 'Salem, Tamil Nadu, India',
         }
 
         logger.info(f"Returning complete application data for user {user.email}")
@@ -2687,7 +2748,22 @@ def download_receipt(request):
         payment = Payment.objects.filter(user=user, application_id=application.application_id).first()
         
         # Get fee payment details from ApplicationPayment table (feepayment)
-        fee_payment = ApplicationPayment.objects.filter(user=user, application_id=application.application_id).first()
+        # Try multiple query methods to find the payment record
+        fee_payment = ApplicationPayment.objects.filter(application_id=application.application_id).first()
+        
+        if not fee_payment:
+            # Try by user if not found by application_id
+            fee_payment = ApplicationPayment.objects.filter(user=user).first()
+        
+        if not fee_payment:
+            # Try by email
+            fee_payment = ApplicationPayment.objects.filter(email=user.email).first()
+        
+        # Log the fee payment details for debugging
+        if fee_payment:
+            logger.info(f"Found fee_payment for {user.email}: TXN={fee_payment.transaction_id}, Bank TXN={fee_payment.bank_transaction_id}, Order={fee_payment.order_id}")
+        else:
+            logger.warning(f"No fee_payment record found for {user.email} with application_id={application.application_id}")
         
         # Extract LSC code from application_id if student doesn't have it
         lsc_code = student.lsc_code if student and student.lsc_code else ''
@@ -2736,7 +2812,12 @@ def download_receipt(request):
             'university_address': 'Salem, Tamil Nadu, India'
         }
 
+        # Log the complete receipt data being returned
         logger.info(f"Returning receipt data for user {user.email}, Application ID: {application.application_id}")
+        logger.info(f"Receipt data transaction_id: {receipt_data.get('transaction_id')}")
+        logger.info(f"Receipt data bank_transaction_id: {receipt_data.get('bank_transaction_id')}")
+        logger.info(f"Receipt data order_id: {receipt_data.get('order_id')}")
+        
         return Response({
             "status": "success",
             "data": receipt_data

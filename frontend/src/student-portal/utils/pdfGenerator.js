@@ -173,43 +173,43 @@ export const generateReceiptPDF = (receiptData) => {
         <h3>Transaction Details</h3>
         <div class="info-row">
           <span class="label">Transaction ID:</span>
-          <span class="value">${receiptData.transaction_id}</span>
+          <span class="value">${receiptData.transaction_id || 'N/A'}</span>
         </div>
         <div class="info-row">
           <span class="label">Bank Transaction ID:</span>
-          <span class="value">${receiptData.bank_transaction_id}</span>
+          <span class="value">${receiptData.bank_transaction_id || 'N/A'}</span>
         </div>
         <div class="info-row">
           <span class="label">Order ID:</span>
-          <span class="value">${receiptData.order_id}</span>
+          <span class="value">${receiptData.order_id || 'N/A'}</span>
         </div>
         <div class="info-row">
           <span class="label">Transaction Date:</span>
-          <span class="value">${receiptData.transaction_date}</span>
+          <span class="value">${receiptData.transaction_date || new Date().toLocaleString()}</span>
         </div>
         <div class="info-row">
           <span class="label">Payment Mode:</span>
-          <span class="value">${receiptData.payment_mode}</span>
+          <span class="value">${receiptData.payment_mode || 'N/A'}</span>
         </div>
         <div class="info-row">
           <span class="label">Gateway:</span>
-          <span class="value">${receiptData.gateway_name}</span>
+          <span class="value">${receiptData.gateway_name || 'N/A'}</span>
         </div>
         <div class="info-row">
           <span class="label">Bank Name:</span>
-          <span class="value">${receiptData.bank_name}</span>
+          <span class="value">${receiptData.bank_name || 'N/A'}</span>
         </div>
         <div class="info-row">
           <span class="label">Status:</span>
-          <span class="value"><span class="status-badge">${receiptData.payment_status}</span></span>
+          <span class="value"><span class="status-badge">${receiptData.payment_status || 'SUCCESS'}</span></span>
         </div>
         <div class="info-row">
           <span class="label">Response Code:</span>
-          <span class="value">${receiptData.response_code}</span>
+          <span class="value">${receiptData.response_code || 'N/A'}</span>
         </div>
         <div class="info-row">
           <span class="label">Response Message:</span>
-          <span class="value">${receiptData.response_message}</span>
+          <span class="value">${receiptData.response_message || 'N/A'}</span>
         </div>
       </div>
 

@@ -19,6 +19,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { generateReceiptPDF } from '../utils/pdfGenerator';
 import { generateComprehensiveApplicationPDF } from '../utils/comprehensiveApplicationPDF';
+import { generateProfessionalApplicationPDF } from '../utils/professionalApplicationPDF';
+import { generateApplicationFormPDF } from '../utils/applicationFormPDF';
 
 const PaymentPage = () => {
   const navigate = useNavigate();
@@ -133,6 +135,12 @@ const PaymentPage = () => {
         toast.dismiss(loadingToast);
         toast.success('Receipt generated successfully!');
         
+        // Log the receipt data for debugging
+        console.log('Receipt Data:', response.data.data);
+        console.log('Transaction ID:', response.data.data.transaction_id);
+        console.log('Bank Transaction ID:', response.data.data.bank_transaction_id);
+        console.log('Order ID:', response.data.data.order_id);
+        
         // Generate PDF with the receipt data
         generateReceiptPDF(response.data.data);
       }
@@ -166,8 +174,11 @@ const PaymentPage = () => {
         toast.dismiss(loadingToast);
         toast.success('Application form generated successfully!');
         
-        // Generate comprehensive PDF with ALL application data
-        generateComprehensiveApplicationPDF(response.data.data);
+        // Log the data for debugging
+        console.log('Application Data:', response.data.data);
+        
+        // Generate PDF matching PUCDOE.pdf reference format exactly
+        generateApplicationFormPDF(response.data.data);
       }
     } catch (error) {
       toast.dismiss();
