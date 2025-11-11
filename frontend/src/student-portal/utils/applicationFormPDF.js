@@ -767,19 +767,31 @@ export const generateApplicationFormPDF = async (applicationData) => {
       <tbody>
         ${applicationData.qualifications && applicationData.qualifications.length > 0 ? 
           applicationData.qualifications.map(qual => {
-            // Parse subjects_studied if it's a JSON string or array
+            // Get institution name - primary field is institute_name
+            const institution = qual.institute_name || qual.institution || qual.board_university || 'N/A';
+            
+            // Get subjects - primary field is subject_studied (singular)
             let subjects = '';
             try {
-              if (typeof qual.subjects_studied === 'string') {
-                const parsed = JSON.parse(qual.subjects_studied);
-                subjects = Array.isArray(parsed) ? parsed.join(', ') : qual.subjects_studied;
-              } else if (Array.isArray(qual.subjects_studied)) {
-                subjects = qual.subjects_studied.join(', ');
+              // Check primary field first: subject_studied
+              const subjectField = qual.subject_studied || qual.subjects_studied || qual.subjects || qual.subjectsstudied || '';
+              
+              if (typeof subjectField === 'string') {
+                // Try to parse as JSON first
+                try {
+                  const parsed = JSON.parse(subjectField);
+                  subjects = Array.isArray(parsed) ? parsed.join(', ') : subjectField;
+                } catch {
+                  // Not JSON, use as is
+                  subjects = subjectField;
+                }
+              } else if (Array.isArray(subjectField)) {
+                subjects = subjectField.join(', ');
               } else {
-                subjects = qual.subjects_studied || qual.subjects || '';
+                subjects = subjectField;
               }
             } catch (e) {
-              subjects = qual.subjects_studied || qual.subjects || '';
+              subjects = qual.subject_studied || qual.subjects_studied || qual.subjects || '';
             }
             
             // If subjects is still empty, show placeholder
@@ -787,19 +799,50 @@ export const generateApplicationFormPDF = async (applicationData) => {
               subjects = 'Not Specified';
             }
             
-            // Get register number with multiple fallbacks
-            const registerNo = qual.register_no || qual.register_number || qual.registration_no || 'Not Provided';
+            // Get register number - primary field is reg_no
+            const registerNo = qual.reg_no || qual.register_no || qual.register_number || qual.registration_no || qual.registerno || qual.regno || 'N/A';
+            
+            // Parse month_year if it contains both month and year (e.g., "03/2025")
+            let monthOfPassing = '';
+            let yearOfPassing = '';
+            
+            // Primary field is month_year
+            if (qual.month_year || qual.month_year_of_passing || qual.monthyearofpassing) {
+              const monthYear = qual.month_year || qual.month_year_of_passing || qual.monthyearofpassing;
+              if (typeof monthYear === 'string' && monthYear.includes('/')) {
+                const parts = monthYear.split('/');
+                if (parts.length === 2) {
+                  monthOfPassing = parts[0]; // Month (e.g., "03")
+                  yearOfPassing = parts[1];  // Year (e.g., "2025")
+                }
+              } else {
+                monthOfPassing = monthYear;
+              }
+            } else {
+              // Fallback to separate fields
+              monthOfPassing = qual.month_of_passing || qual.month || '';
+              yearOfPassing = qual.year_of_passing || qual.year || '';
+            }
+            
+            // Convert month number to name if needed
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            if (monthOfPassing && !isNaN(monthOfPassing)) {
+              const monthNum = parseInt(monthOfPassing);
+              if (monthNum >= 1 && monthNum <= 12) {
+                monthOfPassing = monthNames[monthNum - 1];
+              }
+            }
             
             return `
             <tr>
               <td>${qual.course || qual.exam_passed || 'N/A'}</td>
-              <td>${qual.institution || qual.board_university || 'N/A'}</td>
-              <td>${qual.board || qual.board_university || 'N/A'}</td>
+              <td>${institution}</td>
+              <td>${qual.board || qual.university || 'N/A'}</td>
               <td>${subjects}</td>
               <td>${registerNo}</td>
               <td>${qual.percentage || 'N/A'}</td>
-              <td>${qual.month_of_passing || qual.month_year || 'N/A'}</td>
-              <td>${qual.year_of_passing || qual.year || 'N/A'}</td>
+              <td>${monthOfPassing || 'N/A'}</td>
+              <td>${yearOfPassing || 'N/A'}</td>
               <td>${qual.mode_of_study || 'Regular'}</td>
               <td>${qual.document || qual.document_uploaded ? '<span class="view-link">✓</span>' : '-'}</td>
             </tr>
