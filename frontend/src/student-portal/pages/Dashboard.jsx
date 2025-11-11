@@ -224,7 +224,7 @@ const Dashboard = () => {
                 <motion.div
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="relative overflow-hidden bg-gradient-to-br from-purple-700 via-purple-700 to-purple-700 rounded-2xl shadow-2xl border border-purple-400/20"
+                  className="relative overflow-hidden bg-gradient-to-br from-purple-800 via-purple-800 to-purple-800 rounded-2xl shadow-2xl border border-purple-400/20"
                 >
                   <div className="absolute inset-0 bg-black/5"></div>
                   <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-48 -mt-48"></div>
