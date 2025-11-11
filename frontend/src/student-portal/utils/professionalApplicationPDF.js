@@ -93,6 +93,7 @@ export const generateProfessionalApplicationPDF = (data) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <base href="${window.location.origin}/">
       <title>Application Form - ${data.application_id || 'Draft'}</title>
       <style>
         /* Reset and Base Styles */
@@ -105,6 +106,13 @@ export const generateProfessionalApplicationPDF = (data) => {
         @page {
           size: A4;
           margin: 15mm;
+          /* Remove default headers and footers in print */
+          @top-left { content: none; }
+          @top-center { content: none; }
+          @top-right { content: none; }
+          @bottom-left { content: none; }
+          @bottom-center { content: none; }
+          @bottom-right { content: none; }
         }
         
         body {
@@ -376,6 +384,55 @@ export const generateProfessionalApplicationPDF = (data) => {
           background: #f44336;
         }
         
+        /* Action Buttons */
+        .action-buttons {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          display: flex;
+          gap: 10px;
+          z-index: 1000;
+          background: white;
+          padding: 10px;
+          border-radius: 8px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn {
+          padding: 10px 20px;
+          border: none;
+          border-radius: 5px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .btn-print {
+          background: #7401b6ff;
+          color: white;
+        }
+
+        .btn-print:hover {
+          background: #5a0190;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(116, 1, 182, 0.3);
+        }
+
+        .btn-back {
+          background: #6c757d;
+          color: white;
+        }
+
+        .btn-back:hover {
+          background: #545b62;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+        }
+
         /* Print Styles */
         @media print {
           body {
@@ -395,6 +452,10 @@ export const generateProfessionalApplicationPDF = (data) => {
           .no-print {
             display: none;
           }
+
+          .action-buttons {
+            display: none !important;
+          }
         }
         
         /* Utility Classes */
@@ -409,6 +470,23 @@ export const generateProfessionalApplicationPDF = (data) => {
       </style>
     </head>
     <body>
+      <!-- Action Buttons -->
+      <div class="action-buttons no-print">
+        <button class="btn btn-back" onclick="window.close()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 7.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5z"/>
+          </svg>
+          Back
+        </button>
+        <button class="btn btn-print" onclick="window.print()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+            <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/>
+          </svg>
+          Print
+        </button>
+      </div>
+
       <div class="container">
         <!-- Header -->
         <div class="header">
@@ -779,24 +857,24 @@ export const generateProfessionalApplicationPDF = (data) => {
       </div>
       
       <script>
-        // Auto-print when page loads
-        window.onload = function() {
-          setTimeout(function() {
+        // Optional: Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+          // Ctrl/Cmd + P to print
+          if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+            e.preventDefault();
             window.print();
-          }, 500);
-        };
-        
-        // Close window after print or cancel
-        window.onafterprint = function() {
-          // Optional: close window after printing
-          // window.close();
-        };
+          }
+          // Escape to close
+          if (e.key === 'Escape') {
+            window.close();
+          }
+        });
       </script>
     </body>
     </html>
   `;
   
-  // Open the PDF in a new window/tab
+  // Open the PDF in a new window/tab with proper title
   const pdfWindow = window.open('', '_blank', 'width=900,height=1200');
   
   if (pdfWindow) {
