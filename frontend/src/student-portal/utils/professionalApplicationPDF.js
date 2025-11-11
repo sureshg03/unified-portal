@@ -5,6 +5,23 @@
  */
 
 export const generateProfessionalApplicationPDF = (data) => {
+  // Helper function to convert image URL to base64
+  const getImageAsBase64 = async (url) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Error loading image:', error);
+      return null;
+    }
+  };
+
   // Helper function to format qualifications table
   const formatQualificationsTable = (qualifications) => {
     if (!qualifications || qualifications.length === 0) {
@@ -26,24 +43,32 @@ export const generateProfessionalApplicationPDF = (data) => {
         } else if (Array.isArray(qual.subjects_studied)) {
           subjects = qual.subjects_studied.join(', ');
         } else {
-          subjects = qual.subjects_studied || '-';
+          subjects = qual.subjects_studied || '';
         }
       } catch (e) {
-        subjects = qual.subjects_studied || '-';
+        subjects = qual.subjects_studied || '';
       }
+      
+      // If subjects is still empty, show placeholder
+      if (!subjects || subjects.trim() === '') {
+        subjects = 'Not Specified';
+      }
+      
+      // Get register number with multiple fallbacks
+      const registerNo = qual.register_no || qual.register_number || qual.registration_no || 'Not Provided';
       
       return `
       <tr>
-        <td style="text-align: center;">${qual.course || qual.exam_passed || '-'}</td>
-        <td>${qual.institution || qual.board_university || '-'}</td>
-        <td>${qual.board || qual.board_university || '-'}</td>
-        <td>${subjects}</td>
-        <td style="text-align: center;">${qual.register_no || qual.register_number || '-'}</td>
-        <td style="text-align: center;">${qual.percentage || '-'}</td>
-        <td style="text-align: center;">${qual.month_of_passing || qual.month_year || '-'}</td>
-        <td style="text-align: center;">${qual.year_of_passing || qual.year || '-'}</td>
-        <td style="text-align: center;">${qual.mode_of_study || 'Regular'}</td>
-        <td style="text-align: center;">${qual.document_uploaded ? 'View' : '-'}</td>
+        <td style="text-align: center; font-size: 10px;">${qual.course || qual.exam_passed || '-'}</td>
+        <td style="font-size: 10px;">${qual.institution || qual.board_university || '-'}</td>
+        <td style="font-size: 10px;">${qual.board || qual.board_university || '-'}</td>
+        <td style="font-size: 10px;">${subjects}</td>
+        <td style="text-align: center; font-size: 10px;">${registerNo}</td>
+        <td style="text-align: center; font-size: 10px;">${qual.percentage || '-'}</td>
+        <td style="text-align: center; font-size: 10px;">${qual.month_of_passing || qual.month_year || '-'}</td>
+        <td style="text-align: center; font-size: 10px;">${qual.year_of_passing || qual.year || '-'}</td>
+        <td style="text-align: center; font-size: 10px;">${qual.mode_of_study || 'Regular'}</td>
+        <td style="text-align: center; font-size: 10px;">${qual.document_uploaded ? '✓' : '-'}</td>
       </tr>
     `}).join('');
   };
@@ -199,14 +224,15 @@ export const generateProfessionalApplicationPDF = (data) => {
           width: 100%;
           border-collapse: collapse;
           margin: 10px 0;
+          border: 1px solid #000;
         }
         
         .data-table tr {
-          border-bottom: 1px solid #ddd;
+          border-bottom: 1px solid #333;
         }
         
         .data-table td {
-          padding: 10px;
+          padding: 8px 12px;
           vertical-align: top;
         }
         
@@ -216,12 +242,14 @@ export const generateProfessionalApplicationPDF = (data) => {
           color: #000;
           background: #f5f5f5;
           border-right: 2px solid #000;
+          font-size: 11pt;
         }
         
         .data-table .value {
           width: 60%;
           color: #000;
           padding-left: 15px;
+          font-size: 11pt;
         }
         
         /* Qualification Table */
@@ -229,14 +257,15 @@ export const generateProfessionalApplicationPDF = (data) => {
           width: 100%;
           border-collapse: collapse;
           margin: 10px 0;
-          font-size: 10pt;
+          font-size: 9pt;
         }
         
         .qual-table th,
         .qual-table td {
           border: 1px solid #000;
-          padding: 8px;
+          padding: 6px 4px;
           text-align: left;
+          vertical-align: middle;
         }
         
         .qual-table th {
@@ -244,8 +273,9 @@ export const generateProfessionalApplicationPDF = (data) => {
           color: #fff;
           font-weight: bold;
           text-align: center;
-          font-size: 10pt;
+          font-size: 9pt;
           text-transform: uppercase;
+          padding: 8px 4px;
         }
         
         .qual-table td {
@@ -383,7 +413,7 @@ export const generateProfessionalApplicationPDF = (data) => {
         <!-- Header -->
         <div class="header">
           <div class="logo-section">
-            <img src="/Logo.png" alt="University Logo" style="height: 60px; margin-right: 15px;" />
+            <img src="/Logo.png" alt="University Logo" style="height: 60px; margin-right: 15px;" onerror="console.error('Logo failed to load'); this.onerror=null; this.style.visibility='hidden';" />
             <div style="text-align: center;">
               <div class="university-name">PERIYAR UNIVERSITY</div>
               <div style="font-size: 10pt; color: #c00; font-weight: bold; margin-top: 3px;">State University - NAAC 'A+' Grade - NIRF Rank 94</div>
@@ -402,15 +432,15 @@ export const generateProfessionalApplicationPDF = (data) => {
             <tr>
               <td style="padding: 8px; border: 1px solid #333; background: #f5f5f5; font-weight: bold; width: 30%;">Application No :</td>
               <td style="padding: 8px; border: 1px solid #333; font-weight: bold; color: #c00;">${data.application_id || 'To Be Generated'}</td>
-              <td style="padding: 8px; border: 1px solid #333; background: #f5f5f5; width: 150px; text-align: right;" rowspan="3">
+              <td style="padding: 8px; border: 1px solid #333; background: #f9f9f9; width: 150px; text-align: center; vertical-align: middle;" rowspan="3">
                 ${data.photo_url ? 
-                  `<img src="http://127.0.0.1:8000${data.photo_url}" alt="Photo" style="width: 120px; height: 150px; object-fit: cover; border: 1px solid #000;" crossorigin="anonymous" />` : 
-                  'Photo'}
+                  `<img src="http://127.0.0.1:8000${data.photo_url}" alt="Applicant Photo" style="width: 120px; height: 150px; object-fit: cover; border: 2px solid #333;" onerror="this.onerror=null; this.src=''; this.alt='Photo Not Available'; this.style='width:120px; height:150px; border:2px solid #333; display:flex; align-items:center; justify-content:center; background:#f0f0f0; color:#666; font-size:10px;';" />` : 
+                  '<div style="width: 120px; height: 150px; border: 2px solid #333; display: flex; align-items: center; justify-content: center; background: #f0f0f0; color: #666; font-size: 11px; font-weight: bold;">PHOTO<br/>NOT<br/>UPLOADED</div>'}
               </td>
             </tr>
             <tr>
               <td style="padding: 8px; border: 1px solid #333; background: #f5f5f5; font-weight: bold;">Enrollment No :</td>
-              <td style="padding: 8px; border: 1px solid #333; font-weight: bold;">${data.enrollment_no || 'A25DSW21010001'}</td>
+              <td style="padding: 8px; border: 1px solid #333; font-weight: bold;">${data.enrollment_no || 'To Be Assigned'}</td>
             </tr>
             <tr>
               <td style="padding: 8px; border: 1px solid #333; background: #f5f5f5; font-weight: bold;">Applied Date :</td>
@@ -605,20 +635,20 @@ export const generateProfessionalApplicationPDF = (data) => {
         
         <!-- Section 18: Educational Qualifications -->
         <div class="section">
-          <div class="section-heading">18. Educational Qualifications</div>
+          <div class="section-heading">9. Educational Qualifications</div>
           <table class="qual-table">
             <thead>
               <tr>
-                <th style="width: 10%;">Course</th>
-                <th style="width: 12%;">Institution</th>
-                <th style="width: 10%;">Board</th>
-                <th style="width: 15%;">Subject Studied</th>
+                <th style="width: 8%;">Course</th>
+                <th style="width: 15%;">Institution</th>
+                <th style="width: 12%;">Board/University</th>
+                <th style="width: 18%;">Subjects Studied</th>
                 <th style="width: 10%;">Register No</th>
-                <th style="width: 8%;">Percentage</th>
-                <th style="width: 10%;">Month of Passing</th>
-                <th style="width: 8%;">Year of Passing</th>
-                <th style="width: 10%;">Mode of Study</th>
-                <th style="width: 7%;">Document</th>
+                <th style="width: 6%;">%</th>
+                <th style="width: 8%;">Month</th>
+                <th style="width: 6%;">Year</th>
+                <th style="width: 10%;">Mode</th>
+                <th style="width: 7%;">Doc</th>
               </tr>
             </thead>
             <tbody>
@@ -717,11 +747,14 @@ export const generateProfessionalApplicationPDF = (data) => {
               <div class="signature-line">Date: ${new Date().toLocaleDateString('en-IN')}</div>
             </div>
             <div class="signature-block">
-              <div class="signature-line">Place: ${data.perm_district || 'N/A'}</div>
+              <div class="signature-line">Place: ${data.perm_district || data.comm_district || 'Not Specified'}</div>
             </div>
             <div class="signature-block">
               ${data.signature_url ? 
-                `<img src="http://127.0.0.1:8000${data.signature_url}" alt="Signature" style="max-width: 150px; max-height: 50px; margin-bottom: 5px;" crossorigin="anonymous" />` : ''}
+                `<div style="margin-bottom: 10px; min-height: 50px; display: flex; align-items: center; justify-content: center;">
+                  <img src="http://127.0.0.1:8000${data.signature_url}" alt="Applicant Signature" style="max-width: 150px; max-height: 50px; object-fit: contain;" onerror="this.onerror=null; this.parentElement.innerHTML='<span style=\\'color:#999; font-size:9px;\\'>Signature Not Available</span>';" />
+                </div>` : 
+                '<div style="margin-bottom: 10px; min-height: 50px; display: flex; align-items: center; justify-content: center; border: 1px dashed #ccc; background: #f9f9f9;"><span style="color: #999; font-size: 9px;">Signature Not Uploaded</span></div>'}
               <div class="signature-line">Signature of the Applicant</div>
             </div>
           </div>
