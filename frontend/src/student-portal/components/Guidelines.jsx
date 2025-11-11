@@ -1,25 +1,61 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDownIcon, ChevronUpIcon, DocumentTextIcon, EnvelopeIcon, PhoneIcon, ClockIcon, PaperClipIcon } from '@heroicons/react/24/outline';
+import { 
+  ChevronDownIcon, 
+  ChevronUpIcon, 
+  DocumentTextIcon, 
+  EnvelopeIcon, 
+  PhoneIcon, 
+  ClockIcon, 
+  PaperClipIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  BuildingLibraryIcon,
+  CalendarDaysIcon,
+  BanknotesIcon
+} from '@heroicons/react/24/outline';
 
 const Guidelines = () => {
   const [isInstructionsOpen, setIsInstructionsOpen] = useState(true);
-  const [isCertificatesOpen, setIsCertificatesOpen] = useState(false);
+  const [isCertificatesOpen, setIsCertificatesOpen] = useState(true);
+  const [isSubmissionOpen, setIsSubmissionOpen] = useState(true);
 
   const containerVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, type: 'spring', stiffness: 100 } },
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { 
+        duration: 0.5, 
+        ease: [0.22, 1, 0.36, 1],
+        staggerChildren: 0.1
+      } 
+    },
   };
 
   const cardVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
-    hover: { scale: 1.02, boxShadow: '0 10px 30px rgba(99, 102, 241, 0.3)' },
+    hidden: { opacity: 0, y: 15 },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { 
+        duration: 0.4, 
+        ease: [0.22, 1, 0.36, 1]
+      } 
+    },
   };
 
   const sectionVariants = {
     hidden: { opacity: 0, height: 0 },
-    visible: { opacity: 1, height: 'auto', transition: { duration: 0.4, ease: 'easeOut' } },
+    visible: { 
+      opacity: 1, 
+      height: 'auto', 
+      transition: { 
+        duration: 0.3, 
+        ease: [0.22, 1, 0.36, 1]
+      } 
+    },
   };
 
   const instructions = [
@@ -52,205 +88,359 @@ const Guidelines = () => {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="mt-6 w-full max-w-5xl sm:max-w-full mx-auto px-4 sm:px-6 py-8"
+      className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6"
     >
-      <div className="bg-gradient-to-br from-white/10 to-indigo-200/10 backdrop-blur-3xl rounded-3xl p-8 sm:p-6 shadow-2xl relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1440 320%22%3E%3Cpath fill=%22%23ffffff%22 fill-opacity=%220.1%22 d=%22M0,160L48,176C96,192,192,224,288,213.3C384,203,480,149,576,144C672,139,768,181,864,197.3C960,213,1056,203,1152,176C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z%22%3E%3C/path%3E%3C/svg%3E')] bg-bottom bg-no-repeat animate-wave-slow" />
-        <div className="relative z-10">
-          <h3 className="text-5xl sm:text-4xl font-bold font-poppins bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 mb-6 sm:mb-4 tracking-tight text-center">
-            Application Guidelines
-          </h3>
-          <p className="text-xl sm:text-lg font-lato font-normal text-gray-700 mb-8 sm:mb-6 leading-relaxed text-center">
-            Follow these guidelines to ensure a smooth application process for the 2025-2026 academic year.
-          </p>
+      {/* Header Section */}
+      <motion.div 
+        variants={cardVariants}
+        className="mb-8 text-center"
+      >
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg mb-4"
+        >
+          <BuildingLibraryIcon className="w-10 h-10 text-white" />
+        </motion.div>
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 tracking-tight">
+          Application Guidelines
+        </h1>
+        <p className="text-base text-gray-600 max-w-3xl mx-auto leading-relaxed">
+          Please read the following guidelines carefully before submitting your application for the 2025-2026 academic year.
+        </p>
+      </motion.div>
 
-          {/* Instructions Section */}
-          <motion.div
-            variants={cardVariants}
-            whileHover="hover"
-            className="bg-white/95 backdrop-blur-lg rounded-2xl p-6 sm:p-4 mb-6 shadow-lg border border-indigo-300/30"
-          >
-            <div
-              className="flex items-center justify-between cursor-pointer"
-              onClick={() => setIsInstructionsOpen(!isInstructionsOpen)}
-            >
-              <h4 className="text-3xl sm:text-2xl font-semibold font-poppins text-indigo-800 flex items-center">
-                <DocumentTextIcon className="h-7 w-7 sm:h-6 sm:w-6 mr-2" />
-                Instructions to Candidates
-              </h4>
-              {isInstructionsOpen ? (
-                <ChevronUpIcon className="h-7 w-7 sm:h-6 sm:w-6 text-indigo-600" />
-              ) : (
-                <ChevronDownIcon className="h-7 w-7 sm:h-6 sm:w-6 text-indigo-600" />
-              )}
+      {/* Important Notice Banner */}
+      <motion.div
+        variants={cardVariants}
+        className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-500 rounded-lg p-4 shadow-sm"
+      >
+        <div className="flex items-start gap-3">
+          <ExclamationTriangleIcon className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-semibold text-amber-900 mb-1">Important Notice</h3>
+            <p className="text-sm text-amber-800 leading-relaxed">
+              Ensure all information is accurate and complete. Incomplete or incorrect applications may be rejected without notice.
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Instructions Section */}
+      <motion.div
+        variants={cardVariants}
+        className="mb-6 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden"
+      >
+        <div
+          className="flex items-center justify-between p-5 bg-gradient-to-r from-indigo-50 to-purple-50 cursor-pointer hover:from-indigo-100 hover:to-purple-100 transition-colors duration-200"
+          onClick={() => setIsInstructionsOpen(!isInstructionsOpen)}
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-indigo-100 rounded-lg">
+              <DocumentTextIcon className="w-6 h-6 text-indigo-600" />
             </div>
-            <AnimatePresence>
-              {isInstructionsOpen && (
-                <motion.ul
-                  variants={sectionVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="hidden"
-                  className="mt-4 space-y-3 list-none pl-4"
-                >
-                  {instructions.map((instruction, index) => (
-                    <motion.li
-                      key={index}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="text-lg sm:text-base font-lato font-normal text-gray-800 leading-relaxed flex items-start"
-                    >
-                      <span className="inline-block w-2 h-2 rounded-full bg-indigo-600 mr-3 mt-2" />
-                      {instruction}
-                    </motion.li>
-                  ))}
-                </motion.ul>
-              )}
-            </AnimatePresence>
-          </motion.div>
-
-          {/* Certificates Section */}
+            <h2 className="text-xl font-semibold text-gray-900">
+              Instructions to Candidates
+            </h2>
+          </div>
           <motion.div
-            variants={cardVariants}
-            whileHover="hover"
-            className="bg-white/95 backdrop-blur-lg rounded-2xl p-6 sm:p-4 mb-6 shadow-lg border border-indigo-300/30"
+            animate={{ rotate: isInstructionsOpen ? 180 : 0 }}
+            transition={{ duration: 0.3 }}
           >
-            <div
-              className="flex items-center justify-between cursor-pointer"
-              onClick={() => setIsCertificatesOpen(!isCertificatesOpen)}
-            >
-              <h4 className="text-3xl sm:text-2xl font-semibold font-poppins text-indigo-800 flex items-center">
-                <PaperClipIcon className="h-7 w-7 sm:h-6 sm:w-6 mr-2" />
-                Required Certificates
-              </h4>
-              {isCertificatesOpen ? (
-                <ChevronUpIcon className="h-7 w-7 sm:h-6 sm:w-6 text-indigo-600" />
-              ) : (
-                <ChevronDownIcon className="h-7 w-7 sm:h-6 sm:w-6 text-indigo-600" />
-              )}
-            </div>
-            <AnimatePresence>
-              {isCertificatesOpen && (
-                <motion.ul
-                  variants={sectionVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="hidden"
-                  className="mt-4 space-y-3 list-none pl-4"
-                >
-                  {certificates.map((certificate, index) => (
-                    <motion.li
-                      key={index}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="text-lg sm:text-base font-lato font-normal text-gray-800 leading-relaxed flex items-start"
-                    >
-                      <span className="inline-block w-2 h-2 rounded-full bg-purple-600 mr-3 mt-2" />
-                      {certificate}
-                    </motion.li>
-                  ))}
-                </motion.ul>
-              )}
-            </AnimatePresence>
-          </motion.div>
-
-          {/* Submission Details */}
-          <motion.div
-            variants={cardVariants}
-            whileHover="hover"
-            className="bg-white/95 backdrop-blur-lg rounded-2xl p-6 sm:p-4 mb-6 shadow-lg border border-indigo-300/30"
-          >
-            <h4 className="text-3xl sm:text-2xl font-semibold font-poppins text-indigo-800 mb-4 flex items-center">
-              <ClockIcon className="h-7 w-7 sm:h-6 sm:w-6 mr-2" />
-              Submission Details
-            </h4>
-            <p className="text-lg sm:text-base font-lato font-normal text-gray-800 leading-relaxed mb-4">
-              After completing the online application, take a hard copy printout of your application and send it along with the required documents to:
-            </p>
-            <p className="text-lg sm:text-base font-lato font-medium text-gray-900">
-              The Director<br />
-              Centre for Distance and Online Education (CDOE)<br />
-              Periyar University,<br />
-              Salem - 636011.
-            </p>
-            <p className="text-lg sm:text-base font-lato font-normal text-gray-800 mt-4">
-              <span className="font-semibold">Last Date to Apply:</span> March 31, 2026<br />
-              <span className="font-semibold">Last Date to Submit Hard Copy:</span> April 5, 2026
-            </p>
-            <p className="text-lg sm:text-base font-lato font-normal text-gray-800 mt-4">
-              <span className="font-semibold">Institution Fee:</span> Rs. 1000/-
-            </p>
-          </motion.div>
-
-          {/* Contact Information */}
-          <motion.div
-            variants={cardVariants}
-            whileHover="hover"
-            className="bg-white/95 backdrop-blur-lg rounded-2xl p-6 sm:p-4 shadow-lg border border-indigo-300/30"
-          >
-            <h4 className="text-3xl sm:text-2xl font-semibold font-poppins text-indigo-800 mb-4 flex items-center">
-              <EnvelopeIcon className="h-7 w-7 sm:h-6 sm:w-6 mr-2" />
-              Contact Information
-            </h4>
-            <p className="text-lg sm:text-base font-lato font-normal text-gray-800 leading-relaxed mb-4">
-              For any further clarification or details, please reach out to us:
-            </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6">
-              <motion.a
-                href="tel:+914272345918"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center justify-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl shadow-md hover:from-indigo-700 hover:to-purple-700 transition duration-300 text-lg sm:text-base"
-              >
-                <PhoneIcon className="h-6 w-6 sm:h-5 sm:w-5 mr-2" />
-                0427-2345918
-              </motion.a>
-              <motion.a
-                href="tel:+914272345258"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center justify-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl shadow-md hover:from-indigo-700 hover:to-purple-700 transition duration-300 text-lg sm:text-base"
-              >
-                <PhoneIcon className="h-6 w-6 sm:h-5 sm:w-5 mr-2" />
-                0427-2345258
-              </motion.a>
-              <motion.a
-                href="mailto:pridedirector@periyaruniversity.ac.in"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center justify-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl shadow-md hover:from-indigo-700 hover:to-purple-700 transition duration-300 text-lg sm:text-base"
-              >
-                <EnvelopeIcon className="h-6 w-6 sm:h-5 sm:w-5 mr-2" />
-                pridedirector@periyaruniversity.ac.in
-              </motion.a>
-            </div>
+            <ChevronDownIcon className="w-6 h-6 text-gray-500" />
           </motion.div>
         </div>
-      </div>
+        
+        <AnimatePresence>
+          {isInstructionsOpen && (
+            <motion.div
+              variants={sectionVariants}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              className="p-6 bg-white"
+            >
+              <div className="space-y-4">
+                {instructions.map((instruction, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                  >
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center">
+                        <span className="text-xs font-semibold text-indigo-600">{index + 1}</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-700 leading-relaxed flex-1">
+                      {instruction}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
-      <style jsx>{`
-        .font-poppins {
-          font-family: 'Poppins', sans-serif !important;
-          text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-        }
-        .font-lato {
-          font-family: 'Lato', sans-serif !important;
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-        }
-        .border-gradient {
-          border-image: linear-gradient(to right, rgba(126, 34, 206, 0.7), rgba(167, 139, 250, 0.7)) 1;
-        }
-        @keyframes waveSlow {
-          0% { background-position: 0 bottom; }
-          50% { background-position: 1440px bottom; }
-          100% { background-position: 2880px bottom; }
-        }
-        .animate-wave-slow {
-          animation: waveSlow 12s linear infinite;
-        }
-      `}</style>
+      {/* Certificates Section */}
+      <motion.div
+        variants={cardVariants}
+        className="mb-6 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden"
+      >
+        <div
+          className="flex items-center justify-between p-5 bg-gradient-to-r from-purple-50 to-pink-50 cursor-pointer hover:from-purple-100 hover:to-pink-100 transition-colors duration-200"
+          onClick={() => setIsCertificatesOpen(!isCertificatesOpen)}
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <PaperClipIcon className="w-6 h-6 text-purple-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Required Certificates
+            </h2>
+          </div>
+          <motion.div
+            animate={{ rotate: isCertificatesOpen ? 180 : 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <ChevronDownIcon className="w-6 h-6 text-gray-500" />
+          </motion.div>
+        </div>
+        
+        <AnimatePresence>
+          {isCertificatesOpen && (
+            <motion.div
+              variants={sectionVariants}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              className="p-6 bg-white"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {certificates.map((certificate, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="flex items-center gap-3 p-4 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 hover:shadow-md transition-shadow duration-200"
+                  >
+                    <CheckCircleIcon className="w-5 h-5 text-purple-600 flex-shrink-0" />
+                    <p className="text-sm font-medium text-gray-800">
+                      {certificate}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-start gap-2">
+                  <InformationCircleIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-blue-800">
+                    <span className="font-semibold">Note:</span> All certificates must be self-attested and submitted along with the printed application form.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+
+      {/* Submission Details */}
+      <motion.div
+        variants={cardVariants}
+        className="mb-6 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden"
+      >
+        <div
+          className="flex items-center justify-between p-5 bg-gradient-to-r from-blue-50 to-cyan-50 cursor-pointer hover:from-blue-100 hover:to-cyan-100 transition-colors duration-200"
+          onClick={() => setIsSubmissionOpen(!isSubmissionOpen)}
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <ClockIcon className="w-6 h-6 text-blue-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Submission Details & Important Dates
+            </h2>
+          </div>
+          <motion.div
+            animate={{ rotate: isSubmissionOpen ? 180 : 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <ChevronDownIcon className="w-6 h-6 text-gray-500" />
+          </motion.div>
+        </div>
+        
+        <AnimatePresence>
+          {isSubmissionOpen && (
+            <motion.div
+              variants={sectionVariants}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              className="p-6 bg-white"
+            >
+              {/* Submission Instructions */}
+              <div className="mb-6">
+                <p className="text-sm text-gray-700 leading-relaxed mb-4">
+                  After completing the online application, print a hard copy and send it along with all required documents to:
+                </p>
+                <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200">
+                  <div className="flex items-start gap-3">
+                    <BuildingLibraryIcon className="w-6 h-6 text-indigo-600 flex-shrink-0 mt-1" />
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900 mb-2">Address:</p>
+                      <p className="text-sm text-gray-800 leading-relaxed">
+                        <strong>The Director</strong><br />
+                        Centre for Distance and Online Education (CDOE)<br />
+                        Periyar University<br />
+                        Salem - 636011, Tamil Nadu
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Important Dates */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                  <div className="flex items-center gap-3 mb-2">
+                    <CalendarDaysIcon className="w-5 h-5 text-green-600" />
+                    <h3 className="text-sm font-semibold text-gray-900">Last Date to Apply</h3>
+                  </div>
+                  <p className="text-lg font-bold text-green-700">March 31, 2026</p>
+                  <p className="text-xs text-gray-600 mt-1">Online Application Deadline</p>
+                </div>
+
+                <div className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg border border-orange-200">
+                  <div className="flex items-center gap-3 mb-2">
+                    <ClockIcon className="w-5 h-5 text-orange-600" />
+                    <h3 className="text-sm font-semibold text-gray-900">Hard Copy Submission</h3>
+                  </div>
+                  <p className="text-lg font-bold text-orange-700">April 5, 2026</p>
+                  <p className="text-xs text-gray-600 mt-1">Document Submission Deadline</p>
+                </div>
+              </div>
+
+              {/* Fee Information */}
+              <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                <div className="flex items-start gap-3">
+                  <BanknotesIcon className="w-6 h-6 text-purple-600 flex-shrink-0 mt-1" />
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-2">Fee Information</h3>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-sm text-gray-700">Institution Fee:</span>
+                      <span className="text-xl font-bold text-purple-700">₹1,000/-</span>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-2">
+                      To be paid during the application process. Examination fees to be paid separately.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+
+      {/* Contact Information */}
+      <motion.div
+        variants={cardVariants}
+        className="mb-6 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden"
+      >
+        <div className="p-5 bg-gradient-to-r from-emerald-50 to-teal-50">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-emerald-100 rounded-lg">
+              <EnvelopeIcon className="w-6 h-6 text-emerald-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Contact Information
+            </h2>
+          </div>
+          <p className="text-sm text-gray-700 leading-relaxed">
+            For any queries or clarifications regarding the application process, please reach out to us:
+          </p>
+        </div>
+
+        <div className="p-6 bg-white">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Phone Contact 1 */}
+            <motion.a
+              href="tel:+914272345918"
+              whileHover={{ scale: 1.03, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-3 p-4 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg border border-indigo-200 hover:shadow-lg transition-all duration-200 group"
+            >
+              <div className="p-2 bg-indigo-100 rounded-lg group-hover:bg-indigo-200 transition-colors">
+                <PhoneIcon className="w-5 h-5 text-indigo-600" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 mb-0.5">Phone</p>
+                <p className="text-sm font-semibold text-gray-900">0427-2345918</p>
+              </div>
+            </motion.a>
+
+            {/* Phone Contact 2 */}
+            <motion.a
+              href="tel:+914272345258"
+              whileHover={{ scale: 1.03, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-3 p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-200 hover:shadow-lg transition-all duration-200 group"
+            >
+              <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                <PhoneIcon className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 mb-0.5">Phone</p>
+                <p className="text-sm font-semibold text-gray-900">0427-2345258</p>
+              </div>
+            </motion.a>
+
+            {/* Email Contact */}
+            <motion.a
+              href="mailto:pridedirector@periyaruniversity.ac.in"
+              whileHover={{ scale: 1.03, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-3 p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg border border-emerald-200 hover:shadow-lg transition-all duration-200 group sm:col-span-2 lg:col-span-1"
+            >
+              <div className="p-2 bg-emerald-100 rounded-lg group-hover:bg-emerald-200 transition-colors">
+                <EnvelopeIcon className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-gray-600 mb-0.5">Email</p>
+                <p className="text-xs font-semibold text-gray-900 truncate">pridedirector@periyaruniversity.ac.in</p>
+              </div>
+            </motion.a>
+          </div>
+
+          {/* Office Hours */}
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex items-center gap-2 mb-2">
+              <ClockIcon className="w-5 h-5 text-gray-600" />
+              <h3 className="text-sm font-semibold text-gray-900">Office Hours</h3>
+            </div>
+            <p className="text-xs text-gray-700">
+              Monday to Friday: 9:30 AM - 5:30 PM<br />
+              Saturday: 9:30 AM - 1:00 PM<br />
+              <span className="text-red-600 font-medium">Sunday & Public Holidays: Closed</span>
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Footer Note */}
+      <motion.div
+        variants={cardVariants}
+        className="text-center p-4 bg-gradient-to-r from-gray-50 to-slate-50 rounded-lg border border-gray-200"
+      >
+        <p className="text-xs text-gray-600 leading-relaxed">
+          <span className="font-semibold text-gray-800">Periyar University</span> reserves the right to make changes to these guidelines at any time. 
+          Please check the official website regularly for updates.
+        </p>
+      </motion.div>
     </motion.div>
   );
 };
