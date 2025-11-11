@@ -104,12 +104,12 @@ const MarksheetUpload = ({ index, onFileChange, marksheetUrl, uploadProgress, er
                     transition={{ duration: 0.5 }}
                   />
                 </div>
-                <p className="text-purple-600 text-sm mt-1 font-semibold">{uploadProgress}%</p>
+                <p className="text-purple-600 text-sm mt-1 font-medium">{uploadProgress}%</p>
               </div>
             )}
           </div>
         </div>
-        {errors?.[index]?.marksheet && <p className="text-red-500 text-base mt-2 font-roboto font-semibold">{errors[index].marksheet}</p>}
+        {errors?.[index]?.marksheet && <p className="text-red-500 text-sm mt-2 font-roboto font-medium">{errors[index].marksheet}</p>}
         {marksheetUrl && (
           <motion.button
             type="button"
@@ -118,7 +118,7 @@ const MarksheetUpload = ({ index, onFileChange, marksheetUrl, uploadProgress, er
             whileTap={{ scale: 0.95 }}
             animate={{ scale: [1, 1.02, 1], transition: { duration: 1.5, repeat: Infinity } }}
             disabled={uploadProgress > 0}
-            className="mt-3 flex items-center px-6 py-3 bg-purple-500 text-white rounded-lg font-roboto font-semibold text-base shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="mt-3 flex items-center px-6 py-3 bg-purple-500 text-white rounded-lg font-roboto font-medium text-base shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
             aria-label={`Preview ${qualificationType} ${qualificationType === 'UG Provisional' ? 'certificate' : 'marksheet'}`}
           >
             <Eye className="h-5 w-5 mr-2" />
@@ -126,7 +126,7 @@ const MarksheetUpload = ({ index, onFileChange, marksheetUrl, uploadProgress, er
           </motion.button>
         )}
       </div>
-      <Suspense fallback={<div className="text-gray-600 font-roboto text-base font-semibold">Loading preview...</div>}>
+      <Suspense fallback={<div className="text-gray-600 font-roboto text-base font-medium">Loading preview...</div>}>
         <DocumentPreviewModal
           isOpen={previewOpen}
           onClose={() => setPreviewOpen(false)}
@@ -373,7 +373,7 @@ const EducationalQualificationForm = memo(({ index, qualification, onChange, err
           { name: 'percentage', label: 'Percentage', type: 'number', icon: Percent, min: 0, max: 100, step: 0.01, placeholder: 'Enter percentage', tooltip: 'Enter percentage (0-100)' },
         ].map(({ name, label, type, icon: Icon, min, max, step, placeholder, tooltip }) => (
           <div key={name} className="relative group">
-            <label className="block text-lg font-bold text-gray-800 font-roboto mb-2">
+            <label className="block text-base font-medium text-gray-800 font-roboto mb-2">
               {label} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -400,16 +400,16 @@ const EducationalQualificationForm = memo(({ index, qualification, onChange, err
                   max={max}
                   step={step}
                   placeholder={placeholder}
-                  className={`w-full py-4  pl-10 pr-3 bg-white  rounded-lg  box border border-purple-300 text-base font-roboto font-semibold text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition duration-200 ${name === 'course' && isStatic ? 'cursor-not-allowed bg-gray-100' : ''}`}
+                  className={`w-full py-4  pl-10 pr-3 bg-white  rounded-lg  box border border-purple-300 text-base font-roboto font-medium text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition duration-200 ${name === 'course' && isStatic ? 'cursor-not-allowed bg-gray-100' : ''}`}
                   aria-label={label}
                 />
               )}
-              <span className="absolute hidden group-hover:block bg-purple-600 text-white text-sm rounded px-2 py-1 -top-10 left-0">
+              <span className="absolute hidden group-hover:block bg-purple-600 text-white text-xs rounded px-2 py-1 -top-10 left-0">
                 {tooltip}
               </span>
             </div>
             {errors?.[index]?.[name] && (
-              <p className="text-red-500 text-base mt-2 font-roboto font-semibold">{errors[index][name]}</p>
+              <p className="text-red-500 text-sm mt-2 font-roboto font-medium">{errors[index][name]}</p>
             )}
           </div>
         ))}
@@ -426,16 +426,16 @@ const EducationalQualificationForm = memo(({ index, qualification, onChange, err
               showMonthYearPicker
               showFullMonthYearPicker
               placeholderText="Select Month & Year"
-              className="w-full py-4 pl-10 pr-3 bg-white rounded-lg border border-purple-300 text-base font-roboto font-semibold text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition duration-200"
+              className="w-full py-4 pl-10 pr-3 bg-white rounded-lg border border-purple-300 text-base font-roboto font-medium text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition duration-200"
               aria-label="Month & Year"
               minDate={new Date(1900, 0, 1)}
               maxDate={new Date()}
             />
-            <span className="absolute hidden group-hover:block bg-purple-600 text-white text-sm rounded px-2 py-1 -top-10 left-0">
+            <span className="absolute hidden group-hover:block bg-purple-600 text-white text-xs rounded px-2 py-1 -top-10 left-0">
               Select month and year
             </span>
             {errors?.[index]?.month_year && (
-              <p className="text-red-500 text-base mt-2 font-roboto font-semibold">{errors[index].month_year}</p>
+              <p className="text-red-500 text-sm mt-2 font-roboto font-medium">{errors[index].month_year}</p>
             )}
           </div>
         </div>
@@ -455,11 +455,11 @@ const EducationalQualificationForm = memo(({ index, qualification, onChange, err
               classNamePrefix="select"
               aria-label="Mode of Study"
             />
-            <span className="absolute hidden group-hover:block bg-purple-600 text-white text-sm rounded px-2 py-1 -top-10 left-0">
+            <span className="absolute hidden group-hover:block bg-purple-600 text-white text-xs rounded px-2 py-1 -top-10 left-0">
               Select mode of study (e.g., Regular, Distance)
             </span>
             {errors?.[index]?.mode_of_study && (
-              <p className="text-red-500 text-base mt-2 font-roboto font-semibold">{errors[index].mode_of_study}</p>
+              <p className="text-red-500 text-sm mt-2 font-roboto font-medium">{errors[index].mode_of_study}</p>
             )}
           </div>
         </div>
@@ -502,8 +502,8 @@ const QualificationsAndSemesters = ({ formData, setFormData, loading, errors }) 
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="p-8 bg-white rounded-2xl shadow-lg text-center">
           <h2 className="text-3xl font-bold text-red-600 font-montserrat">Error: Invalid Data</h2>
-          <p className="mt-3 text-gray-600 text-lg font-semibold font-roboto">The application data could not be loaded. Please try refreshing or contact support.</p>
-          <button onClick={() => window.location.reload()} className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-lg font-semibold font-roboto transition duration-200">
+          <p className="mt-3 text-gray-600 text-base font-medium font-roboto">The application data could not be loaded. Please try refreshing or contact support.</p>
+          <button onClick={() => window.location.reload()} className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium font-roboto transition duration-200">
             Retry
           </button>
         </div>
