@@ -3,6 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  CheckCircleIcon,
+  ClockIcon,
+  DocumentTextIcon,
+  ArrowDownTrayIcon,
+  BanknotesIcon,
+  SparklesIcon,
+  ChartBarIcon,
+  RocketLaunchIcon,
+} from '@heroicons/react/24/outline';
 import Sidebar from '../components/Sidebar';
 import UniversityInfo from '../components/UniversityInfo';
 import WelcomeSection from '../components/WelcomeSection';
@@ -13,6 +23,9 @@ import Applications from '../components/Applications';
 import Payment from '../components/Payment';
 import Footer from '../components/Footer';
 import InstructionsModal from '../components/InstructionsModal';
+import ApplicationProgress from '../components/ApplicationProgress';
+import PaymentHistory from './PaymentHistory';
+import ApplicationDownloadDashboard from '../components/ApplicationDownloadDashboard';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -31,6 +44,31 @@ const Dashboard = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPaid, setIsPaid] = useState(false);
+  const [paymentData, setPaymentData] = useState(null);
+
+  // Fetch payment status
+  const fetchPaymentStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await axios.get(
+        'http://localhost:8000/api/application-payment-data/',
+        { headers: { Authorization: `Token ${token}` } }
+      );
+
+      if (response.data.status === 'success') {
+        const paymentStatus = response.data.data.application.payment_status;
+        setIsPaid(paymentStatus === 'P');
+        setPaymentData(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching payment status:', error);
+      // If no application exists yet, that's fine
+      setIsPaid(false);
+    }
+  };
 
   // Fetch application settings (status, opening/closing dates)
   const fetchApplicationSettings = async (silent = false) => {
@@ -91,6 +129,7 @@ const Dashboard = () => {
 
     fetchUserData();
     fetchApplicationSettings(); // Initial fetch
+    fetchPaymentStatus(); // Fetch payment status
   }, [navigate]);
 
   // Silent auto-refresh every 5 seconds
@@ -179,14 +218,226 @@ const Dashboard = () => {
         return (
           <>
             <UniversityInfo />
-            <WelcomeSection 
-              deadline={deadline} 
-              handleNewApplication={handleNewApplication}
-              isApplicationOpen={isApplicationOpen}
-              applicationStatus={applicationStatus}
-              openingDate={openingDate}
-              closingDate={closingDate}
-            />
+            {isPaid ? (
+              <div className="mt-6 space-y-6">
+                {/* Hero Welcome Card */}
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="relative overflow-hidden bg-gradient-to-br from-purple-700 via-purple-700 to-purple-700 rounded-2xl shadow-2xl border border-purple-400/20"
+                >
+                  <div className="absolute inset-0 bg-black/5"></div>
+                  <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-48 -mt-48"></div>
+                  <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -ml-32 -mb-32"></div>
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent"></div>
+                  
+                  <div className="relative z-10 p-6 md:p-8">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div>
+                        <h1 className="text-2xl md:text-3xl font-semibold text-white mb-2">
+                          Welcome back, {userData.name}! 
+                        </h1>
+                        <p className="text-base md:text-lg text-indigo-100">
+                          Your application is in progress
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                      <motion.div 
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        className="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/30 shadow-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-green-500/30 rounded-xl flex items-center justify-center shadow-lg">
+                            <CheckCircleIcon className="h-6 w-6 text-green-200" />
+                          </div>
+                          <div>
+                            <p className="text-xs text-green-100 uppercase tracking-wider font-medium mb-0.5">Application</p>
+                            <p className="text-base md:text-lg font-semibold text-white">Submitted</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                      
+                      <motion.div 
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        className="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/30 shadow-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-blue-500/30 rounded-xl flex items-center justify-center shadow-lg">
+                            <ClockIcon className="h-6 w-6 text-blue-200" />
+                          </div>
+                          <div>
+                            <p className="text-xs text-blue-100 uppercase tracking-wider font-medium mb-0.5">Status</p>
+                            <p className="text-base md:text-lg font-semibold text-white">Under Review</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                      
+                      <motion.div 
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        className="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/30 shadow-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-purple-500/30 rounded-xl flex items-center justify-center shadow-lg">
+                            <DocumentTextIcon className="h-6 w-6 text-purple-200" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-purple-100 uppercase tracking-wider font-medium mb-0.5">App ID</p>
+                            <p className="text-sm md:text-base font-mono font-semibold text-white truncate">
+                              {paymentData?.application?.application_id || 'Processing...'}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Quick Actions Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    whileHover={{ scale: 1.03, y: -8 }}
+                    className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer border border-violet-100"
+                    onClick={() => setActiveSection('applicationProgress')}
+                  >
+                    <div className="h-1.5 bg-gradient-to-r from-violet-500 via-purple-500 to-purple-600"></div>
+                    <div className="p-6">
+                      <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
+                        <ChartBarIcon className="h-8 w-8 text-white" />
+                      </div>
+                      <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2 group-hover:text-violet-600 transition-colors">Track Progress</h3>
+                      <p className="text-sm md:text-base text-gray-600 mb-4 leading-relaxed">
+                        View your application verification status and timeline
+                      </p>
+                      <div className="flex items-center text-violet-600 font-medium text-sm group-hover:gap-2 transition-all">
+                        <span>View Status</span>
+                        <motion.span
+                          animate={{ x: [0, 5, 0] }}
+                          transition={{ repeat: Infinity, duration: 1.5 }}
+                          className="ml-2"
+                        >
+                          →
+                        </motion.span>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    whileHover={{ scale: 1.03, y: -8 }}
+                    className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer border border-blue-100"
+                    onClick={() => setActiveSection('applicationDownload')}
+                  >
+                    <div className="h-1.5 bg-gradient-to-r from-blue-500 via-cyan-500 to-cyan-600"></div>
+                    <div className="p-6">
+                      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
+                        <ArrowDownTrayIcon className="h-8 w-8 text-white" />
+                      </div>
+                      <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Download Form</h3>
+                      <p className="text-sm md:text-base text-gray-600 mb-4 leading-relaxed">
+                        Get your completed application form in PDF format
+                      </p>
+                      <div className="flex items-center text-blue-600 font-medium text-sm group-hover:gap-2 transition-all">
+                        <span>Download Now</span>
+                        <motion.span
+                          animate={{ x: [0, 5, 0] }}
+                          transition={{ repeat: Infinity, duration: 1.5 }}
+                          className="ml-2"
+                        >
+                          →
+                        </motion.span>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    whileHover={{ scale: 1.03, y: -8 }}
+                    className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer border border-green-100"
+                    onClick={() => setActiveSection('paymentHistory')}
+                  >
+                    <div className="h-1.5 bg-gradient-to-r from-green-500 via-emerald-500 to-emerald-600"></div>
+                    <div className="p-6">
+                      <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
+                        <BanknotesIcon className="h-8 w-8 text-white" />
+                      </div>
+                      <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2 group-hover:text-green-600 transition-colors">Payment Details</h3>
+                      <p className="text-sm md:text-base text-gray-600 mb-4 leading-relaxed">
+                        View your payment history and download receipt
+                      </p>
+                      <div className="flex items-center text-green-600 font-medium text-sm group-hover:gap-2 transition-all">
+                        <span>View History</span>
+                        <motion.span
+                          animate={{ x: [0, 5, 0] }}
+                          transition={{ repeat: Infinity, duration: 1.5 }}
+                          className="ml-2"
+                        >
+                          →
+                        </motion.span>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+
+                {/* Next Steps Card */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="bg-gradient-to-br from-amber-50 via-orange-50 to-amber-50 rounded-2xl shadow-xl border border-amber-300/50 p-6 md:p-8 relative overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-amber-300/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-start gap-4">
+                      <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                        <RocketLaunchIcon className="h-7 w-7 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          Next Steps
+                          <span className="text-xs bg-amber-200 text-amber-800 px-2 py-1 rounded-full font-medium">Important</span>
+                        </h3>
+                        <ul className="space-y-3 text-sm md:text-base text-gray-700 leading-relaxed">
+                          <li className="flex items-start gap-3 p-3 bg-white/60 rounded-xl hover:bg-white/80 transition-colors">
+                            <span className="flex-shrink-0 w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                            <span>Track your application progress from the sidebar menu</span>
+                          </li>
+                          <li className="flex items-start gap-3 p-3 bg-white/60 rounded-xl hover:bg-white/80 transition-colors">
+                            <span className="flex-shrink-0 w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                            <span>Download your application form for your records</span>
+                          </li>
+                          <li className="flex items-start gap-3 p-3 bg-white/60 rounded-xl hover:bg-white/80 transition-colors">
+                            <span className="flex-shrink-0 w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                            <span>Wait for document verification by college staff</span>
+                          </li>
+                          <li className="flex items-start gap-3 p-3 bg-white/60 rounded-xl hover:bg-white/80 transition-colors">
+                            <span className="flex-shrink-0 w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold">4</span>
+                            <span>Check your email regularly for updates</span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            ) : (
+              <WelcomeSection 
+                deadline={deadline} 
+                handleNewApplication={handleNewApplication}
+                isApplicationOpen={isApplicationOpen}
+                applicationStatus={applicationStatus}
+                openingDate={openingDate}
+                closingDate={closingDate}
+              />
+            )}
           </>
         );
       case 'newApplication':
@@ -202,6 +453,12 @@ const Dashboard = () => {
             description="Begin your journey with Periyar University by applying for the 2025-2026 Academic Year."
           />
         );
+      case 'applicationProgress':
+        return <ApplicationProgress />;
+      case 'applicationDownload':
+        return <ApplicationDownloadDashboard />;
+      case 'paymentHistory':
+        return <PaymentHistory />;
       case 'programs':
         return <ProgramsTable programs={programs} />;
       case 'guidelines':
@@ -299,6 +556,7 @@ const Dashboard = () => {
               handleNewApplication={handleNewApplication}
               isSidebarOpen={isSidebarOpen}
               setIsSidebarOpen={setIsSidebarOpen}
+              isPaid={isPaid}
             />
           </motion.div>
 

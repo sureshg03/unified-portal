@@ -99,6 +99,7 @@ const NotFound = () => {
           </h2>
           <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed animate-fade-in animation-delay-500">
             The page you're trying to access in the Periyar University CDOE portal does not exist or has been moved.
+            Please use the button below to return to your previous page.
           </p>
         </div>
 
@@ -114,7 +115,23 @@ const NotFound = () => {
           </div>
         </div>
 
-       
+        {/* Action Button */}
+        <div className="flex justify-center items-center animate-fade-in animation-delay-1500">
+          <button
+            onClick={() => navigate(-1)}
+            className="group relative px-6 py-3 bg-purple-600 text-white font-semibold rounded-full shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl hover:bg-purple-700 overflow-hidden"
+          >
+            <span className="relative z-10 flex items-center space-x-2 text-base leading-normal">
+              <svg className="w-5 h-5 group-hover:rotate-[-10deg] transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Take Me Back</span>
+            </span>
+            
+            {/* Shine effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+          </button>
+        </div>
 
         {/* Help Text */}
         <div className="mt-8 space-y-2 animate-fade-in animation-delay-2000">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -18,8 +18,6 @@ import {
   BuildingLibraryIcon
 } from '@heroicons/react/24/outline';
 import { generateReceiptPDF } from '../utils/pdfGenerator';
-import { generateComprehensiveApplicationPDF } from '../utils/comprehensiveApplicationPDF';
-import { generateProfessionalApplicationPDF } from '../utils/professionalApplicationPDF';
 import { generateApplicationFormPDF } from '../utils/applicationFormPDF';
 
 const PaymentPage = () => {
@@ -92,7 +90,7 @@ const PaymentPage = () => {
           transaction_id: response.data.data?.transaction_id || `TXN${Date.now()}`,
           bank_transaction_id: response.data.data?.bank_transaction_id || `BANK${Date.now()}`,
           order_id: response.data.data?.order_id || `ORD${Date.now()}`,
-          amount: response.data.data?.amount || '236.00',
+          amount: response.data.data?.amount || '354.00',
           payment_mode: 'DUMMY_GATEWAY',
           transaction_date: new Date().toLocaleString(),
           status: 'SUCCESS'
@@ -242,7 +240,7 @@ const PaymentPage = () => {
         <Toaster position="top-right" />
         <div className="max-w-4xl mx-auto">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-            <button onClick={() => navigate('/dashboard')} className="flex items-center text-indigo-600 hover:text-indigo-800 mb-4 transition-colors">
+            <button onClick={() => navigate('/student/dashboard')} className="flex items-center text-indigo-600 hover:text-indigo-800 mb-4 transition-colors">
               <ArrowLeftIcon className="h-5 w-5 mr-2" />
               Back to Dashboard
             </button>
@@ -264,7 +262,7 @@ const PaymentPage = () => {
                   <motion.button 
                     whileHover={{ scale: 1.02 }} 
                     whileTap={{ scale: 0.98 }} 
-                    onClick={() => navigate('/dashboard')} 
+                    onClick={() => navigate('/student/dashboard')} 
                     className="px-6 py-3 bg-gray-200 text-gray-800 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
                   >
                     Back to Dashboard
@@ -286,7 +284,7 @@ const PaymentPage = () => {
     );
   }
 
-  const { student, application, admission, application_id_format } = applicationData;
+  const { student, application } = applicationData;
   const isPaid = application.payment_status === 'P';
 
   return (
@@ -297,7 +295,7 @@ const PaymentPage = () => {
         {/* Header */}
         <div className="mb-6">
           <button 
-            onClick={() => navigate('/dashboard')} 
+            onClick={() => navigate('/student/dashboard')} 
             className="flex items-center text-gray-600 hover:text-gray-800 mb-4 transition-colors"
           >
             <ArrowLeftIcon className="h-5 w-5 mr-2" />
@@ -404,7 +402,7 @@ const PaymentPage = () => {
                             </div>
                             <div>
                               <p className="text-xs text-gray-600 uppercase tracking-wide font-medium">Application Fee</p>
-                              <p className="text-3xl font-bold text-gray-900">₹236.00</p>
+                              <p className="text-3xl font-bold text-gray-900">₹354.00</p>
                             </div>
                           </div>
                           <div className="text-right">
@@ -421,13 +419,13 @@ const PaymentPage = () => {
                         </div>
                         <div className="flex items-center justify-between pt-2">
                           <span className="text-sm font-bold text-gray-900">Total Amount</span>
-                          <span className="text-lg font-bold text-blue-600">₹236.00</span>
+                          <span className="text-lg font-bold text-blue-600">₹354.00</span>
                         </div>
                       </div>
 
                       {/* Payment Gateway Button */}
                       {processing ? (
-                        <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-8 text-white shadow-lg">
+                        <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-xl p-8 text-white shadow-lg">
                           <div className="text-center space-y-4">
                             <motion.div
                               animate={{ rotate: 360 }}
@@ -449,14 +447,14 @@ const PaymentPage = () => {
                       ) : (
                         <button
                           onClick={handleDummyPayment}
-                          className="group relative w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-5 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                          className="group relative w-full sm:w-auto bg-gradient-to-r from-green-600 to-green-600 hover:from-green-700 hover:to-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-shadow duration-200 shadow-md hover:shadow-lg inline-flex items-center gap-3 justify-center"
                         >
-                          <div className="flex items-center justify-center space-x-3">
-                            <ShieldCheckIcon className="h-6 w-6" />
-                            <span className="text-lg">Proceed to Secure Payment</span>
-                            <ArrowRightIcon className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                          </div>
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20 transition-opacity" />
+                          <span className="inline-flex items-center justify-center w-10 h-10 bg-white/20 rounded-md">
+                            <ShieldCheckIcon className="h-5 w-5 text-white" />
+                          </span>
+                          <span className="text-sm">Pay Now</span>
+                          <span className="text-sm font-mono ml-1">₹354.00</span>
+                          <ArrowRightIcon className="h-4 w-4 ml-1 opacity-90" />
                         </button>
                       )}
 
@@ -532,15 +530,15 @@ const PaymentPage = () => {
 
             {/* Transaction Details Table */}
             {(isPaid || paymentDetails) && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="border-b border-gray-200 p-6">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
                   <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <ReceiptPercentIcon className="h-6 w-6 text-blue-600" />
+                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                      <ReceiptPercentIcon className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900">Transaction Details</h2>
-                      <p className="text-sm text-gray-600">Complete payment information</p>
+                      <h2 className="text-lg font-bold text-white">Transaction Details</h2>
+                      <p className="text-sm text-blue-100">Complete payment information</p>
                     </div>
                   </div>
                 </div>
@@ -548,57 +546,57 @@ const PaymentPage = () => {
                 <div className="p-6">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <tbody className="divide-y divide-gray-200">
-                        <tr>
-                          <td className="py-3 pr-4 font-medium text-gray-700">Application ID</td>
-                          <td className="py-3 font-mono text-gray-900">{application.application_id}</td>
+                      <tbody className="divide-y divide-gray-100">
+                        <tr className="hover:bg-gray-50 transition-colors">
+                          <td className="py-3 pr-4 font-semibold text-gray-700">Application ID</td>
+                          <td className="py-3 font-mono font-semibold text-indigo-600">{application.application_id}</td>
                         </tr>
-                        <tr>
-                          <td className="py-3 pr-4 font-medium text-gray-700">Transaction ID</td>
+                        <tr className="hover:bg-gray-50 transition-colors">
+                          <td className="py-3 pr-4 font-semibold text-gray-700">Transaction ID</td>
                           <td className="py-3 font-mono text-gray-900">{paymentDetails?.transaction_id || `TXN${Date.now()}`}</td>
                         </tr>
-                        <tr>
-                          <td className="py-3 pr-4 font-medium text-gray-700">Bank Transaction ID</td>
+                        <tr className="hover:bg-gray-50 transition-colors">
+                          <td className="py-3 pr-4 font-semibold text-gray-700">Bank Transaction ID</td>
                           <td className="py-3 font-mono text-gray-900">{paymentDetails?.bank_transaction_id || `BANK${Date.now()}`}</td>
                         </tr>
-                        <tr>
-                          <td className="py-3 pr-4 font-medium text-gray-700">Order ID</td>
+                        <tr className="hover:bg-gray-50 transition-colors">
+                          <td className="py-3 pr-4 font-semibold text-gray-700">Order ID</td>
                           <td className="py-3 font-mono text-gray-900">{paymentDetails?.order_id || `ORD${Date.now()}`}</td>
                         </tr>
-                        <tr>
-                          <td className="py-3 pr-4 font-medium text-gray-700">Transaction Amount</td>
-                          <td className="py-3 font-semibold text-gray-900">₹{paymentDetails?.amount || '236.00'}</td>
+                        <tr className="hover:bg-gray-50 transition-colors">
+                          <td className="py-3 pr-4 font-semibold text-gray-700">Transaction Amount</td>
+                          <td className="py-3 font-bold text-green-600 text-lg">₹{paymentDetails?.amount || '354.00'}</td>
                         </tr>
-                        <tr>
-                          <td className="py-3 pr-4 font-medium text-gray-700">Payment Mode</td>
+                        <tr className="hover:bg-gray-50 transition-colors">
+                          <td className="py-3 pr-4 font-semibold text-gray-700">Payment Mode</td>
                           <td className="py-3 text-gray-900">{paymentDetails?.payment_mode || 'DUMMY_GATEWAY'}</td>
                         </tr>
-                        <tr>
-                          <td className="py-3 pr-4 font-medium text-gray-700">Gateway Name</td>
+                        <tr className="hover:bg-gray-50 transition-colors">
+                          <td className="py-3 pr-4 font-semibold text-gray-700">Gateway Name</td>
                           <td className="py-3 text-gray-900">TEST_BANK</td>
                         </tr>
-                        <tr>
-                          <td className="py-3 pr-4 font-medium text-gray-700">Transaction Date</td>
+                        <tr className="hover:bg-gray-50 transition-colors">
+                          <td className="py-3 pr-4 font-semibold text-gray-700">Transaction Date</td>
                           <td className="py-3 text-gray-900 flex items-center space-x-2">
-                            <CalendarIcon className="h-4 w-4 text-gray-500" />
+                            <CalendarIcon className="h-4 w-4 text-indigo-500" />
                             <span>{paymentDetails?.transaction_date || new Date().toLocaleString()}</span>
                           </td>
                         </tr>
-                        <tr>
-                          <td className="py-3 pr-4 font-medium text-gray-700">Payment Status</td>
+                        <tr className="hover:bg-gray-50 transition-colors">
+                          <td className="py-3 pr-4 font-semibold text-gray-700">Payment Status</td>
                           <td className="py-3">
-                            <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                            <span className="inline-flex items-center space-x-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-green-90 to-emerald-90 text-green-600 shadow-sm">
                               <CheckCircleIcon className="h-4 w-4" />
                               <span>SUCCESS</span>
                             </span>
                           </td>
                         </tr>
-                        <tr>
-                          <td className="py-3 pr-4 font-medium text-gray-700">Response Code</td>
+                        <tr className="hover:bg-gray-50 transition-colors">
+                          <td className="py-3 pr-4 font-semibold text-gray-700">Response Code</td>
                           <td className="py-3 text-gray-900">01</td>
                         </tr>
-                        <tr>
-                          <td className="py-3 pr-4 font-medium text-gray-700">Response Message</td>
+                        <tr className="hover:bg-gray-50 transition-colors">
+                          <td className="py-3 pr-4 font-semibold text-gray-700">Response Message</td>
                           <td className="py-3 text-gray-900">Txn Success</td>
                         </tr>
                       </tbody>
@@ -609,70 +607,97 @@ const PaymentPage = () => {
             )}
 
             {/* Action Buttons */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="space-y-3">
+            <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center">
+                <span className="w-1 h-5 bg-indigo-600 rounded-full mr-2"></span>
+                Quick Actions
+              </h3>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {isPaid && (
                   <>
-                    <button
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
                       onClick={handleDownloadReceipt}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                      className="group inline-flex items-center gap-3 p-3 bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 rounded-lg transition-shadow duration-200 shadow-sm"
+                      title="Download Payment Receipt"
                     >
-                      <DocumentArrowDownIcon className="h-5 w-5" />
-                      <span>Download Payment Receipt</span>
-                    </button>
+                      <div className="w-10 h-10 flex items-center justify-center bg-white/20 rounded-md">
+                        <DocumentArrowDownIcon className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="text-left">
+                        <div className="text-sm font-semibold text-white">Receipt</div>
+                        <div className="text-xs text-green-100">Download PDF</div>
+                      </div>
+                    </motion.button>
                     
-                    <button
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
                       onClick={handleDownloadApplication}
-                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                      className="group inline-flex items-center gap-3 p-3 bg-gradient-to-br from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 rounded-lg transition-shadow duration-200 shadow-sm"
+                      title="Download Application Form"
                     >
-                      <DocumentArrowDownIcon className="h-5 w-5" />
-                      <span>Download Application Form</span>
-                    </button>
+                      <div className="w-10 h-10 flex items-center justify-center bg-white/20 rounded-md">
+                        <DocumentArrowDownIcon className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="text-left">
+                        <div className="text-sm font-semibold text-white">Application</div>
+                        <div className="text-xs text-indigo-100">Download PDF</div>
+                      </div>
+                    </motion.button>
                   </>
                 )}
                 
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={handleClearPayment}
                   disabled={processing}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                  className="group inline-flex items-center gap-3 p-3 bg-gradient-to-br from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 rounded-lg transition-shadow duration-200 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                  title="Clear Payment & Start New Application"
                 >
-                  {processing ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <div className="w-10 h-10 flex items-center justify-center bg-white/20 rounded-md">
+                    {processing ? (
+                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      <span>Processing...</span>
-                    </>
-                  ) : (
-                    <span>Clear Payment & Start New Application</span>
-                  )}
-                </button>
+                    ) : (
+                      <ArrowLeftIcon className="h-5 w-5 text-white" />
+                    )}
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-semibold text-white">Clear</div>
+                    <div className="text-xs text-red-100">Reset & Restart</div>
+                  </div>
+                </motion.button>
 
-                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200">
-                  <button
-                    onClick={() => navigate('/dashboard')}
-                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors text-sm"
-                  >
-                    Dashboard
-                  </button>
-                  <button
-                    onClick={() => navigate('/application/page1')}
-                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors text-sm"
-                  >
-                    Edit Application
-                  </button>
-                </div>
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => navigate('/student/dashboard')}
+                  className="group inline-flex items-center gap-3 p-3 bg-gradient-to-br from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 rounded-lg transition-shadow duration-200 shadow-sm"
+                  title="Go to Dashboard"
+                >
+                  <div className="w-10 h-10 flex items-center justify-center bg-white/20 rounded-md">
+                    <UserCircleIcon className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-semibold text-white">Dashboard</div>
+                    <div className="text-xs text-purple-100">Go to Home</div>
+                  </div>
+                </motion.button>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Footer */}
-        <div className="mt-8 text-center">
-          <div className="inline-flex items-center space-x-2 bg-white px-6 py-3 rounded-lg shadow-sm border border-gray-200">
-            <ShieldCheckIcon className="h-5 w-5 text-green-600" />
-            <span className="text-sm text-gray-600">Secure Payment Gateway • Instant Processing • 24/7 Support</span>
+            {/* Footer */}
+            <div className="mt-8 text-center">
+              <div className="inline-flex items-center space-x-2 bg-white px-6 py-3 rounded-lg shadow-sm border border-gray-200">
+                <ShieldCheckIcon className="h-5 w-5 text-green-600" />
+                <span className="text-sm text-gray-600">Secure Payment Gateway • Instant Processing • 24/7 Support</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

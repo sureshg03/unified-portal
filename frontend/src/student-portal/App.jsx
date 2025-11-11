@@ -16,6 +16,9 @@ import SubmittedApplication from './pages/SubmittedApplication';
 import ViewApplication from './components/ViewApplication';
 import Payment from './components/Payment'; // NEW: Updated to use Payment component with dummy payment
 import ApplicationDownload from './pages/ApplicationDownload';
+import PaymentHistory from './pages/PaymentHistory';
+import NotFound from './pages/NotFound';
+
 function App() {
   return (
     <Router>
@@ -37,6 +40,9 @@ function App() {
         <Route path="/application-download/:applicationId" element={<ApplicationDownload />} />
         <Route path="/dashboard/view/*" element={<ViewApplication />} />
         <Route path="/application/payment" element={<Payment />} />
+        <Route path="/payment-history" element={<PaymentHistory />} />
+        {/* 404 Not Found - Must be last route */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );

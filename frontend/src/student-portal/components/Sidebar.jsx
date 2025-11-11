@@ -10,9 +10,12 @@ import {
   ArrowLeftOnRectangleIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  ClipboardDocumentCheckIcon,
+  BanknotesIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 
-const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, setIsProfileOpen, handleLogout, handleNewApplication, isSidebarOpen, setIsSidebarOpen }) => {
+const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, setIsProfileOpen, handleLogout, handleNewApplication, isSidebarOpen, setIsSidebarOpen, isPaid }) => {
   useEffect(() => {
     console.log('Sidebar.jsx: isSidebarOpen prop:', isSidebarOpen); 
   }, [isSidebarOpen]);
@@ -39,15 +42,19 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
     active: { scale: 0.98, transition: { duration: 0.2 } },
   };
 
-  const menuItems = [
-    { name: 'dashboard', label: 'Dashboard', icon: HomeIcon, color: 'bg-gradient-to-r from-indigo-600 to-blue-500', hoverColor: 'hover:from-indigo-700 hover:to-blue-600' },
-    { name: 'newApplication', label: 'New Application', icon: DocumentTextIcon, color: 'bg-gradient-to-r from-violet-600 to-fuchsia-500', hoverColor: 'hover:from-violet-700 hover:to-fuchsia-600' }, // Removed action
-    { name: 'programs', label: 'Programmes', icon: AcademicCapIcon, color: 'bg-gradient-to-r from-purple-600 to-pink-500', hoverColor: 'hover:from-purple-700 hover:to-pink-600' },
-    { name: 'guidelines', label: 'Guidelines', icon: DocumentTextIcon, color: 'bg-gradient-to-r from-indigo-500 to-purple-600', hoverColor: 'hover:from-indigo-600 hover:to-purple-700' },
-    { name: 'prospectus', label: 'Prospectus', icon: DocumentArrowDownIcon, color: 'bg-gradient-to-r from-fuchsia-500 to-purple-600', hoverColor: 'hover:from-fuchsia-600 hover:to-purple-700' },
-    { name: 'applications', label: 'Applications', icon: DocumentTextIcon, color: 'bg-gradient-to-r from-blue-500 to-indigo-600', hoverColor: 'hover:from-blue-600 hover:to-indigo-700' },
-    { name: 'payment', label: 'Payment Status', icon: CheckCircleIcon, color: 'bg-gradient-to-r from-purple-600 to-violet-500', hoverColor: 'hover:from-purple-700 hover:to-violet-600' },
-  ];
+  // Conditional menu items based on payment status
+  const menuItems = isPaid
+    ? [
+        { name: 'dashboard', label: 'Dashboard', icon: HomeIcon, color: 'bg-gradient-to-r from-indigo-600 to-blue-500', hoverColor: 'hover:from-indigo-700 hover:to-blue-600' },
+        { name: 'applicationProgress', label: 'Application Status', icon: ClipboardDocumentCheckIcon, color: 'bg-gradient-to-r from-violet-600 to-fuchsia-500', hoverColor: 'hover:from-violet-700 hover:to-fuchsia-600' },
+        { name: 'applicationDownload', label: 'Download Application', icon: ArrowDownTrayIcon, color: 'bg-gradient-to-r from-blue-600 to-cyan-500', hoverColor: 'hover:from-blue-700 hover:to-cyan-600' },
+        { name: 'paymentHistory', label: 'Payment History', icon: BanknotesIcon, color: 'bg-gradient-to-r from-green-600 to-emerald-500', hoverColor: 'hover:from-green-700 hover:to-emerald-600' },
+      ]
+    : [
+        { name: 'dashboard', label: 'Dashboard', icon: HomeIcon, color: 'bg-gradient-to-r from-indigo-600 to-blue-500', hoverColor: 'hover:from-indigo-700 hover:to-blue-600' },
+        { name: 'newApplication', label: 'Start Application', icon: DocumentTextIcon, color: 'bg-gradient-to-r from-violet-600 to-fuchsia-500', hoverColor: 'hover:from-violet-700 hover:to-fuchsia-600' },
+        { name: 'guidelines', label: 'Guidelines', icon: DocumentTextIcon, color: 'bg-gradient-to-r from-indigo-500 to-purple-600', hoverColor: 'hover:from-indigo-600 hover:to-purple-700' },
+      ];
 
   return (
     <AnimatePresence>

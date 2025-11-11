@@ -14,7 +14,7 @@ export const generateReceiptPDF = (receiptData) => {
       <style>
         @page {
           size: A4;
-          margin: 15mm;
+          margin: 10mm;
           /* Remove default headers and footers in print */
           @top-left { content: none; }
           @top-center { content: none; }
@@ -24,105 +24,190 @@ export const generateReceiptPDF = (receiptData) => {
           @bottom-right { content: none; }
         }
 
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+
         body {
           font-family: 'Arial', sans-serif;
-          margin: 40px;
+          margin: 0;
+          padding: 15px;
           color: #333;
+          font-size: 11px;
+          line-height: 1.3;
         }
+
+        .container {
+          max-width: 100%;
+          border: 2px solid #2563eb;
+          padding: 15px;
+        }
+
+        /* Header with Logo and University Details */
         .header {
           text-align: center;
           border-bottom: 3px solid #2563eb;
-          padding-bottom: 20px;
-          margin-bottom: 30px;
+          padding-bottom: 12px;
+          margin-bottom: 12px;
         }
-        .header h1 {
-          color: #1e40af;
-          margin: 0;
-          font-size: 28px;
-        }
-        .header p {
-          margin: 5px 0;
-          color: #6b7280;
-        }
-        .receipt-info {
-          background: #f3f4f6;
-          padding: 20px;
-          border-radius: 8px;
-          margin-bottom: 30px;
-        }
-        .receipt-info h2 {
-          color: #059669;
-          margin-top: 0;
-          font-size: 20px;
-        }
-        .info-row {
+
+        .header-content {
           display: flex;
-          justify-content: space-between;
-          padding: 10px 0;
-          border-bottom: 1px solid #d1d5db;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 8px;
         }
-        .info-row:last-child {
-          border-bottom: none;
+
+        .logo {
+          width: 70px;
+          height: 70px;
+          object-fit: contain;
+          margin-bottom: 8px;
         }
-        .label {
+
+        .university-info {
+          text-align: center;
+          width: 100%;
+        }
+
+        .university-info h1 {
+          color: #4a04bcff;
+          font-size: 20px;
+          font-weight: bold;
+          margin-bottom: 4px;
+          line-height: 1.2;
+        }
+
+        .university-info .subtitle {
+          font-size: 9px;
+          color: #4b5563;
+          margin: 2px 0;
+          line-height: 1.3;
+        }
+
+        .cdoe-title {
+          font-size: 12px;
+          font-weight: bold;
+          color: #1100ccff;
+          margin: 5px 0 2px 0;
+        }
+
+        .odl-subtitle {
+          font-size: 10px;
+          color: #ff6600;
+          font-style: italic;
+          font-weight: 500;
+        }
+
+        .receipt-title {
+          background: #2563eb;
+          color: white;
+          padding: 8px;
+          font-weight: bold;
+          font-size: 14px;
+          margin-top: 10px;
+          text-align: center;
+          letter-spacing: 1px;
+        }
+
+        /* Grid Layout for Content */
+        .content-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-bottom: 10px;
+        }
+
+        .full-width {
+          grid-column: 1 / -1;
+        }
+
+        /* Info Boxes */
+        .info-box {
+          border: 1px solid #d1d5db;
+          padding: 8px;
+          background: #f9fafb;
+        }
+
+        .info-box h3 {
+          color: #1e40af;
+          font-size: 11px;
+          font-weight: bold;
+          margin-bottom: 6px;
+          padding-bottom: 4px;
+          border-bottom: 2px solid #2563eb;
+        }
+
+        /* Table Style */
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 10px;
+        }
+
+        table td {
+          padding: 4px 6px;
+          border: 1px solid #d1d5db;
+        }
+
+        table td:first-child {
           font-weight: 600;
           color: #4b5563;
+          background: #f3f4f6;
           width: 40%;
         }
-        .value {
+
+        table td:last-child {
           color: #111827;
-          width: 60%;
-          text-align: right;
-          font-family: monospace;
         }
-        .section {
-          margin-bottom: 30px;
-        }
-        .section h3 {
-          color: #1e40af;
-          border-bottom: 2px solid #e5e7eb;
-          padding-bottom: 10px;
-          font-size: 18px;
-        }
+
+        /* Amount Box */
         .amount-box {
           background: linear-gradient(135deg, #10b981 0%, #059669 100%);
           color: white;
-          padding: 20px;
-          border-radius: 8px;
+          padding: 10px;
           text-align: center;
-          margin: 20px 0;
+          border-radius: 5px;
         }
-        .amount-box h2 {
-          margin: 0;
-          font-size: 36px;
+
+        .amount-box .amount {
+          font-size: 24px;
+          font-weight: bold;
+          margin: 3px 0;
         }
-        .amount-box p {
-          margin: 5px 0 0 0;
+
+        .amount-box .label {
+          font-size: 9px;
           opacity: 0.9;
         }
+
         .status-badge {
-          display: inline-block;
           background: #d1fae5;
           color: #065f46;
-          padding: 8px 16px;
-          border-radius: 20px;
+          padding: 3px 10px;
+          border-radius: 12px;
           font-weight: 600;
-          font-size: 14px;
+          font-size: 10px;
         }
+
         .footer {
-          margin-top: 50px;
+          margin-top: 10px;
           text-align: center;
-          padding-top: 20px;
+          padding-top: 8px;
           border-top: 2px solid #e5e7eb;
           color: #6b7280;
-          font-size: 12px;
+          font-size: 9px;
         }
+
         .security-note {
           background: #fef3c7;
-          border-left: 4px solid #f59e0b;
-          padding: 15px;
-          margin: 20px 0;
-          font-size: 13px;
+          border-left: 3px solid #f59e0b;
+          padding: 6px 8px;
+          margin: 8px 0;
+          font-size: 9px;
         }
 
         /* Action Buttons */
@@ -175,7 +260,10 @@ export const generateReceiptPDF = (receiptData) => {
         }
 
         @media print {
-          body { margin: 20px; }
+          body { 
+            margin: 0;
+            padding: 10px;
+          }
           
           .no-print {
             display: none !important;
@@ -205,111 +293,99 @@ export const generateReceiptPDF = (receiptData) => {
         </button>
       </div>
 
-      <div class="header">
-        <h1>🎓 ${receiptData.university || 'Periyar University'}</h1>
-        <p>${receiptData.university_address || 'Salem, Tamil Nadu, India'}</p>
-        <p style="font-weight: 600; color: #2563eb; margin-top: 10px;">PAYMENT RECEIPT</p>
-      </div>
+      <div class="container">
+        <!-- Header with Logo and University Details -->
+        <div class="header">
+          <div class="header-content">
+            <img src="/logo.jpg" alt="University Logo" class="logo" />
+            <div class="university-info">
+              <h1>Periyar University</h1>
+              <div class="subtitle">State University - NAAC 'A+' Grade - NIRF Rank 94</div>
+              <div class="subtitle">State Public University Rank 40 - SDG Institutions Rank Band: 11-50</div>
+              <div class="subtitle">Salem-636011, Tamilnadu, India.</div>
+              <div class="cdoe-title">CENTRE FOR DISTANCE AND ONLINE EDUCATION (CDOE)</div>
+              <div class="odl-subtitle">Open and Distance Learning</div>
+            </div>
+          </div>
+          <div class="receipt-title">PAYMENT RECEIPT</div>
+        </div>
 
-      <div class="receipt-info">
-        <h2>✓ Payment Successful</h2>
-        <div class="info-row">
-          <span class="label">Receipt Date:</span>
-          <span class="value">${receiptData.receipt_date || new Date().toLocaleString()}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">Application ID:</span>
-          <span class="value">${receiptData.application_id}</span>
-        </div>
-      </div>
+        <!-- Content Grid -->
+        <div class="content-grid">
+          <!-- Student Information -->
+          <div class="info-box">
+            <h3>Student Information</h3>
+            <table>
+              <tr><td>Application ID</td><td><strong>${receiptData.application_id}</strong></td></tr>
+              <tr><td>Name</td><td>${receiptData.student_name}</td></tr>
+              <tr><td>Email</td><td>${receiptData.email}</td></tr>
+              <tr><td>Phone</td><td>${receiptData.phone || 'N/A'}</td></tr>
+            </table>
+          </div>
 
-      <div class="section">
-        <h3>Student Information</h3>
-        <div class="info-row">
-          <span class="label">Name:</span>
-          <span class="value">${receiptData.student_name}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">Email:</span>
-          <span class="value">${receiptData.email}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">Phone:</span>
-          <span class="value">${receiptData.phone || 'N/A'}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">Course:</span>
-          <span class="value">${receiptData.course}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">Mode of Study:</span>
-          <span class="value">${receiptData.mode_of_study}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">LSC Center:</span>
-          <span class="value">${receiptData.lsc_code} - ${receiptData.lsc_name}</span>
-        </div>
-      </div>
+          <!-- Course Information -->
+          <div class="info-box">
+            <h3>Course Details</h3>
+            <table>
+              <tr><td>Course</td><td>${receiptData.course}</td></tr>
+              <tr><td>Mode of Study</td><td>${receiptData.mode_of_study}</td></tr>
+              <tr><td>LSC Center</td><td>${receiptData.lsc_code} - ${receiptData.lsc_name}</td></tr>
+              <tr><td>Receipt Date</td><td>${receiptData.receipt_date || new Date().toLocaleDateString()}</td></tr>
+            </table>
+          </div>
 
-      <div class="amount-box">
-        <p style="font-size: 16px; margin: 0;">Amount Paid</p>
-        <h2>₹${receiptData.amount}</h2>
-        <p>Application Fee (Including GST)</p>
-      </div>
+          <!-- Amount Paid -->
+          <div class="info-box full-width">
+            <div class="amount-box">
+              <div class="label">Amount Paid (Including GST)</div>
+              <div class="amount">₹${receiptData.amount}</div>
+              <div class="label">Payment Status: <span class="status-badge">${receiptData.payment_status || 'SUCCESS'}</span></div>
+            </div>
+          </div>
 
-      <div class="section">
-        <h3>Transaction Details</h3>
-        <div class="info-row">
-          <span class="label">Transaction ID:</span>
-          <span class="value">${receiptData.transaction_id || 'N/A'}</span>
+          <!-- Transaction Details -->
+          <div class="info-box full-width">
+            <h3>Transaction Details</h3>
+            <table>
+              <tr>
+                <td>Transaction ID</td>
+                <td>${receiptData.transaction_id || 'N/A'}</td>
+                <td>Bank Transaction ID</td>
+                <td>${receiptData.bank_transaction_id || 'N/A'}</td>
+              </tr>
+              <tr>
+                <td>Order ID</td>
+                <td>${receiptData.order_id || 'N/A'}</td>
+                <td>Transaction Date</td>
+                <td>${receiptData.transaction_date || new Date().toLocaleString()}</td>
+              </tr>
+              <tr>
+                <td>Payment Mode</td>
+                <td>${receiptData.payment_mode || 'N/A'}</td>
+                <td>Gateway</td>
+                <td>${receiptData.gateway_name || 'N/A'}</td>
+              </tr>
+              <tr>
+                <td>Bank Name</td>
+                <td>${receiptData.bank_name || 'N/A'}</td>
+                <td>Response Code</td>
+                <td>${receiptData.response_code || 'N/A'}</td>
+              </tr>
+            </table>
+          </div>
         </div>
-        <div class="info-row">
-          <span class="label">Bank Transaction ID:</span>
-          <span class="value">${receiptData.bank_transaction_id || 'N/A'}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">Order ID:</span>
-          <span class="value">${receiptData.order_id || 'N/A'}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">Transaction Date:</span>
-          <span class="value">${receiptData.transaction_date || new Date().toLocaleString()}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">Payment Mode:</span>
-          <span class="value">${receiptData.payment_mode || 'N/A'}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">Gateway:</span>
-          <span class="value">${receiptData.gateway_name || 'N/A'}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">Bank Name:</span>
-          <span class="value">${receiptData.bank_name || 'N/A'}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">Status:</span>
-          <span class="value"><span class="status-badge">${receiptData.payment_status || 'SUCCESS'}</span></span>
-        </div>
-        <div class="info-row">
-          <span class="label">Response Code:</span>
-          <span class="value">${receiptData.response_code || 'N/A'}</span>
-        </div>
-        <div class="info-row">
-          <span class="label">Response Message:</span>
-          <span class="value">${receiptData.response_message || 'N/A'}</span>
-        </div>
-      </div>
 
-      <div class="security-note">
-        <strong>⚠️ Important:</strong> This is an official payment receipt. Please save this for your records. 
-        For any queries, contact the admission office with your Application ID.
-      </div>
+        <!-- Security Note -->
+        <div class="security-note">
+          <strong>⚠️ Important:</strong> This is an official payment receipt. Please save this for your records. 
+          For any queries, contact the admission office with your Application ID.
+        </div>
 
-      <div class="footer">
-        <p><strong>This is a computer-generated receipt and does not require a signature.</strong></p>
-        <p>Generated on: ${new Date().toLocaleString()}</p>
-        <p>© ${new Date().getFullYear()} ${receiptData.university || 'Periyar University'}. All rights reserved.</p>
+        <!-- Footer -->
+        <div class="footer">
+          <p><strong>This is a computer-generated receipt and does not require a signature.</strong></p>
+          <p>Generated on: ${new Date().toLocaleString()} | © ${new Date().getFullYear()} Periyar University CDOE. All rights reserved.</p>
+        </div>
       </div>
 
       <script>
