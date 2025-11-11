@@ -7,6 +7,7 @@ from .views import ApplicationPage3View,upload_marksheet
 from .views import upload_documents
 from django.conf import settings
 from django.conf.urls.static import static
+from . import admin_views  # Import admin views
 
 urlpatterns = [
     path('send-otp/', send_otp, name='send_otp'),
@@ -47,5 +48,11 @@ urlpatterns = [
     path('download-application/', views.download_application, name='download_application'),
     path('download-receipt/', views.download_receipt, name='download_receipt'),
     
+    # LSC Admin - Student Admissions Management
+    path('lsc-admin/student-admissions/', admin_views.get_student_admissions, name='lsc_student_admissions'),
+    path('lsc-admin/student-details/<str:application_id>/', admin_views.get_student_details, name='lsc_student_details'),
+    path('lsc-admin/verify-eligibility/', admin_views.verify_eligibility, name='lsc_verify_eligibility'),
+    path('lsc-admin/generate-enrollment/', admin_views.generate_enrollment_id, name='lsc_generate_enrollment'),
+    path('lsc-admin/send-semester-fee-notification/', admin_views.send_semester_fee_notification, name='lsc_semester_fee_notification'),
   
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
