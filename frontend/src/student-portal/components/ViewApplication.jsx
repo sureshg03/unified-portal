@@ -1014,11 +1014,11 @@ const ViewApplication = () => {
             </div>
             <div>
               <span className="field-label">Course:</span>
-              <span className="field-value">{application?.course || 'N/A'}</span>
+              <span className="field-value">{application?.course || application?.course_name || application?.selected_course || 'N/A'}</span>
             </div>
             <div>
               <span className="field-label">Medium:</span>
-              <span className="field-value">{application?.medium || 'N/A'}</span>
+              <span className="field-value">{application?.medium || application?.medium_of_instruction || 'N/A'}</span>
             </div>
             <div>
               <span className="field-label">Academic Year:</span>

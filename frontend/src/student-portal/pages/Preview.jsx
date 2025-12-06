@@ -610,21 +610,24 @@ const Preview = () => {
       <div ref={printRef} className="max-w-5xl mx-auto bg-white shadow-lg rounded-lg p-8">
 
         {/* Header Section */}
-        <div className="header-container">
-          <div className="header-flex" style={{ alignItems: 'center', gap: '0px' }}>
-            <div className="logo-section" style={{ flex: '0 0 120px', padding: '0', justifyContent: 'flex-start' }}>
-              <img src="/Logo.png" alt="Periyar University Logo" className="logo-img" style={{ width: '120px', height: '120px' }} />
+        <div className="header-container" style={{ borderBottom: '2px solid #8B008B', paddingBottom: '16px', marginBottom: '20px' }}>
+          <div className="header-flex" style={{ display: 'flex', alignItems: 'center', gap: '15px', justifyContent: 'flex-start', paddingLeft: '40px' }}>
+            <div className="logo-section" style={{ flex: '0 0 auto' }}>
+              <img src="/Logo.png" alt="Periyar University Logo" className="logo-img" style={{ width: '140px', height: '140px', display: 'block' }} />
             </div>
-            <div className="header-content" style={{ flex: '1', textAlign: 'center' }}>
-              <h1 className="university-name" style={{ fontSize: '28px', margin: '0 0 4px 0', color: '#8B008B', fontWeight: 700 }}>Periyar University</h1>
-              <p className="university-sub" style={{ fontSize: '11px', fontWeight: 600, margin: '2px 0', color: '#2c2c2c' }}>State University - NAAC 'A++' Grade - NIRF Rank 94</p>
-              <p className="university-sub" style={{ fontSize: '11px', margin: '2px 0', color: '#2c2c2c' }}>State Public University Rank 40 - SDG Institutions Rank Band: 11-50</p>
-              <p className="university-sub" style={{ fontSize: '11px', fontWeight: 600, margin: '2px 0 8px 0', color: '#2c2c2c' }}>Salem-636011, Tamilnadu, India</p>
-              <h2 className="cdoe-title" style={{ fontSize: '17px', fontWeight: 700, color: '#FF8C00', margin: '8px 0 4px 0' }}>CENTRE FOR DISTANCE AND ONLINE EDUCATION (CDOE)</h2>
-              <p className="odl-text" style={{ fontSize: '14px', fontWeight: 600, color: '#FF8C00', margin: '0' }}>Open and Distance Learning</p>
+            <div className="header-content" style={{ flex: '1', textAlign: 'left' }}>
+              <h1 className="university-name" style={{ fontSize: '32px', margin: '0 0 4px 0', color: '#8B008B', fontWeight: 800, lineHeight: '1.1' }}>Periyar University</h1>
+              <p className="university-sub" style={{ fontSize: '11px', fontWeight: 600, margin: '2px 0', color: '#333', lineHeight: '1.3' }}>State University - NAAC 'A++' Grade - NIRF Rank 94</p>
+              <p className="university-sub" style={{ fontSize: '11px', margin: '2px 0', color: '#444', lineHeight: '1.3' }}>State Public University Rank 40 - SDG Institutions Rank Band: 11-50</p>
+              <p className="university-sub" style={{ fontSize: '11px', fontWeight: 600, margin: '2px 0 8px 0', color: '#333', lineHeight: '1.3' }}>Salem-636011, Tamilnadu, India</p>
+              <h2 className="cdoe-title" style={{ fontSize: '18px', fontWeight: 800, color: '#FF8C00', margin: '6px 0 3px 0', lineHeight: '1.2' }}>CENTRE FOR DISTANCE AND ONLINE EDUCATION (CDOE)</h2>
+              <p className="odl-text" style={{ fontSize: '14px', fontWeight: 700, color: '#FF8C00', margin: '0', lineHeight: '1.2' }}>Open and Distance Learning</p>
             </div>
           </div>
-          <h3 className="form-title" style={{ fontSize: '15px', fontWeight: 700, textAlign: 'center', margin: '12px 0 8px 0', textDecoration: 'underline', color: '#1a1a1a' }}>
+        </div>
+
+        <div style={{ marginBottom: '20px' }}>
+          <h3 className="form-title" style={{ fontSize: '15px', fontWeight: 700, textAlign: 'center', margin: '0 0 8px 0', textDecoration: 'underline', color: '#1a1a1a' }}>
             Open and Distance Learning Programme (ODL) Admission for the Academic Year {application?.academic_year || academicYear}
           </h3>
         </div>
@@ -667,19 +670,19 @@ const Preview = () => {
               <td className="sno-col">1.</td>
               <td className="label-col">Programme Applied</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.programme_applied || 'N/A'}</td>
+              <td className="value-col">{application?.programme_applied || application?.program_type || 'N/A'}</td>
             </tr>
             <tr>
               <td className="sno-col"></td>
               <td className="label-col">Course</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.course || 'N/A'}</td>
+              <td className="value-col">{application?.course || application?.course_name || application?.selected_course || 'N/A'}</td>
             </tr>
             <tr>
               <td className="sno-col"></td>
               <td className="label-col">Medium</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.medium || 'N/A'}</td>
+              <td className="value-col">{application?.medium || application?.medium_of_instruction || 'N/A'}</td>
             </tr>
             <tr>
               <td className="sno-col">2.</td>

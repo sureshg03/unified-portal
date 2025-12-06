@@ -813,11 +813,11 @@ const PaymentPage = () => {
                 </tr>
                 <tr>
                   <th>Course</th>
-                  <td>{applicationData.application?.course || 'N/A'}</td>
+                  <td>{applicationData.application?.course || applicationData.application?.course_name || applicationData.application?.selected_course || 'N/A'}</td>
                 </tr>
                 <tr>
                   <th>Medium</th>
-                  <td>{applicationData.application?.medium || 'N/A'}</td>
+                  <td>{applicationData.application?.medium || applicationData.application?.medium_of_instruction || 'N/A'}</td>
                 </tr>
                 <tr>
                   <th>Academic Year</th>

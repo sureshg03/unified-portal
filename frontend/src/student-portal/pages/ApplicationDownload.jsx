@@ -60,31 +60,50 @@ const ApplicationDownload = () => {
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
 
-      // Modern Header with Gradient Effect
-      doc.setFillColor(79, 70, 229); // Indigo
-      doc.rect(0, 0, pageWidth, 45, 'F');
+      // Professional Header with Logo
+      // Logo (if you have it as base64 or URL, you can add it here)
+      // For now, using text-based header
       
-      // University Logo Area (placeholder)
-      doc.setFillColor(255, 255, 255);
-      doc.circle(20, 22, 12, 'F');
-      doc.setTextColor(79, 70, 229);
+      // Header Section with Border
+      doc.setDrawColor(139, 0, 139); // Purple color
+      doc.setLineWidth(0.8);
+      doc.line(15, 45, pageWidth - 15, 45); // Bottom border line
+      
+      // University Name
+      doc.setTextColor(139, 0, 139); // Purple
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Periyar University', 50, 18);
+      
+      // University Details
+      doc.setTextColor(51, 51, 51);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text('State University - NAAC \'A++\' Grade - NIRF Rank 94', 50, 24);
+      doc.setFont('helvetica', 'normal');
+      doc.text('State Public University Rank 40 - SDG Institutions Rank Band: 11-50', 50, 28);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Salem-636011, Tamilnadu, India', 50, 32);
+      
+      // CDOE Title
+      doc.setTextColor(255, 140, 0); // Orange
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('CENTRE FOR DISTANCE AND ONLINE EDUCATION (CDOE)', 50, 38);
+      doc.setFontSize(9);
+      doc.text('Open and Distance Learning', 50, 43);
+      
+      // Form Title
+      doc.setTextColor(26, 26, 26);
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text('PU', 20, 24, { align: 'center' });
-
-      // Header Text
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(22);
-      doc.setFont('helvetica', 'bold');
-      doc.text('PERIYAR UNIVERSITY', pageWidth / 2, 20, { align: 'center' });
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Centre for Distance & Online Education', pageWidth / 2, 28, { align: 'center' });
-      doc.setFontSize(9);
-      doc.text('Application Receipt', pageWidth / 2, 36, { align: 'center' });
+      const formTitle = 'Open and Distance Learning Programme (ODL) Admission';
+      const academicYear = `for the Academic Year ${applicationData?.academic_year || '2025-2026'}`;
+      doc.text(formTitle, pageWidth / 2, 52, { align: 'center' });
+      doc.text(academicYear, pageWidth / 2, 58, { align: 'center' });
 
       // Application ID Badge
-      const badgeY = 55;
+      const badgeY = 68;
       doc.setFillColor(240, 253, 244);
       doc.roundedRect(pageWidth / 2 - 50, badgeY, 100, 18, 3, 3, 'F');
       doc.setDrawColor(34, 197, 94);
@@ -120,7 +139,7 @@ const ApplicationDownload = () => {
       doc.text('PAYMENT VERIFIED', 20, badgeY + 25);
 
       // Student Information Section
-      let currentY = 95;
+      let currentY = 108;
       doc.setFillColor(249, 250, 251);
       doc.rect(15, currentY, pageWidth - 30, 12, 'F');
       doc.setTextColor(79, 70, 229);
@@ -176,7 +195,7 @@ const ApplicationDownload = () => {
         body: [
           ['Mode of Study', applicationData.mode_of_study || 'N/A'],
           ['Programme Applied', applicationData.programme_applied || 'N/A'],
-          ['Course/Degree', applicationData.course || 'N/A'],
+          ['Course/Degree', applicationData.course || applicationData.course_name || applicationData.selected_course || 'N/A'],
           ['Academic Year', applicationData.academic_year || 'N/A'],
         ],
         styles: {
@@ -426,7 +445,7 @@ const ApplicationDownload = () => {
                   <span className="font-semibold">Programme:</span> {applicationData?.programme_applied || 'N/A'}
                 </p>
                 <p className="text-sm text-gray-600">
-                  <span className="font-semibold">Course:</span> {applicationData?.course || 'N/A'}
+                  <span className="font-semibold">Course:</span> {applicationData?.course || applicationData?.course_name || applicationData?.selected_course || 'N/A'}
                 </p>
                 <p className="text-sm text-gray-600">
                   <span className="font-semibold">Year:</span> {applicationData?.academic_year || 'N/A'}

@@ -647,30 +647,26 @@ export const generateProfessionalApplicationPDF = (data, mode = 'preview') => {
 
       <div class="container">
         <!-- Header -->
-        <div class="header">
-          <div class="header-top">
-            <div class="header-right">PUCDOE</div>
-          </div>
-
-          <div class="logo-section">
-            <img src="/logo.jpg" 
+        <div class="header" style="text-align: center; padding-bottom: 12px; margin-bottom: 20px; border-bottom: 1px solid #000;">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 0;">
+            <img src="/Logo.png" 
                  alt="Periyar University Logo" 
                  class="university-logo"
+                 style="width: 100px; height: 100px; display: block; margin-bottom: 8px;"
                  onerror="console.error('Logo failed to load'); this.onerror=null; this.style.visibility='hidden';">
-            <div class="university-details">
-              <div class="university-name">Periyar University</div>
-              <div class="university-subtitle">State University - NAAC 'A+' Grade - NIRF Rank 94</div>
-              <div class="university-subtitle">State Public University Rank 40 - SDG Institutions Rank Band: 11-50</div>
-              <div class="university-address">Salem-636011, Tamilnadu, India.</div>
+            <div class="university-details" style="text-align: center;">
+              <div class="university-name" style="font-size: 28px; margin: 0 0 4px 0; color: #7B1FA2; font-weight: 800; line-height: 1.1;">Periyar University</div>
+              <div class="university-subtitle" style="font-size: 11px; font-weight: 600; margin: 2px 0; color: #333; line-height: 1.3;">State University - NAAC 'A++' Grade - NIRF Rank 94</div>
+              <div class="university-subtitle" style="font-size: 11px; margin: 2px 0; color: #444; line-height: 1.3;">State Public University Rank 40 - SDG Institutions Rank Band: 11-50</div>
+              <div class="university-address" style="font-size: 11px; font-weight: 600; margin: 2px 0 10px 0; color: #333; line-height: 1.3;">Salem-636011, Tamilnadu, India.</div>
+              <div class="cdoe-title" style="font-size: 16px; font-weight: 800; color: #7B1FA2; margin: 8px 0 3px 0; line-height: 1.2; text-transform: uppercase;">Centre for Distance and Online Education (CDOE)</div>
+              <div class="odl-subtitle" style="font-size: 13px; font-weight: 700; color: #FF6F00; margin: 0; line-height: 1.2;">Open and Distance Learning</div>
             </div>
           </div>
-
-          <div class="cdoe-title">CENTRE FOR DISTANCE AND ONLINE EDUCATION (CDOE)</div>
-          <div class="odl-subtitle">Open and Distance Learning</div>
         </div>
 
-        <div class="main-title">
-          Open and Distance Learning Programme (ODL) Admission for the Academic Year ${data.academic_year || '2025-26'}
+        <div class="main-title" style="font-size: 14px; font-weight: 700; text-align: center; margin: 0 0 20px 0; text-decoration: underline; color: #000; line-height: 1.4;">
+          Open and Distance Learning Programme (ODL) Admission for the Academic Year ${data.academic_year || '2025-2026'}
         </div>
 
         <!-- Application Info Box with Photo -->
@@ -726,13 +722,13 @@ export const generateProfessionalApplicationPDF = (data, mode = 'preview') => {
             <td class="row-number"></td>
             <td class="field-label">Course</td>
             <td class="field-separator">:</td>
-            <td class="field-value">${data.course || 'Social Welfare Administration'}</td>
+            <td class="field-value">${data.course || data.course_name || data.selected_course || 'Social Welfare Administration'}</td>
           </tr>
           <tr>
             <td class="row-number"></td>
             <td class="field-label">Medium</td>
             <td class="field-separator">:</td>
-            <td class="field-value">${data.medium || 'English'}</td>
+            <td class="field-value">${data.medium || data.medium_of_instruction || 'English'}</td>
           </tr>
           <tr>
             <td class="row-number">2.</td>
