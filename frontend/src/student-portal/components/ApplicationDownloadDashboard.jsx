@@ -48,6 +48,7 @@ const ApplicationDownloadDashboard = () => {
     }
   };
 
+  // Print Preview - Opens PDF in new tab for viewing
   const handlePrintPreview = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -56,7 +57,7 @@ const ApplicationDownloadDashboard = () => {
         return;
       }
 
-      const loadingToast = toast.loading('Opening print preview...');
+      const loadingToast = toast.loading('Opening preview...');
 
       const response = await axios.get(
         'http://localhost:8000/api/download-application/',
@@ -68,16 +69,17 @@ const ApplicationDownloadDashboard = () => {
 
       if (response.data.status === 'success') {
         toast.dismiss(loadingToast);
-        toast.success('Opening print preview...');
-        generateProfessionalApplicationPDF(response.data.data, 'print');
+        toast.success('Opening preview in new tab...');
+        generateProfessionalApplicationPDF(response.data.data, 'preview');
       }
     } catch (error) {
       toast.dismiss();
-      console.error('Error opening print preview:', error);
-      toast.error(error.response?.data?.message || 'Failed to open print preview');
+      console.error('Error opening preview:', error);
+      toast.error(error.response?.data?.message || 'Failed to open preview');
     }
   };
 
+  // Download PDF - Saves file to computer
   const handleDirectDownload = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -86,7 +88,7 @@ const ApplicationDownloadDashboard = () => {
         return;
       }
 
-      const loadingToast = toast.loading('Downloading application form...');
+      const loadingToast = toast.loading('Preparing download...');
 
       const response = await axios.get(
         'http://localhost:8000/api/download-application/',
@@ -105,6 +107,37 @@ const ApplicationDownloadDashboard = () => {
       toast.dismiss();
       console.error('Error downloading application:', error);
       toast.error(error.response?.data?.message || 'Failed to download application');
+    }
+  };
+
+  // Quick Print - Opens print dialog directly
+  const handleQuickPrint = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Please log in again.');
+        return;
+      }
+
+      const loadingToast = toast.loading('Preparing for printing...');
+
+      const response = await axios.get(
+        'http://localhost:8000/api/download-application/',
+        {
+          headers: { Authorization: `Token ${token}` },
+          responseType: 'json',
+        }
+      );
+
+      if (response.data.status === 'success') {
+        toast.dismiss(loadingToast);
+        toast.success('Opening print dialog...');
+        generateProfessionalApplicationPDF(response.data.data, 'print');
+      }
+    } catch (error) {
+      toast.dismiss();
+      console.error('Error printing application:', error);
+      toast.error(error.response?.data?.message || 'Failed to print application');
     }
   };
 
@@ -209,7 +242,7 @@ const ApplicationDownloadDashboard = () => {
             <div className="flex-1">
               <h2 className="text-xl font-bold text-green-700">Documents Verified & Ready</h2>
               <p className="text-sm mt-1 text-green-600">
-                Your application has been verified by LSC admin and is ready for download
+                Your application has been verified by CDOE admin and is ready for download
               </p>
             </div>
           </div>
@@ -279,10 +312,10 @@ const ApplicationDownloadDashboard = () => {
                 <div>
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Verification Status</p>
                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold ${canDownload
-                    ? 'bg-green-100 text-green-700 border border-green-300'
-                    : isPaid
-                      ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                      : 'bg-orange-100 text-orange-700 border border-orange-300'
+                      ? 'bg-green-100 text-green-700 border border-green-300'
+                      : isPaid
+                        ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                        : 'bg-orange-100 text-orange-700 border border-orange-300'
                     }`}>
                     {canDownload ? 'VERIFIED' : isPaid ? 'PENDING VERIFICATION' : 'PENDING PAYMENT'}
                   </span>
@@ -328,8 +361,8 @@ const ApplicationDownloadDashboard = () => {
         <motion.div
           whileHover={{ scale: canDownload ? 1.03 : 1 }}
           className={`bg-indigo-600 rounded-xl shadow-xl p-6 text-white relative overflow-hidden group ${canDownload
-            ? 'cursor-pointer'
-            : 'opacity-60 cursor-not-allowed'
+              ? 'cursor-pointer'
+              : 'opacity-60 cursor-not-allowed'
             }`}
           onClick={canDownload ? handlePrintPreview : null}
         >
@@ -341,7 +374,7 @@ const ApplicationDownloadDashboard = () => {
             <h3 className="text-xl font-bold mb-2">Print Preview</h3>
             <p className="text-sm text-indigo-100 mb-4">
               {canDownload
-                ? 'View and print your application form'
+                ? 'Open PDF in new tab to view before printing'
                 : !isPaid
                   ? 'Available after payment'
                   : 'Available after verification'}
@@ -368,8 +401,8 @@ const ApplicationDownloadDashboard = () => {
         <motion.div
           whileHover={{ scale: canDownload ? 1.03 : 1 }}
           className={`bg-blue-600 rounded-xl shadow-xl p-6 text-white relative overflow-hidden group ${canDownload
-            ? 'cursor-pointer'
-            : 'opacity-60 cursor-not-allowed'
+              ? 'cursor-pointer'
+              : 'opacity-60 cursor-not-allowed'
             }`}
           onClick={canDownload ? handleDirectDownload : null}
         >
@@ -381,7 +414,7 @@ const ApplicationDownloadDashboard = () => {
             <h3 className="text-xl font-bold mb-2">Download PDF</h3>
             <p className="text-sm text-blue-100 mb-4">
               {canDownload
-                ? 'Download form directly as PDF file'
+                ? 'Save PDF file directly to your computer'
                 : !isPaid
                   ? 'Available after payment'
                   : 'Available after verification'}
@@ -404,14 +437,14 @@ const ApplicationDownloadDashboard = () => {
           </div>
         </motion.div>
 
-        {/* Print Directly Card */}
+        {/* Quick Print Card */}
         <motion.div
           whileHover={{ scale: canDownload ? 1.03 : 1 }}
           className={`bg-green-600 rounded-xl shadow-xl p-6 text-white relative overflow-hidden group ${canDownload
-            ? 'cursor-pointer'
-            : 'opacity-60 cursor-not-allowed'
+              ? 'cursor-pointer'
+              : 'opacity-60 cursor-not-allowed'
             }`}
-          onClick={canDownload ? handlePrintPreview : null}
+          onClick={canDownload ? handleQuickPrint : null}
         >
           <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
           <div className="relative z-10">
@@ -421,7 +454,7 @@ const ApplicationDownloadDashboard = () => {
             <h3 className="text-xl font-bold mb-2">Quick Print</h3>
             <p className="text-sm text-green-100 mb-4">
               {canDownload
-                ? 'Open print dialog immediately'
+                ? 'Open print dialog directly without preview'
                 : !isPaid
                   ? 'Available after payment'
                   : 'Available after verification'}
@@ -460,23 +493,23 @@ const ApplicationDownloadDashboard = () => {
           <ul className="space-y-2 text-sm text-blue-800">
             <li className="flex items-start gap-2">
               <span className="text-blue-600 font-bold">1.</span>
-              <span>Download your application form and verify all details are correct</span>
+              <span>Use <strong>Print Preview</strong> to view the form in a new tab before printing</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-600 font-bold">2.</span>
-              <span>Print the form on A4 size paper for physical submission if required</span>
+              <span>Use <strong>Download PDF</strong> to save the form to your computer for offline access</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-600 font-bold">3.</span>
-              <span>Keep both digital and physical copies safe for future reference</span>
+              <span>Use <strong>Quick Print</strong> to open the print dialog immediately</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-600 font-bold">4.</span>
-              <span>Submit any additional documents as mentioned in the guidelines</span>
+              <span>Print the form on A4 size paper for physical submission if required</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-600 font-bold">5.</span>
-              <span>Track your application status from the "Application Status" menu</span>
+              <span>Keep both digital and physical copies safe for future reference</span>
             </li>
           </ul>
         </motion.div>

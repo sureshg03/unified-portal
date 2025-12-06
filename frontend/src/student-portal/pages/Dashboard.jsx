@@ -579,7 +579,7 @@ const Dashboard = () => {
       <Toaster position="top-right" />
       <style>{`
         * {
-          box-sizing-box;
+          box-sizing: border-box;
         }
         .font-roboto {
           font-family: 'Roboto', sans-serif !important;
@@ -599,14 +599,14 @@ const Dashboard = () => {
           z-index: 10 !important;
         }
         .border-gradient {
-          border-image-gradient(to right, rgba(139,0,139, 0.7), rgba(167, 139, 250, 0.7)) 1;
+          border-image: linear-gradient(to right, rgba(139,0,139, 0.7), rgba(167, 139, 250, 0.7)) 1;
         }
         .particle {
-          position;
+          position: absolute;
           border-radius: 50%;
-          background(167, 139, 250, 0.7);
+          background: rgba(167, 139, 250, 0.7);
           box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
-          animation 4s infinite ease-in-out;
+          animation: float 4s infinite ease-in-out;
         }
         .particle-1 {
           width: 12px;
@@ -644,15 +644,15 @@ const Dashboard = () => {
           animation-delay: 4s;
         }
         @keyframes float {
-          0%, 100% { transform(0) translateX(0); }
-          50% { transform(-10px) translateX(6px); }
+          0%, 100% { transform: translateY(0) translateX(0); }
+          50% { transform: translateY(-10px) translateX(6px); }
         }
         @keyframes glow {
           0%, 100% { opacity: 0.9; box-shadow: 0 0 10px rgba(167, 139, 250, 0.5); }
           50% { opacity: 1; box-shadow: 0 0 20px rgba(167, 139, 250, 0.8); }
         }
         .animate-glow {
-          animation 1.5s ease-in-out infinite;
+          animation: glow 1.5s ease-in-out infinite;
         }
         @keyframes neon-glow {
           0% { box-shadow: 0 0 10px rgba(139, 92, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3), 0 0 30px rgba(99, 102, 241, 0.2); }
@@ -660,7 +660,7 @@ const Dashboard = () => {
           100% { box-shadow: 0 0 10px rgba(139, 92, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3), 0 0 30px rgba(99, 102, 241, 0.2); }
         }
         .animate-neon-glow {
-          animation-glow 1.8s ease-in-out infinite;
+          animation: neon-glow 1.8s ease-in-out infinite;
         }
         @keyframes waveSlow {
           0% { background-position: 0 bottom; }
@@ -668,7 +668,7 @@ const Dashboard = () => {
           100% { background-position: 2880px bottom; }
         }
         .animate-wave-slow {
-          animation 12s linear infinite;
+          animation: waveSlow 12s linear infinite;
         }
         @keyframes gradientShift {
           0% { background-position: 0% 50%; }
@@ -677,30 +677,30 @@ const Dashboard = () => {
         }
         .animate-gradient {
           background-size: 200% 200%;
-          animation 8s ease infinite;
+          animation: gradientShift 8s ease infinite;
         }
         .scrollbar {
-          scrollbar-width;
-          scrollbar-color(139, 92, 246, 0.5) transparent;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(139, 92, 246, 0.5) transparent;
         }
         .scrollbar::-webkit-scrollbar {
           width: 8px;
         }
         .scrollbar::-webkit-scrollbar-track {
-          background;
+          background: transparent;
         }
         .scrollbar::-webkit-scrollbar-thumb {
-          background(139, 92, 246, 0.5);
+          background: rgba(139, 92, 246, 0.5);
           border-radius: 4px;
         }
         .scrollbar::-webkit-scrollbar-thumb:hover {
-          background(139, 92, 246, 0.8);
+          background: rgba(139, 92, 246, 0.8);
         }
         /* Responsive adjustments */
         @media (min-width: 768px) {
           main {
             margin-left: 288px; /* 256px sidebar + 32px gap */
-            width(100% - 288px); /* Occupy remaining space after sidebar and gap */
+            width: calc(100% - 288px); /* Occupy remaining space after sidebar and gap */
           }
         }
         @media (max-width: 767px) {
