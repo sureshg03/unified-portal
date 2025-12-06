@@ -409,8 +409,22 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
                       scale: { duration: 2, repeat: Infinity, ease: "easeInOut" },
                     }}
                   />
-                  <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-purple-600 via-purple-500 to-purple-700 flex items-center justify-center shadow-xl ring-2 ring-white/50 ring-offset-2 ring-offset-purple-900">
-                    <UserCircleIcon className="w-7 h-7 sm:w-8 sm:h-8 text-white drop-shadow-lg" />
+                  <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-purple-600 via-purple-500 to-purple-700 flex items-center justify-center shadow-xl ring-2 ring-white/50 ring-offset-2 ring-offset-purple-900 overflow-hidden">
+                    {userData.photo_url ? (
+                      <img
+                        src={userData.photo_url}
+                        alt={userData.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextElementSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <UserCircleIcon 
+                      className="w-7 h-7 sm:w-8 sm:h-8 text-white drop-shadow-lg" 
+                      style={{ display: userData.photo_url ? 'none' : 'block' }}
+                    />
                   </div>
                 </motion.div>
 

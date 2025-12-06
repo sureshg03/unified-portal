@@ -61,7 +61,7 @@ const Payment = () => {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-8 text-white">
+          <div className="bg-gradient-to-r from-indigo-600 to-blue-600 p-8 text-white">
             <div className="flex items-center justify-center mb-4">
               <XCircleIcon className="h-16 w-16" />
             </div>

@@ -31,32 +31,42 @@ const PaymentHistory = () => {
         return;
       }
 
+      console.log('📊 Fetching payment history from database...');
       const response = await axios.get(
-        'http://localhost:8000/api/application-payment-data/',
+        'http://localhost:8000/api/payment-history/',
         { headers: { Authorization: `Token ${token}` } }
       );
 
+      console.log('📨 Payment history response:', response.data);
+
       if (response.data.status === 'success') {
-        setPaymentData(response.data.data);
+        const data = response.data.data;
+        setPaymentData(data);
+        console.log('✅ Payment data set:', data);
+        
         // Set dynamic application fee
-        if (response.data.data.payment?.application_fee) {
-          setApplicationFee(response.data.data.payment.application_fee.toFixed(2));
+        if (data.payment?.application_fee) {
+          const fee = data.payment.application_fee.toFixed(2);
+          setApplicationFee(fee);
+          console.log('💰 Application fee set:', fee);
         }
 
-        // Fetch transaction details if payment is completed
-        if (response.data.data.application?.payment_status === 'P') {
-          const receiptResponse = await axios.get(
-            'http://localhost:8000/api/download-receipt/',
-            { headers: { Authorization: `Token ${token}` }, responseType: 'json' }
-          );
-          if (receiptResponse.data.status === 'success') {
-            setTransactionDetails(receiptResponse.data.data);
-          }
+        // Set transaction details directly from response
+        if (data.transaction) {
+          setTransactionDetails(data.transaction);
+          console.log('✅ Transaction details loaded:', data.transaction);
+        } else {
+          console.log('ℹ️ No transaction details found in database');
         }
+      } else {
+        console.warn('⚠️ Unexpected response status:', response.data);
+        toast.error(response.data.message || 'Failed to load payment history');
       }
     } catch (error) {
-      console.error('Error fetching payment history:', error);
-      toast.error('Failed to load payment history');
+      console.error('❌ Error fetching payment history:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error message:', error.message);
+      toast.error(error.response?.data?.message || 'Failed to load payment history');
     } finally {
       setLoading(false);
     }
@@ -101,6 +111,14 @@ const PaymentHistory = () => {
   }
 
   const isPaid = paymentData?.application?.payment_status === 'P';
+  
+  console.log('🎨 Rendering PaymentHistory:', {
+    paymentData,
+    isPaid,
+    transactionDetails,
+    applicationFee,
+    loading
+  });
 
   return (
     <div className="max-w-5xl mx-auto p-6">
@@ -165,6 +183,19 @@ const PaymentHistory = () => {
         </div>
       </motion.div>
 
+      {/* Debug Info - Remove after testing */}
+      {isPaid && !transactionDetails && (
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-sm text-yellow-800">
+            ⚠️ Debug: Payment is marked as completed but transaction details not loaded.
+            <br />
+            Payment Status: {paymentData?.application?.payment_status}
+            <br />
+            Application ID: {paymentData?.application?.application_id || 'Not set'}
+          </p>
+        </div>
+      )}
+
       {/* Payment Details */}
       {isPaid && paymentData && (
         <motion.div
@@ -181,7 +212,9 @@ const PaymentHistory = () => {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-white">Transaction Details</h3>
-                <p className="text-sm text-indigo-100">Application Fee Payment</p>
+                <p className="text-sm text-indigo-100">
+                  {transactionDetails ? 'Application Fee Payment' : 'Loading transaction details...'}
+                </p>
               </div>
             </div>
           </div>

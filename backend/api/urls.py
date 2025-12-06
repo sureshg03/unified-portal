@@ -25,6 +25,7 @@ urlpatterns = [
     path('get-application/', views.get_application, name='get_application'),
     path('verify-dummy-payment/', views.verify_dummy_payment, name='verify_dummy_payment'),
     path('clear-payment/', views.clear_payment, name='clear_payment'),
+    path('payment-history/', views.get_payment_history, name='get_payment_history'),
     path('application-payment-data/', views.get_application_payment_data, name='get_application_payment_data'),
     path('application/page2/', views.save_application_page2, name='save_application_page2'),
     path('get-autofill-application/', views.get_autofill_application, name='get_autofill_application'),

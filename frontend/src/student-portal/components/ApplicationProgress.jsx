@@ -15,6 +15,7 @@ import {
 const ApplicationProgress = () => {
   const [applicationData, setApplicationData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [verificationStatus, setVerificationStatus] = useState(null);
 
   useEffect(() => {
     fetchApplicationStatus();
@@ -32,6 +33,19 @@ const ApplicationProgress = () => {
 
       if (response.data.status === 'success') {
         setApplicationData(response.data.data);
+        
+        // Parse document validation status if available
+        const application = response.data.data.application;
+        if (application.document_validation) {
+          try {
+            const validationData = typeof application.document_validation === 'string' 
+              ? JSON.parse(application.document_validation) 
+              : application.document_validation;
+            setVerificationStatus(validationData);
+          } catch (e) {
+            console.error('Error parsing document validation:', e);
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching application status:', error);
@@ -40,49 +54,66 @@ const ApplicationProgress = () => {
     }
   };
 
-  // Define application verification stages
-  const stages = [
-    {
-      id: 1,
-      title: 'Application Submitted',
-      description: 'Your application has been successfully submitted',
-      icon: DocumentCheckIcon,
-      status: 'completed',
-      color: 'green',
-    },
-    {
-      id: 2,
-      title: 'Payment Verified',
-      description: 'Application fee payment confirmed',
-      icon: CheckCircleIcon,
-      status: 'completed',
-      color: 'green',
-    },
-    {
-      id: 3,
-      title: 'Document Verification',
-      description: 'Staff is reviewing your submitted documents',
-      icon: DocumentMagnifyingGlassIcon,
-      status: 'in-progress', // This will be dynamic from backend
-      color: 'blue',
-    },
-    {
-      id: 4,
-      title: 'Academic Review',
-      description: 'Academic qualifications are being verified',
-      icon: AcademicCapIcon,
-      status: 'pending',
-      color: 'gray',
-    },
-    {
-      id: 5,
-      title: 'Final Approval',
-      description: 'Final verification by admission committee',
-      icon: ShieldCheckIcon,
-      status: 'pending',
-      color: 'gray',
-    },
-  ];
+  // Determine dynamic stages based on application data
+  const getDynamicStages = () => {
+    if (!applicationData) return [];
+
+    const application = applicationData.application;
+    const isPaid = application.payment_status === 'P';
+    const hasApplicationId = Boolean(application.application_id);
+    const isVerified = verificationStatus && verificationStatus.status === 'approved';
+    const isRejected = verificationStatus && verificationStatus.status === 'rejected';
+    
+    return [
+      {
+        id: 1,
+        title: 'Application Submitted',
+        description: 'Your application has been successfully submitted to the system',
+        icon: DocumentCheckIcon,
+        status: 'completed',
+        color: 'green',
+      },
+      {
+        id: 2,
+        title: 'Payment Verified',
+        description: 'Application fee payment has been confirmed',
+        icon: CheckCircleIcon,
+        status: isPaid ? 'completed' : 'pending',
+        color: isPaid ? 'green' : 'gray',
+      },
+      {
+        id: 3,
+        title: 'Document Verification',
+        description: isRejected 
+          ? `Document verification failed: ${verificationStatus.comments || 'Please resubmit required documents'}` 
+          : 'LSC admin is reviewing your submitted documents',
+        icon: DocumentMagnifyingGlassIcon,
+        status: isRejected ? 'rejected' : (isVerified ? 'completed' : (isPaid ? 'in-progress' : 'pending')),
+        color: isRejected ? 'red' : (isVerified ? 'green' : (isPaid ? 'blue' : 'gray')),
+        verifiedBy: verificationStatus?.verified_by,
+        verifiedDate: verificationStatus?.verified_date,
+        comments: verificationStatus?.comments,
+      },
+      {
+        id: 4,
+        title: 'Academic Review',
+        description: 'Academic qualifications and eligibility are being verified',
+        icon: AcademicCapIcon,
+        status: isVerified ? 'in-progress' : 'pending',
+        color: isVerified ? 'blue' : 'gray',
+      },
+      {
+        id: 5,
+        title: 'Final Approval',
+        description: 'Final verification and approval by the admission committee',
+        icon: ShieldCheckIcon,
+        status: 'pending',
+        color: 'gray',
+      },
+    ];
+  };
+
+  const stages = getDynamicStages();
 
   const getStatusConfig = (status) => {
     const configs = {
@@ -200,11 +231,56 @@ const ApplicationProgress = () => {
                               <div className="w-2 h-2 bg-blue-500 rounded-full animation-delay-400"></div>
                             </div>
                             <p className="text-xs font-medium text-blue-700">
-                              College staff is currently reviewing your documents...
+                              {stage.id === 3 ? 'LSC admin is currently reviewing your documents...' : 'Under review by admission committee...'}
                             </p>
                           </div>
                           <p className="text-xs text-blue-600 mt-2">
                             Estimated completion: 2-3 business days
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Verification details for completed document verification */}
+                      {stage.id === 3 && stage.status === 'completed' && stage.verifiedBy && (
+                        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <p className="text-xs font-medium text-green-700 mb-2">
+                            ✓ Documents verified successfully
+                          </p>
+                          {stage.verifiedBy && (
+                            <p className="text-xs text-green-600">
+                              Verified by: <span className="font-semibold">{stage.verifiedBy}</span>
+                            </p>
+                          )}
+                          {stage.verifiedDate && (
+                            <p className="text-xs text-green-600">
+                              Date: {new Date(stage.verifiedDate).toLocaleDateString('en-IN', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              })}
+                            </p>
+                          )}
+                          {stage.comments && (
+                            <p className="text-xs text-green-600 mt-1">
+                              Comments: {stage.comments}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Rejection details */}
+                      {stage.status === 'rejected' && (
+                        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-xs font-bold text-red-700 mb-2">
+                            ⚠ Action Required: Documents Rejected
+                          </p>
+                          {stage.comments && (
+                            <p className="text-xs text-red-600 mb-2">
+                              Reason: {stage.comments}
+                            </p>
+                          )}
+                          <p className="text-xs text-red-600">
+                            Please resubmit the required documents through the document resubmission page.
                           </p>
                         </div>
                       )}
@@ -232,19 +308,23 @@ const ApplicationProgress = () => {
             <h4 className="font-bold text-gray-900 mb-2">Important Information</h4>
             <ul className="space-y-2 text-sm text-gray-700">
               <li className="flex items-start gap-2">
-                <span className="text-indigo-600 mt-1">ΓÇó</span>
-                <span>You will receive email notifications at each stage of verification</span>
+                <span className="text-indigo-600 mt-1">•</span>
+                <span>You will receive email notifications at each stage of the verification process</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-indigo-600 mt-1">ΓÇó</span>
-                <span>Document verification typically takes 2-3 business days</span>
+                <span className="text-indigo-600 mt-1">•</span>
+                <span>Document verification by LSC admin typically takes 2-3 business days</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-indigo-600 mt-1">ΓÇó</span>
-                <span>Contact support if verification takes longer than expected</span>
+                <span className="text-indigo-600 mt-1">•</span>
+                <span>If your documents are rejected, you can resubmit them through the document resubmission page</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-indigo-600 mt-1">ΓÇó</span>
+                <span className="text-indigo-600 mt-1">•</span>
+                <span>Contact support if the verification process takes longer than expected</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-indigo-600 mt-1">•</span>
                 <span>
                   Support Email:{' '}
                   <a href="mailto:cdoe@periyaruniversity.ac.in" className="text-indigo-600 font-semibold hover:underline">

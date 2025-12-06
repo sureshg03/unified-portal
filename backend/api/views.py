@@ -299,6 +299,17 @@ def get_user_profile(request):
     try:
         user = request.user
         student = Student.objects.filter(email=user.email).first()
+        
+        # Get student details for photo
+        photo_url = None
+        if student:
+            student_details = StudentDetails.objects.filter(email=user.email).first()
+            if student_details and student_details.photo_url:
+                # Build full URL for photo
+                photo_url = student_details.photo_url
+                if not photo_url.startswith('http'):
+                    photo_url = f"{request.scheme}://{request.get_host()}{photo_url}"
+        
         return Response(
             {
                 "status": "success",
@@ -306,7 +317,8 @@ def get_user_profile(request):
                     "email": user.email,
                     "name": student.name if student else user.username or 'User',
                     "phone": student.phone if student else '',
-                    "username": user.username or user.email
+                    "username": user.username or user.email,
+                    "photo_url": photo_url
                 }
             },
             status=status.HTTP_200_OK
@@ -952,6 +964,119 @@ def clear_payment(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+def get_payment_history(request):
+    """
+    Get complete payment history from feepayment table with application details
+    Returns all transaction data stored in the database
+    """
+    try:
+        user = request.user
+        logger.info(f"Fetching payment history for user: {user.email}")
+        
+        # Get student details
+        student = Student.objects.filter(email=user.email).first()
+        if not student:
+            return Response({
+                'status': 'error',
+                'message': 'Student profile not found.'
+            }, status=404)
+        
+        # Get application
+        application = Application.objects.filter(user=user).first()
+        if not application:
+            return Response({
+                'status': 'error',
+                'message': 'Application not found.'
+            }, status=404)
+        
+        # Get payment records from ApplicationPayment (feepayment table)
+        fee_payment = ApplicationPayment.objects.filter(
+            user=user,
+            payment_status='TXN_SUCCESS'
+        ).order_by('-transaction_date').first()
+        
+        if not fee_payment and application.application_id:
+            # Try by application_id
+            fee_payment = ApplicationPayment.objects.filter(
+                application_id=application.application_id
+            ).first()
+        
+        # Get course fee
+        application_fee = 354.00
+        if application.course:
+            try:
+                course = Courses.objects.filter(course_short_code=application.course).first()
+                if not course:
+                    course = Courses.objects.filter(degree=application.course).first()
+                if course:
+                    application_fee = float(course.application_fee)
+            except Exception as e:
+                logger.warning(f"Could not fetch course fee: {str(e)}")
+        
+        # Build response
+        response_data = {
+            'student': {
+                'name': student.name,
+                'email': student.email,
+                'phone': student.phone or '',
+                'lsc_code': student.lsc_code or '',
+                'lsc_name': student.lsc_name or ''
+            },
+            'application': {
+                'application_id': application.application_id,
+                'course': application.course,
+                'degree': application.degree,
+                'branch_name': application.branch_name,
+                'mode_of_study': application.mode_of_study,
+                'academic_year': application.academic_year,
+                'payment_status': application.payment_status,
+                'status': application.status
+            },
+            'payment': {
+                'application_fee': application_fee,
+                'currency': 'INR',
+                'formatted_fee': f"{application_fee:.2f}"
+            },
+            'transaction': None
+        }
+        
+        # Add transaction details if available
+        if fee_payment:
+            response_data['transaction'] = {
+                'transaction_id': fee_payment.transaction_id,
+                'bank_transaction_id': fee_payment.bank_transaction_id,
+                'order_id': fee_payment.order_id,
+                'amount': str(fee_payment.amount),
+                'payment_status': fee_payment.payment_status,
+                'transaction_type': fee_payment.transaction_type,
+                'gateway_name': fee_payment.gateway_name,
+                'payment_mode': fee_payment.payment_mode,
+                'bank_name': fee_payment.bank_name,
+                'transaction_date': fee_payment.transaction_date.isoformat() if fee_payment.transaction_date else None,
+                'response_code': fee_payment.response_code,
+                'response_message': fee_payment.response_message
+            }
+            logger.info(f"Found transaction record for {user.email}: {fee_payment.transaction_id}")
+        else:
+            logger.warning(f"No transaction record found for {user.email}")
+        
+        return Response({
+            'status': 'success',
+            'data': response_data
+        }, status=200)
+        
+    except Exception as e:
+        logger.error(f"Error fetching payment history for {request.user.email}: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return Response({
+            'status': 'error',
+            'message': f'An error occurred: {str(e)}'
+        }, status=500)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_application_payment_data(request):
     """
     Get application data for payment page including:
@@ -1067,7 +1192,11 @@ def get_application_payment_data(request):
                 'payment_status': application.payment_status,
                 'course': application.course,
                 'degree': application.degree,
-                'branch_name': application.branch_name
+                'branch_name': application.branch_name,
+                'document_validation': application.document_validation,
+                'verified_by': application.verified_by,
+                'verified_date': application.verified_date.isoformat() if application.verified_date else None,
+                'enrollment_no': application.enrollment_no
             },
             'course': course_info,
             'payment': {

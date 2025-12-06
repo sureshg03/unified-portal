@@ -29,7 +29,7 @@ import ApplicationDownloadDashboard from '../components/ApplicationDownloadDashb
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [userData, setUserData] = useState({ email: '', name: 'User' });
+  const [userData, setUserData] = useState({ email: '', name: 'User', photo_url: null });
   const [applications, setApplications] = useState({
     active: [],
     opened: [],
@@ -117,6 +117,7 @@ const Dashboard = () => {
           setUserData({
             email: res.data.data.email || 'user@example.com',
             name: res.data.data.name || 'User',
+            photo_url: res.data.data.photo_url || null,
           });
         } else {
           toast.error('Invalid user data received.');
