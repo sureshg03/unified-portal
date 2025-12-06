@@ -89,6 +89,8 @@ const StudentDetail = () => {
   };
 
   const handleDocumentValidation = async (docType, isValid) => {
+    console.log('handleDocumentValidation called:', { docType, isValid, applicationId });
+    
     try {
       const response = await axios.post('http://localhost:8000/api/lsc-admin/validate-document/', {
         application_id: applicationId,
@@ -96,9 +98,17 @@ const StudentDetail = () => {
         is_valid: isValid
       });
 
+      console.log('Validation response:', response.data);
+
       if (response.data.status === 'success') {
-        setDocValidation(prev => ({ ...prev, [docType]: isValid }));
-        toast.success(`Document ${isValid ? 'validated' : 'marked invalid'}`);
+        setDocValidation(prev => {
+          const updated = { ...prev, [docType]: isValid };
+          console.log('Updated docValidation:', updated);
+          return updated;
+        });
+        toast.success(`Document ${isValid ? 'marked as valid' : 'marked as invalid'} successfully`);
+      } else {
+        toast.error(response.data.message || 'Failed to update document validation');
       }
     } catch (error) {
       console.error('Error validating document:', error, error.response?.data || error);
@@ -572,424 +582,455 @@ const StudentDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Fixed Print Button - Top Right */}
-      <button
-        onClick={handlePrintApplication}
-        className="fixed top-4 right-4 z-50 inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded shadow-lg hover:bg-red-700"
-      >
-        <Printer className="w-4 h-4" />
-        Print
-      </button>
-      <div className="p-6 max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8 bg-white rounded-lg shadow-lg p-6">
+    <div className="min-h-screen bg-white">
+      <style>
+        {`
+          @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap');
+          
+          body, * {
+            font-family: 'Roboto', sans-serif;
+          }
+
+          @media print {
+            .no-print {
+              display: none !important;
+            }
+            body {
+              background: white;
+            }
+          }
+
+          /* Application Form Table Styles */
+          .app-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            border: 1px solid #000;
+          }
+
+          .app-table td, .app-table th {
+            border: 1px solid #000;
+            padding: 8px 12px;
+            vertical-align: top;
+          }
+
+          .app-header {
+            background: #f5f5f5;
+            font-weight: 500;
+            text-align: left;
+          }
+
+          .app-value {
+            font-weight: 400;
+          }
+
+          .section-header {
+            background: #fff;
+            font-weight: bold;
+            padding: 10px 12px;
+            border: 1px solid #000;
+          }
+
+          .two-column-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+          }
+
+          .two-column-section > div {
+            border: 1px solid #000;
+            padding: 12px;
+          }
+
+          .edu-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+          }
+
+          .edu-table th, .edu-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: left;
+            font-size: 13px;
+          }
+
+          .edu-table th {
+            background: #f5f5f5;
+            font-weight: 600;
+          }
+
+          .payment-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+          }
+
+          .payment-table td {
+            border: 1px solid #000;
+            padding: 10px;
+            font-size: 14px;
+          }
+
+          .payment-table .label {
+            font-weight: 600;
+            background: #f5f5f5;
+            width: 200px;
+          }
+        `}
+      </style>
+
+      <div className="max-w-7xl mx-auto px-8 py-6">
+        
+        {/* Action Buttons Bar - Top of Page */}
+        <div className="no-print flex justify-between items-center mb-6 pb-4 border-b-2 border-gray-200">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            className="flex items-center gap-2 px-5 py-2.5 bg-gray-600 text-white font-medium rounded-lg shadow hover:bg-gray-700 transition-all"
           >
             <ArrowLeft className="w-5 h-5" />
-            Back to Applications
+            Back to List
           </button>
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-800">Student Verification Portal</h1>
-            <p className="text-sm text-gray-600">Centre for Distance and Online Education</p>
-          </div>
-          {/* Print button removed from header to avoid duplicates - use top-right fixed print */}
+          
+          <button
+            onClick={handlePrintApplication}
+            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg shadow-lg hover:bg-blue-700 transition-all"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            Print Application
+          </button>
         </div>
 
-        {/* Printable Application Form (Mirrors Print Template) */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-100">
-          <div className="flex items-start justify-between mb-6">
-            <div className="text-left">
-              <div className="text-2xl font-bold text-gray-800">Periyar University</div>
-              <div className="text-sm text-gray-600 mt-1">State University - NAAC 'A+' Grade - NIRF Rank 94</div>
-              <div className="text-sm text-gray-600">Salem-636011, Tamil Nadu, India</div>
-              <div className="text-lg font-semibold text-indigo-700 mt-3">Centre for Distance and Online Education (CDOE)</div>
-              <div className="text-base font-semibold mt-4 text-center">
-                <div className="text-lg font-bold underline">Open and Distance Learning Programme (ODL) Admission for the Academic Year {student?.academic_year || '2025'}</div>
-              </div>
-            </div>
-            <div className="text-right">
-              {student?.photo_url ? (
-                <img src={`http://127.0.0.1:8000${student.photo_url}`} alt="Photo" className="w-28 h-36 object-cover rounded border border-gray-200 shadow-sm" />
-              ) : (
-                <div className="w-28 h-36 bg-gray-50 rounded border border-gray-200 flex items-center justify-center">Photo</div>
-              )}
-            </div>
-          </div>
+        {/* Title Header */}
+        <div className="text-center mb-4" style={{ borderBottom: '3px solid green', paddingBottom: '10px' }}>
+          <h1 className="text-2xl font-bold" style={{ textDecoration: 'underline' }}>
+            Open and Distance Learning Programme (ODL) Admission for the Academic Year 2025
+          </h1>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div className="col-span-2">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm block font-semibold text-gray-700">Application No :</label>
-                  <div className="text-lg font-bold text-gray-800 mt-1">{student?.application_id || 'N/A'}</div>
-                </div>
-                <div>
-                  <label className="text-sm block font-semibold text-gray-700">Applied Date :</label>
-                  <div className="text-lg text-gray-800 mt-1">{formatDate(student?.applied_date || student?.created_at)}</div>
-                </div>
-              </div>
-              <div className="mt-4">
-                <label className="text-sm block font-semibold text-gray-700">LSC :</label>
-                <div className="text-base text-gray-700 mt-1">{student?.lsc_name || 'CDOE - Centre for Distance and Online Education (LC2101)'}</div>
-              </div>
-            </div>
-            <div className="hidden md:block" />
-          </div>
+        {/* Header Section with Photo */}
+        <table className="app-table mb-4">
+          <tbody>
+            <tr>
+              <td className="app-header" style={{ width: '180px', fontWeight: 'bold' }}>Application No :</td>
+              <td className="app-value" colSpan="2">{student.application_id}</td>
+              <td rowSpan="3" style={{ width: '150px', textAlign: 'center', verticalAlign: 'middle', padding: '10px' }}>
+                {student?.photo_url ? (
+                  <img
+                    src={`http://127.0.0.1:8000${student.photo_url}`}
+                    alt="Student Photo"
+                    style={{ width: '130px', height: '160px', objectFit: 'cover', border: '2px solid #000' }}
+                  />
+                ) : (
+                  <div style={{ width: '130px', height: '160px', border: '2px solid #000', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5' }}>Photo</div>
+                )}
+              </td>
+            </tr>
+            <tr>
+              <td className="app-header" style={{ fontWeight: 'bold' }}>Applied Date :</td>
+              <td className="app-value" colSpan="2">{formatDate(student?.applied_date || student?.created_at)}</td>
+            </tr>
+            <tr>
+              <td className="app-header" style={{ fontWeight: 'bold' }}>LSC :</td>
+              <td className="app-value" colSpan="2">{student?.lsc_name || 'CDOE - Centre for Distance and Online Education (LC2101)'}</td>
+            </tr>
+          </tbody>
+        </table>
 
-          <table className="min-w-full border-collapse border border-gray-200">
+        {/* Main Application Table */}
+        <table className="app-table mb-4">
+          <tbody>
+            {/* Row 1: Programme Applied */}
+            <tr>
+              <td style={{ width: '40px', fontWeight: 'bold' }}>1.</td>
+              <td style={{ width: '280px' }}>Programme Applied</td>
+              <td style={{ width: '10px', textAlign: 'center' }}>:</td>
+              <td>{student?.programme || student?.programme_applied || 'N/A'}</td>
+              <td rowSpan="3" style={{ width: '120px', fontWeight: '600' }}>PBA</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td style={{ paddingLeft: '20px' }}>Course</td>
+              <td style={{ textAlign: 'center' }}>:</td>
+              <td>{student?.course || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td style={{ paddingLeft: '20px' }}>Medium</td>
+              <td style={{ textAlign: 'center' }}>:</td>
+              <td>{student?.medium || 'English'}</td>
+            </tr>
+
+            {/* Row 2: Name */}
+            <tr>
+              <td style={{ fontWeight: 'bold' }}>2.</td>
+              <td>Name of the Applicant</td>
+              <td style={{ textAlign: 'center' }}>:</td>
+              <td colSpan="2">{student?.name || student?.student_name || 'N/A'}</td>
+            </tr>
+
+            {/* Row 3: DOB */}
+            <tr>
+              <td style={{ fontWeight: 'bold' }}>3.</td>
+              <td>Date of Birth</td>
+              <td style={{ textAlign: 'center' }}>:</td>
+              <td colSpan="2">{formatDate(student?.dob)}</td>
+            </tr>
+
+            {/* Row 4: Parents & Guardian */}
+            <tr>
+              <td style={{ fontWeight: 'bold' }}>4.</td>
+              <td>(a) Name of the Father & Mother</td>
+              <td style={{ textAlign: 'center' }}>:</td>
+              <td colSpan="2">{student?.father_name || 'N/A'} - {student?.mother_name || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td style={{ paddingLeft: '20px' }}>(b) Name of the Guardian</td>
+              <td style={{ textAlign: 'center' }}>:</td>
+              <td colSpan="2">{student?.guardian_name || 'N/A'}</td>
+            </tr>
+
+            {/* Row 5: Parents Occupation */}
+            <tr>
+              <td style={{ fontWeight: 'bold' }}>5.</td>
+              <td>Father's & Mother's Occupation</td>
+              <td style={{ textAlign: 'center' }}>:</td>
+              <td colSpan="2">{student?.father_occupation || 'N/A'} - {student?.mother_occupation || 'N/A'}</td>
+            </tr>
+
+            {/* Row 6: Gender */}
+            <tr>
+              <td style={{ fontWeight: 'bold' }}>6.</td>
+              <td>Gender</td>
+              <td style={{ textAlign: 'center' }}>:</td>
+              <td colSpan="2">{student?.gender || 'N/A'}</td>
+            </tr>
+
+            {/* Row 7: Mother Tongue */}
+            <tr>
+              <td style={{ fontWeight: 'bold' }}>7.</td>
+              <td>Mother Tongue</td>
+              <td style={{ textAlign: 'center' }}>:</td>
+              <td colSpan="2">{student?.mother_tongue || 'N/A'}</td>
+            </tr>
+
+            {/* Row 8: Nationality */}
+            <tr>
+              <td style={{ fontWeight: 'bold' }}>8.</td>
+              <td>Nationality</td>
+              <td style={{ textAlign: 'center' }}>:</td>
+              <td colSpan="2">{student?.nationality || 'Indian'}</td>
+            </tr>
+
+            {/* Row 9: Religion */}
+            <tr>
+              <td style={{ fontWeight: 'bold' }}>9.</td>
+              <td>Religion</td>
+              <td style={{ textAlign: 'center' }}>:</td>
+              <td colSpan="2">{student?.religion || 'N/A'}</td>
+            </tr>
+
+            {/* Row 10: Community */}
+            <tr>
+              <td style={{ fontWeight: 'bold' }}>10.</td>
+              <td>Community</td>
+              <td style={{ textAlign: 'center' }}>:</td>
+              <td colSpan="2">{student?.community || 'N/A'}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Two Column Section - Communication & Permanent Address */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', marginBottom: '20px' }}>
+          <div style={{ border: '1px solid #000', padding: '12px' }}>
+            <h3 style={{ fontWeight: 'bold', marginBottom: '10px' }}>11. Communication Address</h3>
+            <p>{formatAddress('comm')}</p>
+          </div>
+          <div style={{ border: '1px solid #000', borderLeft: '0', padding: '12px' }}>
+            <h3 style={{ fontWeight: 'bold', marginBottom: '10px' }}>Permanent Address</h3>
+            <p>{formatAddress('perm')}</p>
+          </div>
+        </div>
+
+        {/* Contact Details Table */}
+        <table className="app-table mb-4">
+          <tbody>
+            {/* Row 12: Mobile */}
+            <tr>
+              <td style={{ width: '40px', fontWeight: 'bold' }}>12.</td>
+              <td style={{ width: '280px' }}>Mobile No. / Telephone No.</td>
+              <td style={{ width: '10px', textAlign: 'center' }}>:</td>
+              <td colSpan="2">{student?.phone || student?.mobile || 'N/A'}</td>
+            </tr>
+
+            {/* Row 13: Email */}
+            <tr>
+              <td style={{ fontWeight: 'bold' }}>13.</td>
+              <td>E-mail ID</td>
+              <td style={{ textAlign: 'center' }}>:</td>
+              <td colSpan="2">{student?.email || 'N/A'}</td>
+            </tr>
+
+            {/* Row 14: Aadhaar, ABC ID, DEB ID */}
+            <tr>
+              <td style={{ fontWeight: 'bold' }}>14.</td>
+              <td>(a)Aadhaar Card No. & Aadhaar Name</td>
+              <td style={{ textAlign: 'center' }}>:</td>
+              <td>{student?.aadhaar_number || student?.aadhaar_no || 'N/A'}</td>
+              <td>{student?.name || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td style={{ paddingLeft: '20px' }}>(b)ABC ID</td>
+              <td style={{ textAlign: 'center' }}>:</td>
+              <td colSpan="2">{student?.abc_id || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td style={{ paddingLeft: '20px' }}>(c)DEB ID</td>
+              <td style={{ textAlign: 'center' }}>:</td>
+              <td colSpan="2">{student?.deb_id || 'N/A'}</td>
+            </tr>
+
+            {/* Row 15: Differently Abled */}
+            <tr>
+              <td style={{ fontWeight: 'bold' }}>15.</td>
+              <td>Differently Abled</td>
+              <td style={{ textAlign: 'center' }}>:</td>
+              <td colSpan="2">{student?.differently_abled || 'No'}</td>
+            </tr>
+
+            {/* Row 16: Blood Group */}
+            <tr>
+              <td style={{ fontWeight: 'bold' }}>16.</td>
+              <td>Blood Group</td>
+              <td style={{ textAlign: 'center' }}>:</td>
+              <td colSpan="2">{student?.blood_group || 'N/A'}</td>
+            </tr>
+
+            {/* Row 17: Access to Internet */}
+            <tr>
+              <td style={{ fontWeight: 'bold' }}>17.</td>
+              <td>Access to Internet</td>
+              <td style={{ textAlign: 'center' }}>:</td>
+              <td colSpan="2">{student?.internet_access || 'Yes'}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Section 18: Education Qualification */}
+        <div className="mb-4">
+          <h2 style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '10px' }}>18.Education Qualification</h2>
+          {student.qualifications && student.qualifications.length > 0 ? (
+            <table className="edu-table">
+              <thead>
+                <tr>
+                  <th>Course</th>
+                  <th>Institution</th>
+                  <th>Board</th>
+                  <th>Subject Studied</th>
+                  <th>Register No</th>
+                  <th>Percentage</th>
+                  <th>Month of Passing</th>
+                  <th>Year of Passing</th>
+                  <th>Mode of Study</th>
+                </tr>
+              </thead>
+              <tbody>
+                {student.qualifications.map((qual, idx) => {
+                  const { month, year } = parseMonthYear(qual);
+                  return (
+                    <tr key={idx}>
+                      <td>{qual.course || qual.exam_passed || 'N/A'}</td>
+                      <td>{qual.institution || qual.institute_name || qual.board_university || 'N/A'}</td>
+                      <td>{qual.board || qual.university || 'N/A'}</td>
+                      <td>{parseSubjects(qual.subjects_studied || qual.subject_studied || qual.subjects)}</td>
+                      <td style={{ textAlign: 'center' }}>{qual.reg_no || qual.register_no || qual.register_number || 'N/A'}</td>
+                      <td style={{ textAlign: 'center' }}>{qual.percentage || 'N/A'}</td>
+                      <td style={{ textAlign: 'center' }}>{month || 'N/A'}</td>
+                      <td style={{ textAlign: 'center' }}>{year || 'N/A'}</td>
+                      <td style={{ textAlign: 'center' }}>{qual.mode_of_study || 'Regular'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <p style={{ padding: '20px', textAlign: 'center', color: '#666' }}>No educational qualifications data available</p>
+          )}
+        </div>
+
+        {/* Section 19: Working Experience */}
+        <div className="mb-4">
+          <h2 style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '10px' }}>19.Working Experience</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #000' }}>
+            <thead>
+              <tr style={{ background: '#f5f5f5' }}>
+                <th style={{ border: '1px solid #000', padding: '10px', fontWeight: '600', textAlign: 'left' }}>Current Designation</th>
+                <th style={{ border: '1px solid #000', padding: '10px', fontWeight: '600', textAlign: 'left' }}>Current Working Institution</th>
+                <th style={{ border: '1px solid #000', padding: '10px', fontWeight: '600', textAlign: 'left' }}>Working Experience in Years</th>
+                <th style={{ border: '1px solid #000', padding: '10px', fontWeight: '600', textAlign: 'left' }}>Annual Income in Rs</th>
+              </tr>
+            </thead>
             <tbody>
-              <tr className="border-b">
-                <td className="w-12 p-3 bg-gray-50 font-semibold">1.</td>
-                <td className="p-3 w-64 font-medium">Programme Applied</td>
-                <td className="p-3">:</td>
-                <td className="p-3 font-semibold">{student?.programme || student?.programme_applied || 'N/A'}</td>
-                <td className="p-3 w-64 font-medium">Course</td>
-                <td className="p-3">:</td>
-                <td className="p-3">{student?.course || 'N/A'}</td>
-              </tr>
-              <tr className="border-b">
-                <td className="w-12 p-3 bg-gray-50 font-semibold"> </td>
-                <td className="p-3 font-medium">(a) Course</td>
-                <td className="p-3">:</td>
-                <td className="p-3">{student?.course || 'N/A'}</td>
-                <td className="p-3 font-medium">(b) Medium</td>
-                <td className="p-3">:</td>
-                <td className="p-3">{student?.medium || 'English'}</td>
-              </tr>
-              <tr className="border-b">
-                <td className="w-12 p-3 bg-gray-50 font-semibold">2.</td>
-                <td className="p-3 font-medium">Name of the Applicant</td>
-                <td className="p-3">:</td>
-                <td className="p-3">{student?.name || student?.student_name || 'N/A'}</td>
-                <td className="p-3 font-medium">&nbsp;</td>
-                <td className="p-3">&nbsp;</td>
-                <td className="p-3">&nbsp;</td>
-              </tr>
-              <tr className="border-b">
-                <td className="w-12 p-3 bg-gray-50 font-semibold">3.</td>
-                <td className="p-3 font-medium">Date of Birth</td>
-                <td className="p-3">:</td>
-                <td className="p-3">{formatDate(student?.dob)}</td>
-                <td className="p-3 font-medium">Gender</td>
-                <td className="p-3">:</td>
-                <td className="p-3">{student?.gender || 'N/A'}</td>
-              </tr>
-              <tr className="border-b">
-                <td className="w-12 p-3 bg-gray-50 font-semibold">4.</td>
-                <td className="p-3 font-medium">(a) Name of the Father & Mother</td>
-                <td className="p-3">:</td>
-                <td className="p-3">{student?.father_name || 'N/A'} - {student?.mother_name || 'N/A'}</td>
-                <td className="p-3 font-medium">(b) Name of the Guardian</td>
-                <td className="p-3">:</td>
-                <td className="p-3">{student?.guardian_name || 'N/A'}</td>
-              </tr>
-              <tr className="border-b">
-                <td className="w-12 p-3 bg-gray-50 font-semibold">5.</td>
-                <td className="p-3 font-medium">Mobile</td>
-                <td className="p-3">:</td>
-                <td className="p-3">{student?.phone || student?.mobile || 'N/A'}</td>
-                <td className="p-3 font-medium">Email</td>
-                <td className="p-3">:</td>
-                <td className="p-3">{student?.email || 'N/A'}</td>
-              </tr>
-              <tr className="border-b">
-                <td className="w-12 p-3 bg-gray-50 font-semibold">6.</td>
-                <td className="p-3 font-medium">Aadhaar Number</td>
-                <td className="p-3">:</td>
-                <td className="p-3">{student?.aadhaar_number || student?.aadhaar_no || 'N/A'}</td>
-                <td className="p-3 font-medium">Nationality</td>
-                <td className="p-3">:</td>
-                <td className="p-3">{student?.nationality || 'Indian'}</td>
-              </tr>
-              <tr className="border-b">
-                <td className="w-12 p-3 bg-gray-50 font-semibold">2.</td>
-                <td className="p-3 font-medium">Medium</td>
-                <td className="p-3">:</td>
-                <td className="p-3">{student?.medium || 'English'}</td>
-                <td className="p-3 font-medium">Name of the Applicant</td>
-                <td className="p-3">:</td>
-                <td className="p-3">{student?.name || student?.student_name || 'N/A'}</td>
-              </tr>
-              <tr className="border-b">
-                <td className="w-12 p-3 bg-gray-50 font-semibold">3.</td>
-                <td className="p-3 font-medium">Date of Birth</td>
-                <td className="p-3">:</td>
-                <td className="p-3">{formatDate(student?.dob)}</td>
-                <td className="p-3 font-medium">Father & Mother</td>
-                <td className="p-3">:</td>
-                <td className="p-3">{student?.father_name || 'N/A'} - {student?.mother_name || 'N/A'}</td>
+              <tr>
+                <td style={{ border: '1px solid #000', padding: '10px', textAlign: 'center' }}>{student.current_designation || student.work_des || 'Student'}</td>
+                <td style={{ border: '1px solid #000', padding: '10px', textAlign: 'center' }}>{student.current_institute || student.work_org || 'NA'}</td>
+                <td style={{ border: '1px solid #000', padding: '10px', textAlign: 'center' }}>{student.years_experience || student.years_of_experience || '0'}</td>
+                <td style={{ border: '1px solid #000', padding: '10px', textAlign: 'center' }}>{student.annual_income || '0'}</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        {/* Comprehensive Student Details Card */}
-        <div className="bg-white rounded-xl shadow-2xl p-8 mb-8 border border-gray-100">
-          <div className="text-center mb-8">
-            <h2 className="text-4xl font-bold mb-2 text-gray-800 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Student Application Details
-            </h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-blue-600 to-indigo-600 mx-auto rounded-full"></div>
-          </div>
-
-        {/* Application Header Info */}
-        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-xl p-8 mb-8 border border-blue-200 shadow-lg">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center bg-white rounded-lg p-6 shadow-md border border-blue-100">
-              {/* Decorative icon removed */}
-              <div className="text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wide">Application ID</div>
-              <div className="text-2xl font-bold text-blue-800 bg-blue-50 px-4 py-2 rounded-lg">{student.application_id}</div>
-            </div>
-            <div className="text-center bg-white rounded-lg p-6 shadow-md border border-green-100">
-              {/* Decorative icon removed */}
-              <div className="text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wide">Enrollment Number</div>
-              <div className="text-2xl font-bold text-green-800 bg-green-50 px-4 py-2 rounded-lg">{enrollmentNo || 'Pending'}</div>
-            </div>
-            <div className="text-center bg-white rounded-lg p-6 shadow-md border border-yellow-100">
-              {/* Payment icon removed - status shown below */}
-              <div className="text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wide">Payment Status</div>
-              <span className={`inline-flex items-center px-6 py-3 rounded-full text-lg font-bold ${
-                student.payment_status === 'Paid' ? 'bg-green-100 text-green-800 border-2 border-green-300' : 'bg-red-100 text-red-800 border-2 border-red-300'
-              }`}>
-                {student.payment_status === 'Paid' ? 'Paid' : 'Unpaid'}
-              </span>
-            </div>
-          </div>
+        {/* Payment Status Section */}
+        <div className="mb-4">
+          <h2 style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: '15px', textAlign: 'center' }}>Payment Status</h2>
+          <table className="payment-table">
+            <tbody>
+              <tr>
+                <td className="label">Order ID</td>
+                <td>{student.order_id || 'PUCDOE1751435696'}</td>
+                <td className="label">Amount</td>
+                <td>{student.amount || student.payment_amount || '354.00'}</td>
+                <td className="label">Status</td>
+                <td>{student.payment_status || 'TXN_SUCCESS'}</td>
+              </tr>
+              <tr>
+                <td className="label">Bank Name</td>
+                <td>{student.bank_name || ''}</td>
+                <td className="label">Payment Mode</td>
+                <td>{student.payment_mode || student.payment_method || 'UPI'}</td>
+                <td className="label">Transaction Date & Time</td>
+                <td>{student.transaction_date || student.payment_date || '2025-07-02 11:25:07'}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        {/* Personal Information Section */}
-        <div className="mb-10">
-          <div className="flex items-center mb-6">
-            <div className="flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg shadow-lg">
-              {/* Icon removed for professional UI */}
-              <h3 className="text-xl font-bold">Personal Information</h3>
-            </div>
-            <div className="flex-1 ml-4 h-px bg-gradient-to-r from-purple-600 to-pink-600"></div>
+        {/* Declaration Section */}
+        <div className="mb-6" style={{ border: '1px solid #000', padding: '15px' }}>
+          <p style={{ marginBottom: '15px', lineHeight: '1.6' }}>
+            <strong>DECLARATION:</strong> I declare that the information given above are true to the best of my knowledge and that I shall, if admitted abide by the rules of the University.
+          </p>
+          <div style={{ marginBottom: '15px' }}>
+            <strong>Date:</strong> 11-11-2025
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-              <p className="text-lg font-semibold text-gray-900">{student.name || student.student_name || 'N/A'}</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
-              <p className="text-lg text-gray-900">{student.dob || 'N/A'}</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
-              <p className="text-lg text-gray-900">{student.gender || 'N/A'}</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-              <p className="text-lg text-gray-900">{student.email || 'N/A'}</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-              <p className="text-lg text-gray-900">{student.phone || student.mobile || 'N/A'}</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Aadhaar Number</label>
-              <p className="text-lg text-gray-900">{student.aadhaar_number || student.aadhaar_no || 'N/A'}</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Father's Name</label>
-              <p className="text-lg text-gray-900">{student.father_name || 'N/A'}</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Mother's Name</label>
-              <p className="text-lg text-gray-900">{student.mother_name || 'N/A'}</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Nationality</label>
-              <p className="text-lg text-gray-900">{student.nationality || 'Indian'}</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Religion</label>
-              <p className="text-lg text-gray-900">{student.religion || 'N/A'}</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Community</label>
-              <p className="text-lg text-gray-900">{student.community || 'N/A'}</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Mother Tongue</label>
-              <p className="text-lg text-gray-900">{student.mother_tongue || 'N/A'}</p>
-            </div>
+          <div style={{ marginBottom: '15px' }}>
+            <strong>Place:</strong>
           </div>
-        </div>
-
-        {/* Academic Information Section */}
-        <div className="mb-10">
-          <div className="flex items-center mb-6">
-            <div className="flex items-center gap-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-6 py-3 rounded-lg shadow-lg">
-              {/* Icon removed for professional UI */}
-              <h3 className="text-xl font-bold">Academic Information</h3>
-            </div>
-            <div className="flex-1 ml-4 h-px bg-gradient-to-r from-blue-600 to-cyan-600"></div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-blue-50 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Programme</label>
-              <p className="text-lg font-semibold text-blue-800">{student.programme || student.programme_applied || 'N/A'}</p>
-            </div>
-            <div className="bg-blue-50 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Course</label>
-              <p className="text-lg font-semibold text-blue-800">{student.course || 'N/A'}</p>
-            </div>
-            <div className="bg-blue-50 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Medium</label>
-              <p className="text-lg font-semibold text-blue-800">{student.medium || 'English'}</p>
-            </div>
-            <div className="bg-blue-50 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Academic Year</label>
-              <p className="text-lg font-semibold text-blue-800">{student.academic_year || academicYear}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Address Information Section */}
-        <div className="mb-10">
-          <div className="flex items-center mb-6">
-            <div className="flex items-center gap-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-lg shadow-lg">
-              <div className="text-2xl">🏠</div>
-              <h3 className="text-xl font-bold">Address Information</h3>
-            </div>
-            <div className="flex-1 ml-4 h-px bg-gradient-to-r from-green-600 to-emerald-600"></div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-green-50 rounded-lg p-4">
-              <h4 className="text-lg font-semibold text-green-800 mb-3">Communication Address</h4>
-              <p className="text-gray-900 whitespace-pre-line">{formatAddress('comm')}</p>
-            </div>
-            <div className="bg-green-50 rounded-lg p-4">
-              <h4 className="text-lg font-semibold text-green-800 mb-3">Permanent Address</h4>
-              <p className="text-gray-900 whitespace-pre-line">{formatAddress('perm')}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Educational Qualifications Section */}
-        <div className="mb-10">
-          <div className="flex items-center mb-6">
-            <div className="flex items-center gap-3 bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3 rounded-lg shadow-lg">
-              {/* Icon removed for professional UI */}
-              <h3 className="text-xl font-bold">Educational Qualifications</h3>
-            </div>
-            <div className="flex-1 ml-4 h-px bg-gradient-to-r from-orange-600 to-red-600"></div>
-          </div>
-          {student.qualifications && student.qualifications.length > 0 ? (
-            <div className="overflow-x-auto bg-white rounded-lg shadow-lg border border-gray-200">
-              <table className="min-w-full bg-white border border-gray-300 rounded-lg">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Course</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Institution</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Board/University</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Subjects</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Register No</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Percentage</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Month/Year</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Mode</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {student.qualifications.map((qual, idx) => {
-                    const { month, year } = parseMonthYear(qual);
-                    return (
-                      <tr key={idx} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm text-gray-900 border-b">{qual.course || qual.exam_passed || 'N/A'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900 border-b">{qual.institution || qual.institute_name || qual.board_university || 'N/A'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900 border-b">{qual.board || qual.university || 'N/A'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900 border-b">{parseSubjects(qual.subjects_studied || qual.subject_studied || qual.subjects)}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900 border-b">{qual.reg_no || qual.register_no || qual.register_number || 'N/A'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900 border-b">{qual.percentage || 'N/A'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900 border-b">{month && year ? `${month} ${year}` : 'N/A'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900 border-b">{qual.mode_of_study || 'Regular'}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-8 text-center">
-              {/* Icon removed for professional UI */}
-              <p className="text-gray-600 text-lg">No educational qualifications data available</p>
-              <p className="text-gray-500 text-sm mt-2">Educational qualification details will be displayed here once available</p>
-            </div>
-          )}
-        </div>
-
-        {/* Work Experience Section */}
-        <div className="mb-10">
-          <div className="flex items-center mb-6">
-            <div className="flex items-center gap-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-lg shadow-lg">
-              {/* Icon removed for professional UI */}
-              <h3 className="text-xl font-bold">Work Experience</h3>
-            </div>
-            <div className="flex-1 ml-4 h-px bg-gradient-to-r from-purple-600 to-indigo-600"></div>
-          </div>
-          {(student.work_exp || student.current_designation || student.work_org) ? (
-            <div className="bg-purple-50 rounded-lg p-8 border border-purple-200 shadow-lg">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Working Status</label>
-                  <p className="text-lg text-gray-900">{student.current_designation || student.work_exp ? 'Yes' : 'No'}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Organization</label>
-                  <p className="text-lg text-gray-900">{student.current_institute || student.work_org || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Designation</label>
-                  <p className="text-lg text-gray-900">{student.current_designation || student.work_des || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Years of Experience</label>
-                  <p className="text-lg text-gray-900">{student.years_experience || student.years_of_experience || 'N/A'}</p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-purple-50 rounded-lg p-8 border border-purple-200 shadow-lg text-center">
-              {/* Icon removed for professional UI */}
-              <p className="text-gray-600 text-lg">No work experience data available</p>
-              <p className="text-gray-500 text-sm mt-2">Work experience details will be displayed here if applicable</p>
-            </div>
-          )}
-        </div>
-
-        {/* Payment Information Section */}
-        <div className="mb-10">
-          <div className="flex items-center mb-6">
-            <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-600 to-orange-600 text-white px-6 py-3 rounded-lg shadow-lg">
-              {/* Icon removed for professional UI */}
-              <h3 className="text-xl font-bold">Payment Information</h3>
-            </div>
-            <div className="flex-1 ml-4 h-px bg-gradient-to-r from-yellow-600 to-orange-600"></div>
-          </div>
-          <div className="bg-yellow-50 rounded-lg p-8 border border-yellow-200 shadow-lg">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Order ID</label>
-                <p className="text-lg font-mono text-gray-900">{student.order_id || 'N/A'}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
-                <p className="text-lg font-bold text-green-800">₹ {student.amount || student.payment_amount || '236.00'}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Payment Mode</label>
-                <p className="text-lg text-gray-900">{student.payment_mode || student.payment_method || 'Online'}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Transaction Date</label>
-                <p className="text-lg text-gray-900">{student.transaction_date || student.payment_date || 'N/A'}</p>
-              </div>
-            </div>
+          <div style={{ textAlign: 'right', marginTop: '60px' }}>
+            {student?.signature_url && (
+              <img
+                src={`http://127.0.0.1:8000${student.signature_url}`}
+                alt="Signature"
+                style={{ width: '150px', height: '60px', marginBottom: '10px' }}
+              />
+            )}
+            <div style={{ fontWeight: 'bold' }}>Signature of the Applicant</div>
           </div>
         </div>
 
@@ -1009,28 +1050,46 @@ const StudentDetail = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
-              { label: 'SSLC Marksheet', type: 'sslc_valid', url: student.sslc_marksheet_url, key: 'SSLC' },
-              { label: 'HSC Marksheet', type: 'hsc_valid', url: student.hsc_marksheet_url, key: 'HSC' },
-              { label: 'UG Certificate', type: 'ug_valid', url: student.ug_marksheet_url, key: 'UG' },
-              { label: 'Community Certificate', type: 'community_valid', url: student.community_certificate_url, key: 'COMMUNITY' },
-              { label: 'Aadhaar Card', type: 'aadhaar_valid', url: student.aadhaar_url, key: 'AADHAAR' },
-              { label: 'Transfer Certificate', type: 'tc_valid', url: student.transfer_certificate_url, key: 'TC' },
-            ].map((doc, idx) => (
+              { label: 'SSLC Marksheet', type: 'sslc_valid', url: student.sslc_marksheet_url, key: 'SSLC', resubmitKey: 'sslc' },
+              { label: 'HSC Marksheet', type: 'hsc_valid', url: student.hsc_marksheet_url, key: 'HSC', resubmitKey: 'hsc' },
+              { label: 'UG Certificate', type: 'ug_valid', url: student.ug_marksheet_url, key: 'UG', resubmitKey: 'ug' },
+              { label: 'Community Certificate', type: 'community_valid', url: student.community_certificate_url, key: 'COMMUNITY', resubmitKey: 'community' },
+              { label: 'Aadhaar Card', type: 'aadhaar_valid', url: student.aadhaar_url, key: 'AADHAAR', resubmitKey: 'aadhaar' },
+              { label: 'Transfer Certificate', type: 'tc_valid', url: student.transfer_certificate_url, key: 'TC', resubmitKey: 'tc' },
+            ].map((doc, idx) => {
+              const resubmittedDoc = docValidation?.resubmitted?.[doc.resubmitKey];
+              const hasResubmission = resubmittedDoc && resubmittedDoc.path;
+              
+              return (
               <div key={idx} className="border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between mb-3">
                   <span className="font-medium text-gray-800">{doc.label}</span>
-                  {docValidation[doc.type] !== null && (
-                    <span className={`text-sm font-medium px-2 py-1 rounded-full ${
-                      docValidation[doc.type] ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
-                      {docValidation[doc.type] ? 'VALID' : 'INVALID'}
-                    </span>
-                  )}
+                  <div className="flex gap-2 items-center">
+                    {docValidation[doc.type] !== null && (
+                      <span className={`text-sm font-medium px-2 py-1 rounded-full ${
+                        docValidation[doc.type] ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {docValidation[doc.type] ? 'VALID' : 'INVALID'}
+                      </span>
+                    )}
+                    {hasResubmission && (
+                      <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                        RESUBMITTED
+                      </span>
+                    )}
+                  </div>
                 </div>
 
+                {/* Original Document */}
                 <div className="flex gap-2 mb-3">
                   <button
-                    onClick={() => viewDocument(doc.url)}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('View button clicked for:', doc.url);
+                      viewDocument(doc.url);
+                    }}
                     className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
                       doc.url
                         ? 'bg-blue-500 text-white hover:bg-blue-600'
@@ -1039,13 +1098,50 @@ const StudentDetail = () => {
                     disabled={!doc.url}
                   >
                     <Eye className="w-4 h-4 inline mr-1" />
-                    View
+                    View Original
                   </button>
                 </div>
 
+                {/* Resubmitted Document Section */}
+                {hasResubmission && (
+                  <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-blue-900">
+                         Resubmitted Document
+                      </span>
+                      <span className="text-xs text-blue-700">
+                        {new Date(resubmittedDoc.uploaded_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          viewDocument(`/media/${resubmittedDoc.path}`);
+                        }}
+                        className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors"
+                      >
+                        <Eye className="w-3 h-3 inline mr-1" />
+                        View Resubmitted
+                      </button>
+                      <span className="text-xs text-blue-700 flex items-center">
+                        Status: {resubmittedDoc.status === 'pending_review' ? '⏳ Pending Review' : '✅ Reviewed'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleDocumentValidation(doc.type, true)}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Valid button clicked for:', doc.type);
+                      handleDocumentValidation(doc.type, true);
+                    }}
                     className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
                       docValidation[doc.type] === true
                         ? 'bg-green-600 text-white'
@@ -1057,7 +1153,13 @@ const StudentDetail = () => {
                   </button>
 
                   <button
-                    onClick={() => handleDocumentValidation(doc.type, false)}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Invalid button clicked for:', doc.type);
+                      handleDocumentValidation(doc.type, false);
+                    }}
                     className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
                       docValidation[doc.type] === false
                         ? 'bg-red-600 text-white'
@@ -1069,158 +1171,201 @@ const StudentDetail = () => {
                   </button>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         </div>
+        </div>
 
-        {/* Verification Section */}
-        <div className="border-t-4 border-indigo-500 pt-8 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-8">
-          <div className="flex items-center mb-8">
-            <div className="flex items-center gap-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-lg shadow-lg">
-              {/* Icon removed for professional UI */}
-              <h3 className="text-2xl font-bold">Verification & Admission Process</h3>
-            </div>
-            <div className="flex-1 ml-4 h-px bg-gradient-to-r from-indigo-600 to-purple-600"></div>
+        {/* Verification & Admission Process Section - Professional Design */}
+        <div className="no-print bg-white border border-gray-300 rounded-lg shadow-sm mt-6 mb-6">
+          {/* Section Header */}
+          <div className="bg-gray-100 border-b border-gray-300 px-6 py-4">
+            <h3 className="text-lg font-semibold text-gray-800">Verification & Admission Process</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {/* Eligibility Status */}
-            <div className="bg-white border-2 border-gray-200 rounded-lg p-6">
-              <label className="block text-lg font-semibold mb-3 text-gray-800">Eligibility Status</label>
-              <select
-                value={eligibilityStatus}
-                onChange={(e) => handleEligibilityChange(e.target.value)}
-                className="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-base font-semibold mb-3"
-              >
-                <option value="">-- Select Eligibility Status --</option>
-                <option value="Eligible">Eligible</option>
-                <option value="Not Eligible">Not Eligible</option>
-              </select>
-              {eligibilityStatus === 'Eligible' && (
-                <p className="text-green-600 text-sm font-medium">Student is eligible for admission</p>
-              )}
-              {eligibilityStatus === 'Not Eligible' && (
-                <div className="mt-3">
-                  <label className="block text-sm font-medium mb-2 text-red-700">Reason for Not Eligible</label>
-                  <textarea
-                    value={notEligibleReason}
-                    onChange={(e) => setNotEligibleReason(e.target.value)}
-                    className="w-full p-3 border-2 border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm"
-                    placeholder="Enter detailed reason why not eligible"
-                    rows={3}
-                  />
-                </div>
-              )}
+          <div className="p-6">
+            {/* Form Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {/* Eligibility Status */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Eligibility Status <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={eligibilityStatus}
+                  onChange={(e) => handleEligibilityChange(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">--Select--</option>
+                  <option value="Eligible">Eligible</option>
+                  <option value="Not Eligible">Not Eligible</option>
+                </select>
+                
+                {eligibilityStatus === 'Eligible' && (
+                  <div className="flex items-center gap-2 text-green-700 text-sm">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Student is eligible for admission</span>
+                  </div>
+                )}
+                
+                {eligibilityStatus === 'Not Eligible' && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      If Not Eligible (Reason)
+                    </label>
+                    <textarea
+                      value={notEligibleReason}
+                      onChange={(e) => setNotEligibleReason(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      placeholder="Enter reason for not eligible"
+                      rows={3}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Admission Status */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Admission Status <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={admissionStatus}
+                  onChange={(e) => handleAdmissionChange(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={eligibilityStatus !== 'Eligible'}
+                >
+                  <option value="">--Select--</option>
+                  <option value="Confirmed">Confirmed</option>
+                  <option value="Not Confirmed">Not Confirmed</option>
+                </select>
+
+                {eligibilityStatus !== 'Eligible' && (
+                  <p className="text-sm text-orange-600">
+                    Please set eligibility status to "Eligible" first
+                  </p>
+                )}
+
+                {admissionStatus === 'Confirmed' && eligibilityStatus === 'Eligible' && !enrollmentNo && (
+                  <p className="text-sm text-blue-600">
+                    Enrollment number will be generated upon saving
+                  </p>
+                )}
+
+                {admissionStatus === 'Not Confirmed' && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      If Admission is not Confirmed (Reason)
+                    </label>
+                    <textarea
+                      value={notConfirmedReason}
+                      onChange={(e) => setNotConfirmedReason(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      placeholder="Enter reason for not confirmed"
+                      rows={3}
+                    />
+                  </div>
+                )}
+
+                {admissionStatus === 'Confirmed' && eligibilityStatus === 'Eligible' && enrollmentNo && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded">
+                    <p className="text-sm text-green-700 mb-1">If Admission is Confirmed, Enrollment No. Alloted</p>
+                    <p className="text-lg font-semibold text-green-800 font-mono">{enrollmentNo}</p>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Admission Status */}
-            <div className="bg-white border-2 border-gray-200 rounded-lg p-6">
-              <label className="block text-lg font-semibold mb-3 text-gray-800">Admission Status</label>
-              <select
-                value={admissionStatus}
-                onChange={(e) => handleAdmissionChange(e.target.value)}
-                className="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-base font-semibold mb-3 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                disabled={eligibilityStatus !== 'Eligible'}
-              >
-                <option value="">-- Select Admission Status --</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Not Confirmed">Not Confirmed</option>
-              </select>
-              {eligibilityStatus !== 'Eligible' && (
-                <p className="text-orange-600 text-sm font-medium">Please set Eligibility Status to "Eligible" first</p>
-              )}
-              {admissionStatus === 'Confirmed' && eligibilityStatus === 'Eligible' && (
-                <p className="text-green-600 text-sm font-medium">Enrollment number will be generated automatically</p>
-              )}
-              {admissionStatus === 'Not Confirmed' && (
-                <div className="mt-3">
-                  <label className="block text-sm font-medium mb-2 text-orange-700">Reason for Not Confirmed</label>
-                  <textarea
-                    value={notConfirmedReason}
-                    onChange={(e) => setNotConfirmedReason(e.target.value)}
-                    className="w-full p-3 border-2 border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm"
-                    placeholder="Enter detailed reason why admission not confirmed"
-                    rows={3}
-                  />
-                </div>
-              )}
-              {admissionStatus === 'Confirmed' && eligibilityStatus === 'Eligible' && enrollmentNo && (
-                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded">
-                  <p className="text-green-800 text-sm font-medium">Enrollment number successfully generated</p>
-                  <p className="text-green-700 font-mono text-lg font-bold">{enrollmentNo}</p>
-                </div>
-              )}
+            {/* Eligibility Verified By Section */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <h4 className="text-sm font-semibold text-gray-800 mb-4">Eligibility Verified by</h4>
+              <table className="w-full border-collapse border border-gray-300">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Name</th>
+                    <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Date</th>
+                    <th className="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Signature</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="border border-gray-300 px-4 py-3 text-sm">LC2101</td>
+                    <td className="border border-gray-300 px-4 py-3 text-sm">{new Date().toLocaleDateString('en-GB')}</td>
+                    <td className="border border-gray-300 px-4 py-3"></td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-4 mt-6">
-            {/* Send Invalid Document Email Button */}
-            <button
-              onClick={async () => {
-                const invalidDocs = Object.entries(docValidation)
-                  .filter(([_, isValid]) => isValid === false)
-                  .map(([docType, _]) => docType.replace('_valid', ''));
+            {/* Action Buttons */}
+            <div className="mt-6 flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+              {/* Send Invalid Document Email Button */}
+              <button
+                onClick={async () => {
+                  const invalidDocs = Object.entries(docValidation)
+                    .filter(([_, isValid]) => isValid === false)
+                    .map(([docType, _]) => docType.replace('_valid', ''));
 
-                if (invalidDocs.length === 0) {
-                  toast.warning('No invalid documents marked. Please mark documents as Invalid first.');
-                  return;
-                }
-
-                try {
-                  setSaving(true);
-                  const response = await axios.post('http://localhost:8000/api/lsc-admin/send-invalid-document-email/', {
-                    application_id: applicationId,
-                    invalid_documents: invalidDocs,
-                    verified_by: 'LSC Admin'
-                  });
-
-                  if (response.data.status === 'success') {
-                    toast.success(`📧 Email sent successfully to student for ${invalidDocs.length} invalid document(s)!`, {
-                      autoClose: 5000
-                    });
-                    await fetchStudentDetails();
-                  } else {
-                    toast.error(response.data.message || 'Failed to send email');
+                  if (invalidDocs.length === 0) {
+                    toast.warning('No invalid documents marked. Please mark documents as Invalid first.');
+                    return;
                   }
-                } catch (error) {
-                  console.error('Error sending email:', error, error.response?.data || error);
-                  toast.error(error.response?.data?.message || formatAxiosError(error) || 'Failed to send invalid document email.');
-                } finally {
-                  setSaving(false);
-                }
-              }}
-              disabled={saving || Object.values(docValidation).filter(v => v === false).length === 0}
-              className={`px-6 py-3 rounded-lg font-semibold text-base shadow-lg hover:shadow-xl transition-all flex items-center gap-2 ${
-                Object.values(docValidation).filter(v => v === false).length === 0
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-orange-600 to-red-600 text-white hover:from-orange-700 hover:to-red-700'
-              }`}
-            >
-              <X className="w-5 h-5" />
-              {saving ? 'Sending Email...' : `📧 Send Email for Invalid Docs (${Object.values(docValidation).filter(v => v === false).length})`}
-            </button>
 
-            {/* Save Verification Button */}
-            <button
-              onClick={handleSaveVerification}
-              disabled={saving}
-              className="px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-semibold text-base shadow-lg hover:shadow-xl hover:from-green-700 hover:to-blue-700 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-5 h-5" />
-                  💾 Save Verification
-                </>
-              )}
-            </button>
+                  try {
+                    setSaving(true);
+                    const response = await axios.post('http://localhost:8000/api/lsc-admin/send-invalid-document-email/', {
+                      application_id: applicationId,
+                      invalid_documents: invalidDocs,
+                      verified_by: 'LSC Admin'
+                    });
+
+                    if (response.data.status === 'success') {
+                      toast.success(`Email sent successfully to student for ${invalidDocs.length} invalid document(s)!`, {
+                        autoClose: 5000
+                      });
+                      await fetchStudentDetails();
+                    } else {
+                      toast.error(response.data.message || 'Failed to send email');
+                    }
+                  } catch (error) {
+                    console.error('Error sending email:', error, error.response?.data || error);
+                    toast.error(error.response?.data?.message || formatAxiosError(error) || 'Failed to send invalid document email.');
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+                disabled={saving || Object.values(docValidation).filter(v => v === false).length === 0}
+                className={`px-5 py-2.5 rounded font-medium text-sm transition-colors flex items-center gap-2 ${
+                  Object.values(docValidation).filter(v => v === false).length === 0
+                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                    : 'bg-orange-600 text-white hover:bg-orange-700'
+                }`}
+              >
+                <X className="w-4 h-4" />
+                {saving ? 'Sending Email...' : `Send Email for Invalid Docs (${Object.values(docValidation).filter(v => v === false).length})`}
+              </button>
+
+              {/* Save Verification Button */}
+              <button
+                onClick={handleSaveVerification}
+                disabled={saving}
+                className="px-5 py-2.5 bg-green-600 text-white rounded font-medium text-sm hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    Save Verification
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-        </div>
         </div>
 
         {/* Admission Allocation & Signatures */}
@@ -1235,29 +1380,6 @@ const StudentDetail = () => {
                 {/* Duplicate print button removed - use fixed print button on top-right */}
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Eligibility Verified by Table */}
-        <div className="mb-10">
-          <h4 className="text-lg font-semibold mb-4 text-gray-800">Eligibility Verified by</h4>
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-            <table className="min-w-full text-left divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-sm font-semibold text-gray-700">Name</th>
-                  <th className="px-6 py-3 text-sm font-semibold text-gray-700">Date</th>
-                  <th className="px-6 py-3 text-sm font-semibold text-gray-700">Signature</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white">
-                <tr className="border-b">
-                  <td className="px-6 py-4 text-sm text-gray-800">{student.verified_by || student.verified_by_name || 'LC2101'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-800">{(student.verified_date && new Date(student.verified_date).toLocaleDateString()) || (student.verification_date && new Date(student.verification_date).toLocaleDateString()) || 'N/A'}</td>
-                  <td className="px-6 py-6 text-sm text-gray-800">&nbsp;</td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </div>
 
@@ -1285,7 +1407,6 @@ const StudentDetail = () => {
           </div>
         </div>
       </div>
-    </div>
     </div>
   );
 };

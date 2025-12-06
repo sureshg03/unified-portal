@@ -24,12 +24,20 @@ const DocumentResubmission = () => {
     try {
       setVerifying(true);
       const response = await axios.get(`http://localhost:8000/api/resubmit-documents/verify/${token}/`);
-      setApplicationData(response.data.application);
-      setInvalidDocuments(response.data.invalid_documents);
-      setLoading(false);
+      
+      console.log('Verification response:', response.data);
+      
+      if (response.data.status === 'success') {
+        setApplicationData(response.data.data);
+        setInvalidDocuments(response.data.data.invalid_documents);
+        setLoading(false);
+      } else {
+        throw new Error(response.data.message || 'Verification failed');
+      }
     } catch (error) {
       console.error('Token verification failed:', error);
-      toast.error('Invalid or expired resubmission link. Please contact support.');
+      const errorMsg = error.response?.data?.message || error.message || 'Invalid or expired resubmission link';
+      toast.error(errorMsg + '. Please contact support.');
       setTimeout(() => navigate('/'), 3000);
     } finally {
       setVerifying(false);

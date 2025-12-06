@@ -414,7 +414,7 @@ def verify_eligibility(request):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         # Fetch application
-        application = Application.objects.using('online_edu').filter(
+        application = Application.objects.filter(
             application_id=application_id
         ).first()
 
@@ -431,7 +431,7 @@ def verify_eligibility(request):
         else:
             application.status = 'Cancelled'
         
-        application.save(using='online_edu')
+        application.save()
 
         # Send email notification
         send_eligibility_email(application, eligibility_status, verification_remarks)
@@ -478,7 +478,7 @@ def generate_enrollment_id(request):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         # Fetch application
-        application = Application.objects.using('online_edu').filter(
+        application = Application.objects.filter(
             application_id=application_id
         ).first()
 
@@ -494,7 +494,7 @@ def generate_enrollment_id(request):
         program_code = application.programme_applied[:3].upper() if application.programme_applied else 'GEN'
         
         # Get count of existing enrollments for this year
-        existing_count = Application.objects.using('online_edu').filter(
+        existing_count = Application.objects.filter(
             status='Completed'
         ).count()
         
@@ -502,7 +502,7 @@ def generate_enrollment_id(request):
         
         # Update application status
         application.status = 'Completed'
-        application.save(using='online_edu')
+        application.save()
 
         # Send enrollment notification email
         send_enrollment_email(application, enrollment_no)
@@ -766,7 +766,7 @@ def send_semester_fee_notification(request):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         # Fetch application
-        application = Application.objects.using('online_edu').filter(
+        application = Application.objects.filter(
             application_id=application_id
         ).first()
 
@@ -894,7 +894,7 @@ def validate_document(request):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         # Fetch application
-        application = Application.objects.using('online_edu').filter(
+        application = Application.objects.filter(
             application_id=application_id
         ).first()
 
@@ -908,7 +908,7 @@ def validate_document(request):
         doc_validation = getattr(application, 'document_validation', {}) or {}
         doc_validation[document_type] = is_valid
         application.document_validation = doc_validation
-        application.save(using='online_edu')
+        application.save()
 
         logger.info(f"Document {document_type} validated as {is_valid} for {application_id}")
 
@@ -947,7 +947,7 @@ def generate_enrollment_number(request):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         # Fetch application
-        application = Application.objects.using('online_edu').filter(
+        application = Application.objects.filter(
             application_id=application_id
         ).first()
 
@@ -978,22 +978,83 @@ def generate_enrollment_number(request):
         except Exception as e:
             logger.warning(f"Could not fetch admission_code from lsc_admin: {e}")
 
-        # Get programme code (first 3 letters of programme in uppercase)
-        programme = application.programme_applied or 'DIPLOMA'
-        if 'PG' in programme.upper() or 'POST' in programme.upper() or 'MBA' in programme.upper() or 'MCA' in programme.upper():
-            programme_code = 'PBA'  # Postgraduate
-        elif 'UG' in programme.upper() or 'BACHELOR' in programme.upper() or 'B.SC' in programme.upper() or 'B.COM' in programme.upper():
-            programme_code = 'UGA'  # Undergraduate
-        else:
-            programme_code = 'DIP'  # Diploma
+        # Get course code from tbl_course table based on the course applied
+        programme_code = 'PBA'  # Default fallback
+        course_name = application.course  # Get course from application (e.g., "MASTER OF COMPUTER APPLICATIONS - COMPUTER APPLICATION")
+        
+        if course_name:
+            try:
+                with connections['default'].cursor() as cursor:
+                    # Try exact match first
+                    cursor.execute("""
+                        SELECT course_code 
+                        FROM tbl_course 
+                        WHERE course_short_code = %s OR course_full_name = %s OR degree = %s
+                        LIMIT 1
+                    """, [course_name, course_name, course_name])
+                    row = cursor.fetchone()
+                    
+                    # If no exact match, try partial match using LIKE
+                    if not row:
+                        # Extract keywords for matching (e.g., "MCA" from "MASTER OF COMPUTER APPLICATIONS")
+                        if 'COMPUTER APPLICATION' in course_name.upper():
+                            search_term = 'M.C.A'
+                        elif 'BUSINESS ADMINISTRATION' in course_name.upper() or 'MBA' in course_name.upper():
+                            search_term = 'M.B.A'
+                        elif 'COMMERCE' in course_name.upper():
+                            search_term = 'M.COM'
+                        elif 'MATHEMATICS' in course_name.upper():
+                            search_term = 'M.SC'
+                        elif 'ENGLISH' in course_name.upper():
+                            search_term = 'M.A'
+                        elif 'HISTORY' in course_name.upper():
+                            search_term = 'M.A'
+                        elif 'SOCIOLOGY' in course_name.upper():
+                            search_term = 'M.A'
+                        elif 'ECONOMICS' in course_name.upper():
+                            search_term = 'M.A'
+                        elif 'TAMIL' in course_name.upper():
+                            search_term = 'M.A'
+                        elif 'DIPLOMA' in course_name.upper():
+                            search_term = 'DIPLOMA'
+                        elif 'CERTIFICATE' in course_name.upper():
+                            search_term = 'Certificate'
+                        else:
+                            search_term = None
+                        
+                        if search_term:
+                            cursor.execute("""
+                                SELECT course_code 
+                                FROM tbl_course 
+                                WHERE course_short_code = %s OR degree LIKE %s OR course_full_name LIKE %s
+                                LIMIT 1
+                            """, [search_term, f'%{search_term}%', f'%{search_term}%'])
+                            row = cursor.fetchone()
+                    
+                    if row and row[0]:
+                        programme_code = row[0]
+                        logger.info(f"Found course_code: {programme_code} for course: {course_name}")
+                    else:
+                        logger.warning(f"No course_code found for course: {course_name}, using default: {programme_code}")
+            except Exception as e:
+                logger.error(f"Error fetching course_code: {e}")
 
-        # Get the next sequential number for this LSC and programme
-        # Count existing enrollments with same pattern
-        count = Application.objects.using('online_edu').filter(
-            enrollment_no__startswith=f"{admission_code}{programme_code}{lsc_code}"
+        # Get the next sequential number for this specific LSC code only
+        # Each LSC should have its own sequence starting from 0001
+        # Example: A25PCA2101 should count only enrollments with A25PCA2101
+        #          A25PCA2102 should count only enrollments with A25PCA2102
+        enrollment_prefix = f"{admission_code}{programme_code}{lsc_code}"
+        
+        count = Application.objects.filter(
+            enrollment_no__startswith=enrollment_prefix,
+            enrollment_no__isnull=False
+        ).exclude(
+            enrollment_no=''
         ).count()
 
         sequential_number = str(count + 1).zfill(4)  # Pad with zeros: 0001, 0002, etc.
+        
+        logger.info(f"Generating enrollment for LSC {lsc_code}: Found {count} existing enrollments with prefix {enrollment_prefix}, next will be {sequential_number}")
 
         # Generate final enrollment number
         enrollment_no = f"{admission_code}{programme_code}{lsc_code}{sequential_number}"
@@ -1039,7 +1100,7 @@ def save_verification(request):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         # Fetch application
-        application = Application.objects.using('online_edu').filter(
+        application = Application.objects.filter(
             application_id=application_id
         ).first()
 
@@ -1074,7 +1135,7 @@ def save_verification(request):
         application.verified_date = datetime.now()
         application.verified_by = 'LSC Admin'  # You can pass actual admin user
 
-        application.save(using='online_edu')
+        application.save()
 
         logger.info(f"Verification saved for application: {application_id}")
 
@@ -1158,7 +1219,7 @@ def verify_resubmission_link(request, token):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         # Get application details using raw query
-        with connections['online_edu'].cursor() as cursor:
+        with connections['default'].cursor() as cursor:
             cursor.execute("""
                 SELECT application_id, name_as_aadhaar, email, course, programme_applied
                 FROM api_application
@@ -1215,7 +1276,7 @@ def submit_resubmitted_documents(request, token):
         application_id = data['application_id']
         
         # Check if application exists
-        with connections['online_edu'].cursor() as cursor:
+        with connections['default'].cursor() as cursor:
             cursor.execute("""
                 SELECT application_id, document_validation
                 FROM api_application
@@ -1232,69 +1293,84 @@ def submit_resubmitted_documents(request, token):
             
             app_id, doc_validation_json = result
 
-        # Get uploaded files from request
-        uploaded_files = {}
-        for doc_type in data['invalid_documents']:
-            file_key = f'{doc_type}_resubmit'
-            if file_key in request.FILES:
-                uploaded_files[doc_type] = request.FILES[file_key]
-
-        if not uploaded_files:
+        # Get uploaded file from request
+        if 'document' not in request.FILES:
             return Response({
                 'status': 'error',
-                'message': 'No files uploaded'
+                'message': 'No file uploaded'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if 'document_type' not in request.POST:
+            return Response({
+                'status': 'error',
+                'message': 'Document type not specified'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        file_obj = request.FILES['document']
+        doc_type = request.POST['document_type']
+        
+        # Validate that this document type is in the invalid documents list
+        if doc_type not in data['invalid_documents']:
+            return Response({
+                'status': 'error',
+                'message': f'Document type {doc_type} is not marked for resubmission'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Save resubmitted documents
+        # Save resubmitted document
         from django.core.files.storage import default_storage
         import os
-        
-        resubmitted_docs = {}
-        for doc_type, file_obj in uploaded_files.items():
-            # Create resubmit directory if not exists
-            upload_dir = f'resubmitted_documents/{application_id}'
-            os.makedirs(os.path.join(settings.MEDIA_ROOT, upload_dir), exist_ok=True)
-            
-            # Save file with timestamp
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            filename = f'{doc_type}_{timestamp}_{file_obj.name}'
-            file_path = os.path.join(upload_dir, filename)
-            
-            # Save file
-            saved_path = default_storage.save(file_path, file_obj)
-            resubmitted_docs[doc_type] = {
-                'filename': filename,
-                'path': saved_path,
-                'uploaded_at': datetime.now().isoformat(),
-                'status': 'pending_review'
-            }
-
-        # Update application with resubmitted documents info
         import json
+        
+        # Create resubmit directory if not exists
+        upload_dir = f'resubmitted_documents/{application_id}'
+        os.makedirs(os.path.join(settings.MEDIA_ROOT, upload_dir), exist_ok=True)
+        
+        # Save file with timestamp
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f'{doc_type}_{timestamp}_{file_obj.name}'
+        file_path = os.path.join(upload_dir, filename)
+        
+        # Save file
+        saved_path = default_storage.save(file_path, file_obj)
+        
+        # Update application with resubmitted document info
         current_validation = json.loads(doc_validation_json) if doc_validation_json else {}
         if 'resubmitted' not in current_validation:
             current_validation['resubmitted'] = {}
         
-        current_validation['resubmitted'].update(resubmitted_docs)
+        current_validation['resubmitted'][doc_type] = {
+            'filename': filename,
+            'path': saved_path,
+            'uploaded_at': datetime.now().isoformat(),
+            'status': 'pending_review'
+        }
         
         # Update database with raw SQL
-        with connections['online_edu'].cursor() as cursor:
+        with connections['default'].cursor() as cursor:
             cursor.execute("""
                 UPDATE api_application
                 SET document_validation = %s
                 WHERE application_id = %s
             """, [json.dumps(current_validation), application_id])
-            connections['online_edu'].commit()
+            connections['default'].commit()
+        
+        # Check if all invalid documents have been resubmitted
+        all_resubmitted = all(
+            doc in current_validation.get('resubmitted', {})
+            for doc in data['invalid_documents']
+        )
+        
+        # Only mark token as completed if all documents are resubmitted
+        if all_resubmitted:
+            mark_resubmission_complete(token)
 
-        # Mark token as completed
-        mark_resubmission_complete(token)
-
-        logger.info(f"Documents resubmitted for application: {application_id}")
+        logger.info(f"Document {doc_type} resubmitted for application: {application_id}")
 
         return Response({
             'status': 'success',
-            'message': 'Documents resubmitted successfully. Your application will be reviewed within 2-3 business days.',
-            'resubmitted_documents': list(uploaded_files.keys())
+            'message': f'{doc_type} uploaded successfully. Your application will be reviewed within 2-3 business days.',
+            'document_type': doc_type,
+            'all_documents_submitted': all_resubmitted
         }, status=status.HTTP_200_OK)
 
     except Exception as e:
@@ -1316,7 +1392,7 @@ def get_pending_revalidations(request):
     try:
         from django.db import connections
         
-        with connections['online_edu'].cursor() as cursor:
+        with connections['default'].cursor() as cursor:
             cursor.execute("""
                 SELECT 
                     a.application_id,
