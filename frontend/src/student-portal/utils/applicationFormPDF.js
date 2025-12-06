@@ -63,103 +63,78 @@ export const generateApplicationFormPDF = async (applicationData) => {
       position: relative;
     }
 
-    /* Header Section */
+    /* Header Section - Left Aligned Professional Style */
     .header {
-      text-align: center;
+      border-bottom: 2px solid #8B008B;
+      padding-bottom: 12px;
       margin-bottom: 15px;
-      border-bottom: 2px solid #3e066cff;
-      padding-bottom: 10px;
-      background: #f9f9f9;
     }
 
-    .header-top {
+    .header-flex {
       display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 8px;
-    }
-
-    .header-left {
-      text-align: left;
-      font-size: 9pt;
-      color: #666;
-      font-weight: 400;
-    }
-
-    .header-right {
-      text-align: right;
-      font-size: 10pt;
-      color: #000;
-      font-weight: 600;
-      letter-spacing: 0.5px;
+      align-items: center;
+      gap: 15px;
+      justify-content: flex-start;
+      padding-left: 30px;
+      min-height: 120px;
     }
 
     .logo-section {
-      justify-content: center;
-      align-items: center;
-      margin-bottom: 10px;
-      position: relative;
-      padding: 5px 0;
+      flex: 0 0 auto;
     }
 
     .university-logo {
-      width: 75px;
-      height: 75px;
+      width: 100px;
+      height: 100px;
       object-fit: contain;
-      flex-shrink: 0;
+      display: block;
     }
 
     .university-details {
-      text-align: center;
-      flex: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      align-items: center;
-      padding: 0;
-      max-width: none;
+      flex: 1;
+      text-align: left;
     }
 
     .university-name {
-      font-size: 22pt;
-      font-weight: 700;
-      color: #7401b6ff;
-      margin: 0 0 5px 0;
-      text-transform: capitalize;
-      line-height: 1;
+      font-size: 24pt;
+      font-weight: 800;
+      color: #8B008B;
+      margin: 0 0 3px 0;
+      line-height: 1.1;
     }
 
     .university-subtitle {
       font-size: 8.5pt;
-      color: #000000;
+      color: #333;
       margin: 1px 0;
-      font-weight: 500;
-      line-height: 1.5;
+      font-weight: 600;
+      line-height: 1.3;
     }
 
     .university-address {
-      font-size: 9pt;
-      color: #000000;
-      font-weight: 500;
+      font-size: 8.5pt;
+      color: #333;
+      font-weight: 600;
+      margin: 1px 0 8px 0;
+      line-height: 1.3;
     }
 
     .cdoe-title {
-      color: #7401b6ff;
-    
-      font-size: 10pt;
-      font-weight: 700;
+      color: #FF8C00;
+      font-size: 14pt;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      text-align: center;
-      border-radius: 0px;
+      letter-spacing: 0.5px;
+      margin: 4px 0 2px 0;
+      line-height: 1.2;
     }
 
     .odl-subtitle {
       color: #FF8C00;
-      font-size: 10pt;
-      font-weight: 600;
-      margin-bottom: 10px;
-      text-align: center;
+      font-size: 11pt;
+      font-weight: 700;
+      margin: 0;
+      line-height: 1.2;
     }
 
     .main-title {
@@ -595,27 +570,24 @@ export const generateApplicationFormPDF = async (applicationData) => {
   </div>
 
   <div class="container">
-    <!-- Header -->
+    <!-- Header - Professional Left Aligned Style -->
     <div class="header">
-      <div class="header-top">
-        <div class="header-right">PUCDOE</div>
-      </div>
-
-      <div class="logo-section">
-        <img src="/logo.jpg" 
-             alt="Periyar University Logo" 
-             class="university-logo"
-             onerror="console.error('Logo failed to load'); this.onerror=null; this.style.visibility='hidden';">
+      <div class="header-flex">
+        <div class="logo-section">
+          <img src="/Logo.png" 
+               alt="Periyar University Logo" 
+               class="university-logo"
+               onerror="console.error('Logo failed to load'); this.onerror=null; this.style.visibility='hidden';">
+        </div>
         <div class="university-details">
           <div class="university-name">Periyar University</div>
-          <div class="university-subtitle">State University - NAAC 'A+' Grade - NIRF Rank 94</div>
+          <div class="university-subtitle">State University - NAAC 'A++' Grade - NIRF Rank 94</div>
           <div class="university-subtitle">State Public University Rank 40 - SDG Institutions Rank Band: 11-50</div>
-          <div class="university-address">Salem-636011, Tamilnadu, India.</div>
+          <div class="university-address">Salem-636011, Tamilnadu, India</div>
+          <div class="cdoe-title">CENTRE FOR DISTANCE AND ONLINE EDUCATION (CDOE)</div>
+          <div class="odl-subtitle">Open and Distance Learning</div>
         </div>
       </div>
-
-      <div class="cdoe-title">CENTRE FOR DISTANCE AND ONLINE EDUCATION (CDOE)</div>
-      <div class="odl-subtitle">Open and Distance Learning</div>
     </div>
 
     <div class="main-title">
