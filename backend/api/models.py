@@ -103,6 +103,11 @@ class Application(models.Model):
     
     # Document Validation & Verification fields
     document_validation = models.JSONField(blank=True, null=True, help_text="Stores document validation status")
+    eligibility_status = models.CharField(max_length=50, blank=True, null=True, help_text="Eligibility status: Eligible, Not Eligible, Pending")
+    eligibility_verified = models.BooleanField(default=False, help_text="Whether eligibility has been verified")
+    verification_remarks = models.TextField(blank=True, null=True, help_text="Remarks for eligibility verification")
+    admission_confirmed = models.BooleanField(default=False, help_text="Whether admission has been confirmed")
+    rejection_reason = models.TextField(blank=True, null=True, help_text="Reason for rejection if not confirmed")
     verified_date = models.DateTimeField(blank=True, null=True, help_text="Date when verification was completed")
     verified_by = models.CharField(max_length=255, blank=True, null=True, help_text="Name/ID of person who verified")
     enrollment_no = models.CharField(max_length=50, blank=True, null=True, help_text="Generated enrollment number (e.g., A25PBA21010001)")

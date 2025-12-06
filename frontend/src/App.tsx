@@ -167,6 +167,12 @@ const App = () => {
               } 
             />
             
+            {/* Direct ID Card Access Route */}
+            <Route 
+              path="/id-card/*" 
+              element={<AdminDashboard />}
+            />
+            
             {/* ========================================
                 STUDENT ADMISSION PORTAL ROUTES
             ======================================== */}

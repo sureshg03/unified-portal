@@ -412,16 +412,13 @@ export const StudentList = () => {
                       </td>
                       <td className="px-6 py-4">
                         {isVerified ? (
-                          <button
-                            onClick={() => {
-                              // Navigate to ID card generation
-                              window.location.href = `/id-card/${student.application_no}`;
-                            }}
+                          <Link
+                            to={`/lsc/dashboard/admin/id-card/${student.application_no}`}
                             className="px-4 py-2 bg-green-600 text-white rounded font-semibold text-sm hover:bg-green-700 transition-colors flex items-center gap-2"
                           >
                             <IdCard className="w-4 h-4" />
                             ID Card
-                          </button>
+                          </Link>
                         ) : (
                           <div className="text-gray-400 text-sm font-medium">-</div>
                         )}

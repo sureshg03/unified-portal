@@ -165,10 +165,10 @@ def get_student_admissions(request):
                     'applied_date': user_date_joined.strftime('%Y-%m-%d') if user_date_joined else None,
                     'lsc_code': app.application_id.split('/')[2] if app.application_id and '/' in app.application_id else None,
                     'has_documents': has_documents,
-                    'eligibility_verified': hasattr(app, 'eligibility_verified') and app.eligibility_verified,
+                    'eligibility_verified': bool(getattr(app, 'eligibility_verified', False)),
                     'eligibility_status': getattr(app, 'eligibility_status', None),
                     'enrollment_no': getattr(app, 'enrollment_no', None),
-                    'admission_confirmed': getattr(app, 'admission_confirmed', False),
+                    'admission_confirmed': bool(getattr(app, 'admission_confirmed', False)),
                     'phone': username if username and '@' not in username else None,
                     'dob': app.dob.strftime('%Y-%m-%d') if app.dob else None,
                     'gender': app.gender,
@@ -321,6 +321,9 @@ def get_student_details(request, application_id):
             'perm_state': getattr(application, 'perm_state', None),
             'perm_pincode': getattr(application, 'perm_pincode', None),
             'perm_country': getattr(application, 'perm_country', None),
+            
+            # Formatted Address for ID Card
+            'address': f"{getattr(application, 'comm_town', '') or ''}, {getattr(application, 'comm_district', '') or ''}, {getattr(application, 'comm_state', '') or ''} - {getattr(application, 'comm_pincode', '') or ''}".strip(' ,- ') if any([getattr(application, 'comm_town', None), getattr(application, 'comm_district', None), getattr(application, 'comm_state', None), getattr(application, 'comm_pincode', None)]) else None,
             
             # Education Qualifications
             'qualifications': student_details.qualifications if student_details and hasattr(student_details, 'qualifications') else [],

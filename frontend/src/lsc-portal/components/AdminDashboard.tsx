@@ -28,6 +28,7 @@ import { clearAuthData, getUserInfo, getLSCCode, getLSCName } from '@/lib/auth';
 import { AdmissionManagement } from './modules/AdmissionManagement';
 import { StudentList } from '../../components/modules/StudentList';
 import StudentDetail from '../../components/modules/StudentDetail';
+import StudentIDCard from '../../components/modules/StudentIDCard';
 import { CounsellorInformation } from './modules/CounsellorInformation';
 import { AttendanceModule } from './modules/AttendanceModule';
 import { AssignmentMarks } from './modules/AssignmentMarks';
@@ -48,7 +49,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type ActivePage = 'dashboard' | 'settings' | 'users' | 'lsc-management' | 'reports' | 'system' | 'password' | 'admissions' | 'applications' | 'materials' | 'counselor' | 'attendance' | 'assignments' | 'admission-management' | 'add-courses';
+type ActivePage = 'dashboard' | 'settings' | 'users' | 'lsc-management' | 'reports' | 'system' | 'password' | 'admissions' | 'applications' | 'materials' | 'counselor' | 'attendance' | 'assignments' | 'admission-management' | 'add-courses' | 'admissions-verify' | 'id-card';
 
 export const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -69,8 +70,19 @@ export const AdminDashboard = () => {
   const getActivePage = () => {
     const pathParts = location.pathname.split('/').filter(Boolean);
     
-    // If on /dashboard/admin, return 'dashboard'
-    if (pathParts.length === 2 && pathParts[1] === 'dashboard') {
+    console.log('=== ADMIN DASHBOARD ROUTING DEBUG ===');
+    console.log('Full pathname:', location.pathname);
+    console.log('Path parts:', pathParts);
+    console.log('=====================================');
+    
+    // Handle direct /id-card/* access (without /lsc/dashboard/admin prefix)
+    if (pathParts[0] === 'id-card') {
+      console.log('Direct ID Card route detected!');
+      return 'id-card';
+    }
+    
+    // If on /lsc/dashboard/admin, return 'dashboard'
+    if (pathParts.length === 3 && pathParts[0] === 'lsc' && pathParts[1] === 'dashboard' && pathParts[2] === 'admin') {
       return 'dashboard';
     }
 
@@ -83,11 +95,19 @@ export const AdminDashboard = () => {
       return 'admissions';
     }
 
+    // Handle ID card route - /lsc/dashboard/admin/id-card/{applicationId}
+    if (pathParts.includes('id-card')) {
+      console.log('ID Card route detected!');
+      return 'id-card';
+    }
+
     const lastPart = pathParts[pathParts.length - 1];
+    console.log('Returning last part as active page:', lastPart);
     return lastPart as ActivePage;
   };
 
   const activePage = getActivePage();
+  console.log('Active page:', activePage);
 
   const handleLogout = () => {
     clearAuthData();
@@ -280,6 +300,8 @@ export const AdminDashboard = () => {
         return <StudentList />;
       case 'admissions-verify':
         return <StudentDetail />;
+      case 'id-card':
+        return <StudentIDCard />;
       case 'applications':
         return (
           <div className="w-full p-8 bg-white">

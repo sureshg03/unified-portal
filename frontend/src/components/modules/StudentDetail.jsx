@@ -138,7 +138,6 @@ const StudentDetail = () => {
           console.log('Updated docValidation:', updated);
           return updated;
         });
-        toast.success(`Document ${isValid ? 'marked as valid' : 'marked as invalid'} successfully`);
       } else {
         toast.error(response.data.message || 'Failed to update document validation');
       }
@@ -172,7 +171,6 @@ const StudentDetail = () => {
 
   const generateEnrollmentNumber = async () => {
     try {
-      toast.info('Generating enrollment number...');
       const response = await axios.post('http://localhost:8000/api/lsc-admin/generate-enrollment/', {
         application_id: applicationId
       });
@@ -181,7 +179,6 @@ const StudentDetail = () => {
 
       if (response.data.status === 'success' && response.data.enrollment_no) {
         setEnrollmentNo(response.data.enrollment_no);
-        toast.success(`Enrollment number generated: ${response.data.enrollment_no}`);
       } else {
         toast.error('Failed to generate enrollment number');
       }
@@ -242,12 +239,6 @@ const StudentDetail = () => {
     try {
       setSaving(true);
       
-      // Show submitting toast
-      const submittingToast = toast.info('Submitting verification details...', {
-        position: 'top-center',
-        autoClose: false,
-      });
-
       const payload = {
         application_id: applicationId,
         eligibility_status: eligibilityStatus,
@@ -272,29 +263,10 @@ const StudentDetail = () => {
 
       console.log('Save verification response:', response.data);
 
-      // Dismiss submitting toast
-      toast.dismiss(submittingToast);
-
       // Check if response indicates success (status === 'success' OR response status is 200/201)
       const isSuccess = response.data.status === 'success' || response.status === 200 || response.status === 201;
       
       if (isSuccess) {
-        toast.success('Verification Details Submitted Successfully!', { 
-          position: 'top-center',
-          autoClose: 5000,
-          style: {
-            background: '#10b981',
-            color: 'white',
-            fontWeight: '600',
-            fontSize: '16px',
-            padding: '16px',
-            borderRadius: '8px',
-          },
-          progressStyle: {
-            background: '#ffffff',
-          }
-        });
-        
         // Mark as verified
         setIsVerified(true);
         
