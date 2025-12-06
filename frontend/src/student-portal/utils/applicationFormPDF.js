@@ -49,8 +49,8 @@ export const generateApplicationFormPDF = async (applicationData) => {
 
     body {
       font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-      font-size: 8.5pt;
-      line-height: 1.2;
+      font-size: 9pt;
+      line-height: 1.25;
       color: #000;
       background: #fff;
       padding: 3mm;
@@ -138,7 +138,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
     }
 
     .main-title {
-      font-size: 9pt;
+      font-size: 9.5pt;
       font-weight: 700;
       text-decoration: underline;
       margin: 5px 0 6px 0;
@@ -160,14 +160,14 @@ export const generateApplicationFormPDF = async (applicationData) => {
 
     .info-cell {
       padding: 6px 10px;
-      font-size: 8.5pt;
+      font-size: 9pt;
       vertical-align: middle;
     }
 
     .info-label {
       font-weight: 700;
       color: #000000;
-      font-size: 8pt;
+      font-size: 8.5pt;
       display: inline-block;
       min-width: 100px;
     }
@@ -175,7 +175,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
     .info-value {
       color: #000000;
       font-weight: 600;
-      font-size: 8pt;
+      font-size: 8.5pt;
       margin-left: 8px;
     }
 
@@ -190,13 +190,13 @@ export const generateApplicationFormPDF = async (applicationData) => {
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 6px;
-      font-size: 8pt;
+      font-size: 8.5pt;
       border: 1px solid #000000;
     }
 
     .content-table td {
       border: 1px solid #000000;
-      padding: 3px 5px;
+      padding: 4px 6px;
       vertical-align: middle;
     }
 
@@ -210,7 +210,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
       font-weight: 600;
       background: #e9ecef;
       color: #000000;
-      font-size: 7.5pt;
+      font-size: 8pt;
     }
 
     .field-label {
@@ -218,7 +218,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
       font-weight: 500;
       color: #000000;
       background: #f8f9fa;
-      font-size: 7.5pt;
+      font-size: 8pt;
     }
 
     .field-separator {
@@ -232,7 +232,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
       color: #000000;
       font-weight: 600;
       background: #ffffff;
-      font-size: 7.5pt;
+      font-size: 8pt;
     }
 
     .view-link {
@@ -240,7 +240,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
       text-decoration: underline;
       cursor: pointer;
       font-weight: 600;
-      font-size: 7pt;
+      font-size: 7.5pt;
     }
 
     /* Section Headers */
@@ -248,11 +248,11 @@ export const generateApplicationFormPDF = async (applicationData) => {
       background: #e9ecef;
       color: #000000;
       border: 1px solid #000000;
-      padding: 4px 8px;
+      padding: 5px 10px;
       font-weight: 700;
       margin-top: 6px;
       margin-bottom: 4px;
-      font-size: 8.5pt;
+      font-size: 9pt;
       border-radius: 0px;
       letter-spacing: 0.3px;
       page-break-after: avoid;
@@ -282,14 +282,14 @@ export const generateApplicationFormPDF = async (applicationData) => {
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 6px;
-      font-size: 6.5pt;
+      font-size: 7pt;
       table-layout: fixed;
     }
 
     .education-table th,
     .education-table td {
       border: 1px solid #000000;
-      padding: 2px 2px;
+      padding: 3px 3px;
       text-align: center;
       vertical-align: middle;
       word-wrap: break-word;
@@ -300,15 +300,15 @@ export const generateApplicationFormPDF = async (applicationData) => {
       background: #e9ecef;
       color: #000000;
       font-weight: 700;
-      font-size: 6.5pt;
-      padding: 3px 2px;
+      font-size: 7pt;
+      padding: 3px 3px;
       border: 1px solid #000000;
     }
 
     .education-table td {
       color: #000000;
       font-weight: 500;
-      font-size: 6.5pt;
+      font-size: 7pt;
       background: #ffffff;
     }
 
@@ -358,7 +358,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
 
     .payment-title {
       text-align: center;
-      font-size: 9pt;
+      font-size: 9.5pt;
       font-weight: 700;
       margin-bottom: 5px;
       text-decoration: underline;
@@ -375,8 +375,8 @@ export const generateApplicationFormPDF = async (applicationData) => {
 
     .payment-table td {
       border: 1px solid #000000;
-      padding: 3px 5px;
-      font-size: 7pt;
+      padding: 4px 6px;
+      font-size: 7.5pt;
     }
 
     .payment-label {
@@ -408,7 +408,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
     }
 
     .declaration-title {
-      font-size: 9pt;
+      font-size: 9.5pt;
       font-weight: 700;
       text-align: center;
       margin-bottom: 5px;
@@ -417,8 +417,8 @@ export const generateApplicationFormPDF = async (applicationData) => {
     }
 
     .declaration-text {
-      font-size: 7.5pt;
-      line-height: 1.3;
+      font-size: 8pt;
+      line-height: 1.35;
       text-align: justify;
       margin-bottom: 4px;
       color: #000;
@@ -437,7 +437,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
     }
 
     .place-date p {
-      font-size: 7.5pt;
+      font-size: 8pt;
       font-weight: 600;
       color: #000;
       margin-bottom: 5px;
@@ -475,7 +475,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
 
     .signature-label {
       font-weight: 600;
-      font-size: 7.5pt;
+      font-size: 8pt;
       text-align: center;
       width: 150px;
       color: #000000;
