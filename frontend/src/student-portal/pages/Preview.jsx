@@ -71,16 +71,16 @@ const Preview = () => {
       console.log('All Application Keys:', Object.keys(combinedData.application));
       console.log('Student Data:', combinedData.student);
       console.log('All Student Keys:', Object.keys(combinedData.student));
-      
+
       // Check all possible course/medium field names
       const possibleCourseFields = ['course', 'course_name', 'selected_course', 'programme', 'programme_name'];
       const possibleMediumFields = ['medium', 'medium_of_instruction', 'study_medium'];
-      
+
       console.log('=== COURSE FIELD SEARCH ===');
       possibleCourseFields.forEach(field => {
         console.log(`${field}:`, combinedData.application?.[field] || combinedData.student?.[field]);
       });
-      
+
       console.log('=== MEDIUM FIELD SEARCH ===');
       possibleMediumFields.forEach(field => {
         console.log(`${field}:`, combinedData.application?.[field] || combinedData.student?.[field]);
@@ -361,9 +361,13 @@ const Preview = () => {
               margin-bottom: 10px !important;
             }
             
+            
             .print-signature-box {
               text-align: right;
               margin-right: 30px;
+              display: flex;
+              flex-direction: column;
+              align-items: flex-end;
             }
             
             .print-signature-img {
@@ -372,12 +376,14 @@ const Preview = () => {
               border: 1px solid #000;
               padding: 3px;
               margin-bottom: 5px;
+              display: block;
             }
             
             .print-signature-label {
               font-size: 9pt !important;
               font-weight: bold;
               color: #000;
+              text-align: right;
             }
             
             /* Footer for print */

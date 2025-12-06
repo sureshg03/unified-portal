@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { ArrowLeft, Printer, Loader2, Check, X, Eye, CheckCircle2 } from 'lucide-react';
 
 const StudentDetail = () => {
@@ -24,6 +25,7 @@ const StudentDetail = () => {
   const [notConfirmedReason, setNotConfirmedReason] = useState('');
   const [saving, setSaving] = useState(false);
   const [academicYear, setAcademicYear] = useState('2025-26');
+  const [isVerified, setIsVerified] = useState(false);
 
   const pathParts = location.pathname.split('/');
   // Extract applicationId from URL - handle IDs that contain slashes
@@ -57,6 +59,33 @@ const StudentDetail = () => {
     }
   };
 
+  // Function to get course code from enrollment number or course name
+  const getCourseCode = () => {
+    // First try to extract from enrollment number (e.g., A25PCA2101001 -> PCA)
+    if (enrollmentNo && enrollmentNo.length >= 6) {
+      // Format: A25PCA2101001 - extract characters at position 3-5 (PCA, PBA, etc.)
+      const code = enrollmentNo.substring(3, 6);
+      if (code && /^[A-Z]{3}$/.test(code)) {
+        return code;
+      }
+    }
+    
+    // Fallback: derive from course name
+    const courseName = (student?.course || '').toUpperCase();
+    if (courseName.includes('COMPUTER APPLICATION')) return 'PCA';
+    if (courseName.includes('BUSINESS ADMINISTRATION') || courseName.includes('MBA')) return 'PBA';
+    if (courseName.includes('COMMERCE')) return 'PCM';
+    if (courseName.includes('MATHEMATICS')) return 'PMH';
+    if (courseName.includes('ENGLISH')) return 'PEN';
+    if (courseName.includes('HISTORY')) return 'PHI';
+    if (courseName.includes('SOCIOLOGY')) return 'PSY';
+    if (courseName.includes('ECONOMICS')) return 'PEC';
+    if (courseName.includes('TAMIL')) return 'PTL';
+    
+    // Default fallback
+    return 'N/A';
+  };
+
   const fetchStudentDetails = async () => {
     try {
       setLoading(true);
@@ -77,6 +106,9 @@ const StudentDetail = () => {
         setEligibilityStatus(data.eligibility_status || '');
         setAdmissionStatus(data.admission_confirmed ? 'Confirmed' : '');
         setEnrollmentNo(data.enrollment_no || '');
+        
+        // Check if already verified (has eligibility status set)
+        setIsVerified(!!data.eligibility_status && data.eligibility_status !== '');
       } else {
         toast.error('Failed to load student details');
       }
@@ -161,8 +193,60 @@ const StudentDetail = () => {
   };
 
   const handleSaveVerification = async () => {
+    // Validation checks
+    if (!eligibilityStatus) {
+      toast.warning('Please set the Eligibility Status before submitting', {
+        position: 'top-center',
+        autoClose: 4000,
+      });
+      return;
+    }
+
+    if (eligibilityStatus === 'Not Eligible' && !notEligibleReason.trim()) {
+      toast.warning('Please provide a reason for "Not Eligible" status', {
+        position: 'top-center',
+        autoClose: 4000,
+      });
+      return;
+    }
+
+    if (!admissionStatus) {
+      toast.warning('Please set the Admission Status before submitting', {
+        position: 'top-center',
+        autoClose: 4000,
+      });
+      return;
+    }
+
+    if (admissionStatus === 'Not Confirmed' && !notConfirmedReason.trim()) {
+      toast.warning('Please provide a reason for "Not Confirmed" status', {
+        position: 'top-center',
+        autoClose: 4000,
+      });
+      return;
+    }
+
+    // Check if all documents have been validated
+    const unvalidatedDocs = Object.entries(docValidation)
+      .filter(([key, value]) => value === null)
+      .map(([key]) => key.replace('_valid', '').toUpperCase());
+    
+    if (unvalidatedDocs.length > 0) {
+      toast.warning(`Please validate all documents. Pending: ${unvalidatedDocs.join(', ')}`, {
+        position: 'top-center',
+        autoClose: 5000,
+      });
+      return;
+    }
+
     try {
       setSaving(true);
+      
+      // Show submitting toast
+      const submittingToast = toast.info('Submitting verification details...', {
+        position: 'top-center',
+        autoClose: false,
+      });
 
       const payload = {
         application_id: applicationId,
@@ -188,15 +272,49 @@ const StudentDetail = () => {
 
       console.log('Save verification response:', response.data);
 
-      if (response.data.status === 'success') {
-        toast.success('Verification details saved successfully!', { autoClose: 3000 });
+      // Dismiss submitting toast
+      toast.dismiss(submittingToast);
+
+      // Check if response indicates success (status === 'success' OR response status is 200/201)
+      const isSuccess = response.data.status === 'success' || response.status === 200 || response.status === 201;
+      
+      if (isSuccess) {
+        toast.success('Verification Details Submitted Successfully!', { 
+          position: 'top-center',
+          autoClose: 5000,
+          style: {
+            background: '#10b981',
+            color: 'white',
+            fontWeight: '600',
+            fontSize: '16px',
+            padding: '16px',
+            borderRadius: '8px',
+          },
+          progressStyle: {
+            background: '#ffffff',
+          }
+        });
+        
+        // Mark as verified
+        setIsVerified(true);
+        
         await fetchStudentDetails(); // Refresh data
       } else {
-        toast.error(response.data.message || 'Failed to save verification details');
+        toast.error(`${response.data.message || 'Failed to save verification details'}`, {
+          position: 'top-center',
+          autoClose: 5000,
+        });
       }
     } catch (error) {
       console.error('Error saving verification:', error, error.response?.data || error);
-      toast.error(error.response?.data?.message || formatAxiosError(error) || 'Failed to save verification details. Check console for details.');
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to save verification details';
+      toast.error(`Submission Failed: ${errorMessage}`, {
+        position: 'top-center',
+        autoClose: 6000,
+        style: {
+          fontSize: '14px',
+        }
+      });
     } finally {
       setSaving(false);
     }
@@ -351,9 +469,9 @@ const StudentDetail = () => {
         .education-table { width: 100%; border-collapse: collapse; font-size: 9pt; margin-bottom: 15px; }
         .education-table th, .education-table td { border: 1px solid #000; padding: 5px; text-align: left; }
         .education-table th { background: #e9ecef; font-weight: bold; }
-        .signature-section { margin-top: 30px; text-align: center; padding-right: 50px; }
-        .signature-line { border-top: 2px solid #000; width: 200px; margin: 40px auto 8px auto; }
-        .signature-label { font-weight: 600; text-align: center; width: 200px; margin: 0 auto; }
+        .signature-section { margin-top: 30px; text-align: right; padding-right: 50px; }
+        .signature-line { border-top: 2px solid #000; width: 200px; margin: 40px 0 8px auto; }
+        .signature-label { font-weight: 600; text-align: center; width: 200px; margin-left: auto; }
         @media print { body { padding: 0; } .no-print { display: none !important; } }
     </style>
 </head>
@@ -462,25 +580,39 @@ const StudentDetail = () => {
     <table class="content-table">
         <tr>
             <td class="row-number">12.</td>
-            <td class="field-label">Mobile No.</td>
-            <td class="field-separator">:</td>
-            <td class="field-value">${student.phone || 'N/A'}</td>
-            <td class="field-label">E-mail ID</td>
-            <td class="field-separator">:</td>
-            <td class="field-value">${student.email || 'N/A'}</td>
+            <td class="field-label" colspan="6">Mobile No. / Telephone No.: ${student.phone || student.mobile || 'N/A'}</td>
         </tr>
         <tr>
             <td class="row-number">13.</td>
-            <td class="field-label">Aadhaar No.</td>
-            <td class="field-separator">:</td>
-            <td class="field-value">${student.aadhaar_no || 'N/A'}</td>
-            <td class="field-label"></td>
-            <td class="field-separator"></td>
-            <td class="field-value"></td>
+            <td class="field-label" colspan="6">E-mail ID: ${student.email || 'N/A'}</td>
+        </tr>
+        <tr>
+            <td class="row-number">14.</td>
+            <td class="field-label" colspan="6">(a) Aadhaar Card No. & Aadhaar Name: ${student.aadhaar_number || student.aadhaar_no || 'N/A'} - ${student.name || 'N/A'}</td>
+        </tr>
+        <tr>
+            <td class="row-number"></td>
+            <td class="field-label" colspan="6" style="padding-left: 20px;">(b) ABC ID: ${student.abc_id || 'N/A'}</td>
+        </tr>
+        <tr>
+            <td class="row-number"></td>
+            <td class="field-label" colspan="6" style="padding-left: 20px;">(c) DEB ID: ${student.deb_id || 'N/A'}</td>
+        </tr>
+        <tr>
+            <td class="row-number">15.</td>
+            <td class="field-label" colspan="6">Differently Abled: ${student.differently_abled || 'No'}</td>
+        </tr>
+        <tr>
+            <td class="row-number">16.</td>
+            <td class="field-label" colspan="6">Blood Group: ${student.blood_group || 'N/A'}</td>
+        </tr>
+        <tr>
+            <td class="row-number">17.</td>
+            <td class="field-label" colspan="6">Access to Internet: ${student.internet_access || 'Yes'}</td>
         </tr>
     </table>
 
-    <div class="section-header">Educational Qualification</div>
+    <div class="section-header">18. Educational Qualification</div>
     <table class="education-table">
         <thead>
             <tr>
@@ -513,8 +645,52 @@ const StudentDetail = () => {
         </tbody>
     </table>
 
-    <div style="margin: 20px 0; text-align: justify;">
+    <div class="section-header">19. Working Experience</div>
+    <table class="education-table">
+        <thead>
+            <tr>
+                <th>Current Designation</th>
+                <th>Current Working Institution</th>
+                <th>Working Experience in Years</th>
+                <th>Annual Income in Rs</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="text-align: center;">${student.current_designation || student.work_des || 'Student'}</td>
+                <td style="text-align: center;">${student.current_institute || student.work_org || 'NA'}</td>
+                <td style="text-align: center;">${student.years_experience || student.years_of_experience || '0'}</td>
+                <td style="text-align: center;">${student.annual_income || '0'}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="section-header">Payment Status</div>
+    <table class="education-table">
+        <tbody>
+            <tr>
+                <td style="font-weight: bold; background: #f8f9fa;">Order ID</td>
+                <td>${student.order_id || 'N/A'}</td>
+                <td style="font-weight: bold; background: #f8f9fa;">Amount</td>
+                <td>${student.amount || student.payment_amount || 'N/A'}</td>
+                <td style="font-weight: bold; background: #f8f9fa;">Status</td>
+                <td>${student.payment_status || 'N/A'}</td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold; background: #f8f9fa;">Bank Name</td>
+                <td>${student.bank_name || 'N/A'}</td>
+                <td style="font-weight: bold; background: #f8f9fa;">Payment Mode</td>
+                <td>${student.payment_mode || student.payment_method || 'N/A'}</td>
+                <td style="font-weight: bold; background: #f8f9fa;">Transaction Date</td>
+                <td>${student.transaction_date || student.payment_date || 'N/A'}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div style="margin: 20px 0; text-align: justify; border: 1px solid #000; padding: 15px;">
         <strong>DECLARATION:</strong> I hereby declare that the information given above are true to the best of my knowledge and that I shall, if admitted abide by the rules of the University.
+        <div style="margin-top: 15px;"><strong>Date:</strong> ${new Date().toLocaleDateString('en-GB')}</div>
+        <div style="margin-top: 10px;"><strong>Place:</strong></div>
     </div>
 
     <div class="signature-section">
@@ -591,6 +767,21 @@ const StudentDetail = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Toast Notifications Container */}
+      <ToastContainer 
+        position="top-center"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        style={{ zIndex: 9999 }}
+      />
+      
       <style>
         {`
           @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap');
@@ -766,7 +957,7 @@ const StudentDetail = () => {
               <td style={{ width: '280px' }}>Programme Applied</td>
               <td style={{ width: '10px', textAlign: 'center' }}>:</td>
               <td>{student?.programme || student?.programme_applied || 'N/A'}</td>
-              <td rowSpan="3" style={{ width: '120px', fontWeight: '600' }}>PBA</td>
+              <td rowSpan="3" style={{ width: '120px', fontWeight: '600' }}>{getCourseCode()}</td>
             </tr>
             <tr>
               <td></td>
@@ -1040,31 +1231,47 @@ const StudentDetail = () => {
           <div style={{ marginBottom: '15px' }}>
             <strong>Place:</strong>
           </div>
-          <div style={{ textAlign: 'right', marginTop: '60px' }}>
-            {student?.signature_url && (
-              <img
-                src={`http://127.0.0.1:8000${student.signature_url}`}
-                alt="Signature"
-                style={{ width: '150px', height: '60px', marginBottom: '10px' }}
-              />
-            )}
-            <div style={{ fontWeight: 'bold' }}>Signature of the Applicant</div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '60px' }}>
+            <div style={{ textAlign: 'center' }}>
+              {student?.signature_url && (
+                <img
+                  src={`http://127.0.0.1:8000${student.signature_url}`}
+                  alt="Signature"
+                  style={{ width: '150px', height: '60px', marginBottom: '10px', display: 'block', marginLeft: 'auto', marginRight: 'auto' }}
+                />
+              )}
+              <div style={{ borderTop: '2px solid #000', paddingTop: '5px', width: '200px', fontWeight: 'bold' }}>Signature of the Applicant</div>
+            </div>
           </div>
         </div>
 
-        {/* Document Validation Section */}
-        <div className="mb-10">
-          <div className="flex items-center mb-6">
-            <div className="flex items-center gap-3 bg-gradient-to-r from-teal-200 to-cyan-200 text-black px-6 py-3 rounded-lg shadow-lg">
-              {/* Icon removed for professional UI */}
-              <h3 className="text-xl font-bold">Document Validation</h3>
+        {/* Document Validation Section - Professional Design */}
+        <div className="mb-10 no-print">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-t-lg px-6 py-4 shadow-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Document Validation 
+              </h3>
+              <span className="bg-white/20 text-white px-4 py-1.5 rounded-full text-sm font-semibold backdrop-blur-sm">
+                Verification Required
+              </span>
             </div>
-            <div className="flex-1 ml-4 h-px bg-gradient-to-r from-teal-600 to-cyan-600"></div>
           </div>
-          <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-lg">
-            <p className="text-base text-gray-700 mb-6 bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
-              <span className="font-semibold text-blue-800">Instructions:</span> Click Valid/Invalid for each document to mark its verification status
-            </p>
+          <div className="bg-white rounded-b-lg p-8 border-x border-b border-gray-200 shadow-xl">
+            <div className="mb-6 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-r-lg">
+              <div className="flex items-start gap-3">
+                <svg className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                <div>
+                  <p className="font-semibold text-blue-900 mb-1">Verification Instructions</p>
+                  <p className="text-sm text-blue-700">Review each document carefully and mark as <span className="font-semibold">Valid</span> or <span className="font-semibold">Invalid</span>. Invalid documents will prompt email notification for resubmission.</p>
+                </div>
+              </div>
+            </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
@@ -1079,23 +1286,41 @@ const StudentDetail = () => {
               const hasResubmission = resubmittedDoc && resubmittedDoc.path;
               
               return (
-              <div key={idx} className="border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-medium text-gray-800">{doc.label}</span>
-                  <div className="flex gap-2 items-center">
-                    {docValidation[doc.type] !== null && (
-                      <span className={`text-sm font-medium px-2 py-1 rounded-full ${
-                        docValidation[doc.type] ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              <div key={idx} className="border-2 border-gray-200 rounded-xl p-5 bg-gradient-to-br from-white to-gray-50 shadow-md hover:shadow-xl hover:border-blue-300 transition-all duration-300">
+                <div className="mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <span className="font-semibold text-gray-900 text-base">{doc.label}</span>
+                    </div>
+                    {/* Show badges on top only if no resubmission */}
+                    {!hasResubmission && docValidation[doc.type] !== null && (
+                      <span className={`text-xs font-bold px-3 py-1.5 rounded-full shadow-sm ${
+                        docValidation[doc.type] ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
                       }`}>
-                        {docValidation[doc.type] ? 'VALID' : 'INVALID'}
-                      </span>
-                    )}
-                    {hasResubmission && (
-                      <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                        RESUBMITTED
+                        {docValidation[doc.type] ? '✓ VALID' : '✗ INVALID'}
                       </span>
                     )}
                   </div>
+                  {/* Show badges below if resubmission exists */}
+                  {hasResubmission && (
+                    <div className="flex gap-2 items-center flex-wrap mt-2">
+                      {docValidation[doc.type] !== null && (
+                        <span className={`text-xs font-bold px-3 py-1.5 rounded-full shadow-sm ${
+                          docValidation[doc.type] ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                        }`}>
+                          {docValidation[doc.type] ? '✓ VALID' : '✗ INVALID'}
+                        </span>
+                      )}
+                      <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-blue-500 text-white shadow-sm">
+                        ↻ RESUBMITTED
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Original Document */}
@@ -1120,38 +1345,56 @@ const StudentDetail = () => {
                   </button>
                 </div>
 
-                {/* Resubmitted Document Section */}
+                {/* Resubmitted Document Section - Enhanced Design */}
                 {hasResubmission && (
-                  <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold text-blue-900">
-                         Resubmitted Document
-                      </span>
-                      <span className="text-xs text-blue-700">
-                        {new Date(resubmittedDoc.uploaded_at).toLocaleDateString()}
+                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-lg p-4 mb-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-sm font-bold text-amber-900 block">
+                          New Document Uploaded
+                        </span>
+                        <span className="text-xs text-amber-700 flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          {new Date(resubmittedDoc.uploaded_at).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                      <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${
+                        resubmittedDoc.status === 'pending_review' 
+                          ? 'bg-amber-500 text-white' 
+                          : 'bg-green-500 text-white'
+                      }`}>
+                        {resubmittedDoc.status === 'pending_review' ? '⏳ Pending Review' : '✓ Reviewed'}
                       </span>
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          viewDocument(`/media/${resubmittedDoc.path}`);
-                        }}
-                        className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors"
-                      >
-                        <Eye className="w-3 h-3 inline mr-1" />
-                        View Resubmitted
-                      </button>
-                      <span className="text-xs text-blue-700 flex items-center">
-                        Status: {resubmittedDoc.status === 'pending_review' ? '⏳ Pending Review' : '✅ Reviewed'}
-                      </span>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        viewDocument(`/media/${resubmittedDoc.path}`);
+                      }}
+                      className="w-full px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg text-sm font-bold hover:from-amber-600 hover:to-orange-600 transition-all duration-200 transform hover:scale-105 shadow-md flex items-center justify-center gap-2"
+                    >
+                      <Eye className="w-4 h-4" />
+                      View Resubmitted Document
+                    </button>
                   </div>
                 )}
 
-                <div className="flex gap-2">
+                <div className="flex gap-3 mt-4">
                   <button
                     type="button"
                     onClick={(e) => {
@@ -1160,14 +1403,14 @@ const StudentDetail = () => {
                       console.log('Valid button clicked for:', doc.type);
                       handleDocumentValidation(doc.type, true);
                     }}
-                    className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
+                    className={`flex-1 px-4 py-3 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-md ${
                       docValidation[doc.type] === true
-                        ? 'bg-green-600 text-white'
-                        : 'bg-green-100 text-green-700 hover:bg-green-200'
+                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-green-200'
+                        : 'bg-white border-2 border-green-500 text-green-600 hover:bg-green-50'
                     }`}
                   >
-                    <Check className="w-4 h-4 inline mr-1" />
-                    Valid
+                    <Check className="w-5 h-5 inline mr-1.5" />
+                    Mark Valid
                   </button>
 
                   <button
@@ -1178,14 +1421,14 @@ const StudentDetail = () => {
                       console.log('Invalid button clicked for:', doc.type);
                       handleDocumentValidation(doc.type, false);
                     }}
-                    className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
+                    className={`flex-1 px-4 py-3 rounded-lg text-sm font-bold transition-all duration-200 transform hover:scale-105 shadow-md ${
                       docValidation[doc.type] === false
-                        ? 'bg-red-600 text-white'
-                        : 'bg-red-100 text-red-700 hover:bg-red-200'
+                        ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-red-200'
+                        : 'bg-white border-2 border-red-500 text-red-600 hover:bg-red-50'
                     }`}
                   >
-                    <X className="w-4 h-4 inline mr-1" />
-                    Invalid
+                    <X className="w-5 h-5 inline mr-1.5" />
+                    Mark Invalid
                   </button>
                 </div>
               </div>
@@ -1364,24 +1607,38 @@ const StudentDetail = () => {
                 {saving ? 'Sending Email...' : `Send Email for Invalid Docs (${Object.values(docValidation).filter(v => v === false).length})`}
               </button>
 
-              {/* Save Verification Button */}
-              <button
-                onClick={handleSaveVerification}
-                disabled={saving}
-                className="px-5 py-2.5 bg-green-600 text-white rounded font-medium text-sm hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" />
-                    Save Verification
-                  </>
-                )}
-              </button>
+              {/* Submit Verification Button */}
+              {isVerified ? (
+                <button
+                  disabled
+                  className="px-6 py-3 rounded-lg font-semibold text-base transition-all duration-200 flex items-center gap-2 shadow-md bg-green-100 text-green-800 border-2 border-green-300 cursor-not-allowed"
+                >
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span>Verified</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleSaveVerification}
+                  disabled={saving}
+                  className={`px-6 py-3 rounded-lg font-semibold text-base transition-all duration-200 flex items-center gap-2 shadow-md ${
+                    saving 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white hover:shadow-lg transform hover:-translate-y-0.5'
+                  }`}
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-5 h-5" />
+                      <span>Submit Verification</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>

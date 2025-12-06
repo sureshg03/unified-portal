@@ -985,25 +985,26 @@ def generate_enrollment_number(request):
         if course_name:
             try:
                 with connections['default'].cursor() as cursor:
-                    # Try exact match first
+                    # Try exact match first against degree field (most reliable)
                     cursor.execute("""
                         SELECT course_code 
                         FROM tbl_course 
-                        WHERE course_short_code = %s OR course_full_name = %s OR degree = %s
+                        WHERE degree LIKE %s
                         LIMIT 1
-                    """, [course_name, course_name, course_name])
+                    """, [f'%{course_name}%'])
                     row = cursor.fetchone()
                     
                     # If no exact match, try partial match using LIKE
                     if not row:
                         # Extract keywords for matching (e.g., "MCA" from "MASTER OF COMPUTER APPLICATIONS")
-                        if 'COMPUTER APPLICATION' in course_name.upper():
+                        # NOTE: Order matters - check more specific terms first
+                        if 'COMPUTER APPLICATION' in course_name.upper() or 'MCA' in course_name.upper():
                             search_term = 'M.C.A'
                         elif 'BUSINESS ADMINISTRATION' in course_name.upper() or 'MBA' in course_name.upper():
                             search_term = 'M.B.A'
-                        elif 'COMMERCE' in course_name.upper():
+                        elif 'COMMERCE' in course_name.upper() or 'M.COM' in course_name.upper():
                             search_term = 'M.COM'
-                        elif 'MATHEMATICS' in course_name.upper():
+                        elif 'MATHEMATICS' in course_name.upper() or 'MATHS' in course_name.upper():
                             search_term = 'M.SC'
                         elif 'ENGLISH' in course_name.upper():
                             search_term = 'M.A'
