@@ -32,7 +32,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
       filter: 'blur(0px)', 
       transition: { 
         duration: 0.6, 
-        ease: [0.4, 0, 0.2, 1]
+        type: 'tween'
       } 
     },
     exit: { 
@@ -42,7 +42,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
       filter: 'blur(8px)', 
       transition: { 
         duration: 0.4, 
-        ease: [0.4, 0, 0.6, 1]
+        type: 'tween'
       } 
     },
   };
@@ -55,7 +55,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
       x: 0,
       transition: { 
         duration: 0.5, 
-        ease: [0.4, 0, 0.2, 1],
+        type: 'tween',
         delay: i * 0.08
       },
     }),
@@ -64,13 +64,13 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
       scale: 1.02,
       transition: { 
         duration: 0.3, 
-        ease: [0.4, 0, 0.2, 1]
+        type: 'tween'
       },
     },
     active: { 
       scale: 0.96,
       x: 4,
-      transition: { duration: 0.15 } 
+      transition: { duration: 0.15, type: 'tween' } 
     },
   };
 
@@ -140,6 +140,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
   return (
     <AnimatePresence>
       {isSidebarOpen && (
+        // @ts-ignore
         <motion.aside
           className="fixed sm:static top-0 left-0 w-full max-w-[320px] sm:w-64 lg:w-80 min-h-screen bg-gradient-to-br from-purple-900 via-purple-900 to-purple-900 flex flex-col z-40 overflow-y-auto shadow-2xl backdrop-blur-2xl sm:shadow-none sm:z-20 border-r border-purple-500/20"
           variants={sidebarVariants}
@@ -245,6 +246,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
               const isHovered = hoveredItem === item.name;
 
               return (
+                // @ts-ignore
                 <motion.div
                   key={item.name}
                   custom={index}
