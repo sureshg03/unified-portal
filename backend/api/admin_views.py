@@ -227,6 +227,13 @@ def get_student_details(request, application_id):
                 user_id=application.user_id
             ).first()
 
+        # Get student contact info from Student model
+        student_contact = None
+        if application and application.user_id:
+            student_contact = Student.objects.filter(
+                user_id=application.user_id
+            ).first()
+
         # Get payment info
         payment = ApplicationPayment.objects.filter(
             application_id=application_id
@@ -259,7 +266,7 @@ def get_student_details(request, application_id):
 
         # Extract contact information
         email = getattr(application, 'email', None) or (user_obj.email if user_obj else None) or 'N/A'
-        phone = getattr(student_details, 'phone', None) or getattr(application, 'phone', None) or 'N/A'
+        phone = getattr(student_contact, 'phone', None) or getattr(student_details, 'phone', None) or getattr(application, 'phone', None) or 'N/A'
 
         # Build comprehensive response
         response_data = {

@@ -18,10 +18,68 @@ import {
 
 const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, setIsProfileOpen, handleLogout, handleNewApplication, isSidebarOpen, setIsSidebarOpen, isPaid }) => {
   const [hoveredItem, setHoveredItem] = useState(null);
+  const [verificationStatus, setVerificationStatus] = useState({
+    eligibility_verified: false,
+    eligibility_status: 'Pending',
+    admission_confirmed: false,
+    enrollment_no: null,
+    application_id: null
+  });
 
   useEffect(() => {
     console.log('Sidebar.jsx prop:', isSidebarOpen); 
   }, [isSidebarOpen]);
+
+  // Fetch verification status
+  useEffect(() => {
+    const fetchVerificationStatus = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('No token found for verification status fetch');
+        return;
+      }
+      
+      try {
+        console.log('Fetching verification status...');
+        const response = await fetch('http://localhost:8000/api/user-profile/', {
+          headers: { 
+            'Authorization': `Token ${token}`,
+            'Content-Type': 'application/json'
+          },
+          cache: 'no-cache' // Force fresh data
+        });
+        
+        console.log('Verification status response:', response.status);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Verification status data received:', data);
+          console.log('Raw response data.data:', JSON.stringify(data.data, null, 2));
+          
+          if (data.status === 'success' && data.data) {
+            const newStatus = {
+              eligibility_verified: data.data.eligibility_verified || false,
+              eligibility_status: data.data.eligibility_status || 'Pending',
+              admission_confirmed: data.data.admission_confirmed || false,
+              enrollment_no: data.data.enrollment_no || null,
+              application_id: data.data.application_id || null
+            };
+            console.log('Setting verification status:', newStatus);
+            setVerificationStatus(newStatus);
+          }
+        } else {
+          console.error('Failed to fetch verification status:', response.status, await response.text());
+        }
+      } catch (error) {
+        console.error('Error fetching verification status:', error);
+      }
+    };
+
+    fetchVerificationStatus();
+    // Refresh every 5 seconds for more responsive updates
+    const interval = setInterval(fetchVerificationStatus, 5000);
+    return () => clearInterval(interval);
+  }, [isPaid]); // Re-fetch when payment status changes
 
   const sidebarVariants = {
     hidden: { opacity: 0, x: '-100%', scale: 0.95, filter: 'blur(8px)' },
@@ -74,6 +132,42 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
     },
   };
 
+  // Helper function to get status badge
+  const getStatusBadge = (itemName) => {
+    console.log(`Getting badge for ${itemName}:`, verificationStatus);
+    
+    if (itemName === 'applicationProgress') {
+      if (verificationStatus.admission_confirmed) {
+        console.log('Badge: Confirmed (green)');
+        return { text: 'Confirmed', color: 'bg-green-500', pulse: true };
+      } else if (verificationStatus.eligibility_verified) {
+        console.log('Badge: Verified (blue)');
+        return { text: 'Verified', color: 'bg-blue-500', pulse: true };
+      } else if (verificationStatus.eligibility_status === 'Eligible') {
+        console.log('Badge: Eligible (yellow)');
+        return { text: 'Eligible', color: 'bg-yellow-500', pulse: true };
+      } else if (verificationStatus.eligibility_status === 'Not Eligible') {
+        console.log('Badge: Rejected (red)');
+        return { text: 'Rejected', color: 'bg-red-500', pulse: false };
+      } else {
+        console.log('Badge: Pending (gray)');
+        return { text: 'Pending', color: 'bg-gray-500', pulse: false };
+      }
+    } else if (itemName === 'applicationDownload') {
+      if (verificationStatus.admission_confirmed && verificationStatus.enrollment_no) {
+        console.log('Badge: Ready (green)');
+        return { text: 'Ready', color: 'bg-green-500', pulse: true };
+      } else if (verificationStatus.eligibility_verified) {
+        console.log('Badge: Processing (yellow)');
+        return { text: 'Processing', color: 'bg-yellow-500', pulse: true };
+      } else {
+        console.log('Badge: Not Ready (gray)');
+        return { text: 'Not Ready', color: 'bg-gray-500', pulse: false };
+      }
+    }
+    return null;
+  };
+
   // Conditional menu items based on payment status with enhanced styling
   const menuItems = isPaid
     ? [
@@ -91,7 +185,8 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
           icon: ClipboardDocumentCheckIcon, 
           gradient: 'from-pink-700 via-pink-700 to-pink-700',
           iconBg: 'from-pink-400 to-pink-600',
-          shadow: 'shadow-violet-500/50'
+          shadow: 'shadow-violet-500/50',
+          badge: true
         },
         { 
           name: 'applicationDownload', 
@@ -99,7 +194,8 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
           icon: ArrowDownTrayIcon, 
           gradient: 'from-blue-600 via-blue-600 to-blue-600',
           iconBg: 'from-blue-400 to-blue-600',
-          shadow: 'shadow-cyan-500/50'
+          shadow: 'shadow-cyan-500/50',
+          badge: true
         },
         { 
           name: 'paymentHistory', 
@@ -195,8 +291,24 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
             />
           </div>
 
+          {/* Debug Panel - Remove after testing */}
+          {isPaid && (
+            <div className="relative px-4 sm:px-5 lg:px-6 pt-20 sm:pt-8 pb-2">
+              <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3 text-xs">
+                <div className="font-bold text-yellow-200 mb-1">Debug Status:</div>
+                <div className="text-yellow-100 space-y-0.5">
+                  <div>Verified: {String(verificationStatus.eligibility_verified)}</div>
+                  <div>Status: {verificationStatus.eligibility_status}</div>
+                  <div>Confirmed: {String(verificationStatus.admission_confirmed)}</div>
+                  <div>Enrollment: {verificationStatus.enrollment_no || 'None'}</div>
+                  <div>App ID: {verificationStatus.application_id || 'None'}</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Header Section with Enhanced Design */}
-          <div className="relative px-4 sm:px-5 lg:px-6 pt-20 sm:pt-8 lg:pt-10 pb-6">
+          <div className="relative px-4 sm:px-5 lg:px-6 pt-2 sm:pt-2 lg:pt-2 pb-6">
             <motion.div
               className="flex items-center space-x-4 bg-gradient-to-r from-purple-800/30 to-purple-800/30 backdrop-blur-xl rounded-2xl p-4 border border-purple-400/20 shadow-lg"
               initial={{ opacity: 0, y: -20 }}
@@ -328,8 +440,29 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
                       {item.label}
                     </span>
 
+                    {/* Status Badge */}
+                    {item.badge && (() => {
+                      const badge = getStatusBadge(item.name);
+                      if (badge) {
+                        return (
+                          <motion.div
+                            className={`relative z-10 ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold text-white ${badge.color} shadow-lg flex items-center gap-1`}
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            {badge.pulse && (
+                              <span className={`w-1.5 h-1.5 ${badge.color} rounded-full animate-pulse`}></span>
+                            )}
+                            {badge.text}
+                          </motion.div>
+                        );
+                      }
+                      return null;
+                    })()}
+
                     {/* Active Indicator Dot */}
-                    {isActive && (
+                    {isActive && !item.badge && (
                       <motion.div
                         className="absolute right-3 w-2 h-2 bg-white rounded-full shadow-lg"
                         initial={{ scale: 0 }}
@@ -496,15 +629,48 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.1 }}
-                        className="px-3 py-2 bg-purple-900/40 rounded-lg border border-purple-400/20"
+                        className="space-y-2"
                       >
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-purple-300">Status:</span>
-                          <span className="flex items-center gap-1 text-green-400 font-semibold">
-                            <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
-                            Active
-                          </span>
+                        <div className="px-3 py-2 bg-purple-900/40 rounded-lg border border-purple-400/20">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-purple-300">Status:</span>
+                            <span className="flex items-center gap-1 text-green-400 font-semibold">
+                              <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
+                              Active
+                            </span>
+                          </div>
                         </div>
+                        
+                        {/* Verification Status */}
+                        {isPaid && (
+                          <div className="px-3 py-2 bg-purple-900/40 rounded-lg border border-purple-400/20">
+                            <div className="text-xs space-y-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-purple-300">Verification:</span>
+                                <span className={`flex items-center gap-1 font-semibold ${
+                                  verificationStatus.eligibility_verified ? 'text-green-400' : 
+                                  verificationStatus.eligibility_status === 'Eligible' ? 'text-yellow-400' :
+                                  verificationStatus.eligibility_status === 'Not Eligible' ? 'text-red-400' :
+                                  'text-gray-400'
+                                }`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${
+                                    verificationStatus.eligibility_verified ? 'bg-green-400 animate-pulse' : 
+                                    verificationStatus.eligibility_status === 'Eligible' ? 'bg-yellow-400 animate-pulse' :
+                                    verificationStatus.eligibility_status === 'Not Eligible' ? 'bg-red-400' :
+                                    'bg-gray-400'
+                                  }`}></span>
+                                  {verificationStatus.eligibility_verified ? 'Verified' : verificationStatus.eligibility_status}
+                                </span>
+                              </div>
+                              {verificationStatus.enrollment_no && (
+                                <div className="flex items-center justify-between pt-1 border-t border-purple-400/20">
+                                  <span className="text-purple-300">Enrollment:</span>
+                                  <span className="text-white font-semibold text-[10px]">{verificationStatus.enrollment_no}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </motion.div>
                     </div>
                   </motion.div>

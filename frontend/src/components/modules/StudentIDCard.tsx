@@ -23,6 +23,9 @@ interface StudentData {
   contact_no?: string;
   contact_number?: string;
   telephone?: string;
+  contact?: string;
+  phone_number?: string;
+  mobile_number?: string;
   email?: string;
   lsc_code?: string;
   lsc_name?: string;
@@ -108,8 +111,27 @@ const StudentIDCard: React.FC = () => {
           phone: data.phone,
           contact_no: data.contact_no,
           contact_number: data.contact_number,
-          telephone: data.telephone
+          telephone: data.telephone,
+          contact: data.contact,
+          phone_number: data.phone_number,
+          mobile_number: data.mobile_number
         });
+        console.log('Selected phone value:', data.mobile || data.phone || 'N/A');
+        console.log('All available keys:', Object.keys(data));
+        console.log('All fields with phone-like names:', Object.keys(data).filter(key => 
+          key.toLowerCase().includes('phone') || 
+          key.toLowerCase().includes('mobile') || 
+          key.toLowerCase().includes('contact') ||
+          key.toLowerCase().includes('tel')
+        ));
+        console.log('Values of phone-like fields:', Object.keys(data)
+          .filter(key => 
+            key.toLowerCase().includes('phone') || 
+            key.toLowerCase().includes('mobile') || 
+            key.toLowerCase().includes('contact') ||
+            key.toLowerCase().includes('tel')
+          )
+          .reduce((obj, key) => ({ ...obj, [key]: data[key] }), {}));
         console.log('All fields:', {
           enrollment_no: data.enrollment_no,
           application_no: data.application_no,
@@ -124,11 +146,13 @@ const StudentIDCard: React.FC = () => {
           address: formattedAddress || 'Address not available',
           name: data.name || data.name_initial || data.student_name || 'N/A',
           programme: data.programme || data.programme_applied || 'N/A',
-          mobile: data.mobile || data.phone || data.contact_no || data.contact_number || data.telephone || 'N/A',
+          mobile: data.mobile || data.phone || data.contact_no || data.contact_number || data.telephone || data.contact || data.phone_number || data.mobile_number || 'N/A',
           enrollment_no: data.enrollment_no || 'Pending',
           deb_id: data.deb_id || 'N/A',
           photo_url: photoUrl
         });
+        
+        console.log('Final mobile value set:', data.mobile || data.phone || data.contact_no || data.contact_number || data.telephone || data.contact || data.phone_number || data.mobile_number || 'N/A');
         
         toast.success('Student details loaded successfully');
       } else {

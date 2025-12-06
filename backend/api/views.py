@@ -310,16 +310,87 @@ def get_user_profile(request):
                 if not photo_url.startswith('http'):
                     photo_url = f"{request.scheme}://{request.get_host()}{photo_url}"
         
+        # Get application verification status
+        logger.info(f"\n{'='*80}")
+        logger.info(f"🔍 USER PROFILE REQUEST START")
+        logger.info(f"User Email: {user.email}")
+        logger.info(f"User ID: {user.id}")
+        logger.info(f"User Username: {user.username}")
+        
+        # Try to find application by user
+        all_applications = Application.objects.filter(user=user)
+        logger.info(f"Total applications for user: {all_applications.count()}")
+        
+        application = all_applications.first()
+        eligibility_verified = False
+        eligibility_status = 'Pending'
+        admission_confirmed = False
+        enrollment_no = None
+        application_id = None
+        
+        if application:
+            # Read directly from model fields
+            eligibility_verified = bool(application.eligibility_verified)
+            eligibility_status = str(application.eligibility_status) if application.eligibility_status else 'Pending'
+            admission_confirmed = bool(application.admission_confirmed)
+            enrollment_no = str(application.enrollment_no) if application.enrollment_no else None
+            application_id = str(application.application_id) if application.application_id else None
+            
+            logger.info(f"\n✅ APPLICATION FOUND!")
+            logger.info(f"Application ID: {application_id}")
+            logger.info(f"Application User ID: {application.user_id if hasattr(application, 'user_id') else 'N/A'}")
+            logger.info(f"Application User Email: {application.user.email if application.user else 'N/A'}")
+            logger.info(f"\n📊 VERIFICATION STATUS:")
+            logger.info(f"eligibility_verified (DB): {application.eligibility_verified} (type: {type(application.eligibility_verified)})")
+            logger.info(f"eligibility_verified (converted): {eligibility_verified}")
+            logger.info(f"eligibility_status (DB): {application.eligibility_status}")
+            logger.info(f"eligibility_status (converted): {eligibility_status}")
+            logger.info(f"admission_confirmed (DB): {application.admission_confirmed} (type: {type(application.admission_confirmed)})")
+            logger.info(f"admission_confirmed (converted): {admission_confirmed}")
+            logger.info(f"enrollment_no (DB): {application.enrollment_no}")
+            logger.info(f"enrollment_no (converted): {enrollment_no}")
+            logger.info(f"verified_date: {application.verified_date if hasattr(application, 'verified_date') else 'N/A'}")
+            logger.info(f"verified_by: {application.verified_by if hasattr(application, 'verified_by') else 'N/A'}")
+        else:
+            logger.warning(f"\n❌ NO APPLICATION FOUND!")
+            logger.warning(f"Checked for user: {user.email} (ID: {user.id})")
+            # Check if there are any applications at all
+            total_apps = Application.objects.all().count()
+            logger.warning(f"Total applications in database: {total_apps}")
+            if total_apps > 0:
+                # Show first few applications for debugging
+                sample_apps = Application.objects.all()[:5]
+                logger.warning("Sample applications in DB:")
+                for app in sample_apps:
+                    logger.warning(f"  - App ID: {app.application_id}, User: {app.user.email if app.user else 'NO USER'}, Status: {app.eligibility_status}")
+        
+        logger.info(f"{'='*80}\n")
+        
+        response_data = {
+            "email": user.email,
+            "name": student.name if student else user.username or 'User',
+            "phone": student.phone if student else '',
+            "username": user.username or user.email,
+            "photo_url": photo_url,
+            "eligibility_verified": eligibility_verified,
+            "eligibility_status": eligibility_status,
+            "admission_confirmed": admission_confirmed,
+            "enrollment_no": enrollment_no,
+            "application_id": application_id
+        }
+        
+        logger.info(f"\n📤 RESPONSE DATA BEING SENT:")
+        logger.info(f"eligibility_verified: {response_data['eligibility_verified']} (type: {type(response_data['eligibility_verified'])})")
+        logger.info(f"eligibility_status: {response_data['eligibility_status']}")
+        logger.info(f"admission_confirmed: {response_data['admission_confirmed']} (type: {type(response_data['admission_confirmed'])})")
+        logger.info(f"enrollment_no: {response_data['enrollment_no']}")
+        logger.info(f"application_id: {response_data['application_id']}")
+        logger.info(f"{'='*80}\n")
+        
         return Response(
             {
                 "status": "success",
-                "data": {
-                    "email": user.email,
-                    "name": student.name if student else user.username or 'User',
-                    "phone": student.phone if student else '',
-                    "username": user.username or user.email,
-                    "photo_url": photo_url
-                }
+                "data": response_data
             },
             status=status.HTTP_200_OK
         )
