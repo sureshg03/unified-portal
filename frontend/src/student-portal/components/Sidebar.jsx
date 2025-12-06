@@ -32,7 +32,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
       filter: 'blur(0px)', 
       transition: { 
         duration: 0.6, 
-        ease: [0.22, 1, 0.36, 1]
+        ease: 'easeOut'
       } 
     },
     exit: { 
@@ -42,7 +42,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
       filter: 'blur(8px)', 
       transition: { 
         duration: 0.4, 
-        ease: [0.4, 0, 1, 1]
+        ease: 'easeInOut'
       } 
     },
   };
@@ -55,7 +55,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
       x: 0,
       transition: { 
         duration: 0.5, 
-        ease: [0.22, 1, 0.36, 1],
+        ease: 'easeOut',
         delay: i * 0.08
       },
     }),
@@ -64,7 +64,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
       scale: 1.02,
       transition: { 
         duration: 0.3, 
-        ease: [0.4, 0, 0.2, 1]
+        ease: 'easeOut'
       },
     },
     active: { 

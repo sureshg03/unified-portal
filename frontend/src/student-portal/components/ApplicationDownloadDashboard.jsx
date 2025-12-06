@@ -12,6 +12,7 @@ import {
   DocumentCheckIcon,
   PrinterIcon,
   EyeIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline';
 import { generateProfessionalApplicationPDF } from '../utils/professionalPdfGenerator';
 
@@ -130,6 +131,8 @@ const ApplicationDownloadDashboard = () => {
   }
 
   const isPaid = applicationData.application.payment_status === 'P';
+  const isVerified = applicationData.application.is_verified || false;
+  const canDownload = isPaid && isVerified;
 
   return (
     <div className="max-w-5xl mx-auto p-6">
@@ -150,36 +153,68 @@ const ApplicationDownloadDashboard = () => {
         </div>
       </motion.div>
 
-      {/* Status Banner */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className={`p-6 rounded-xl border-2 mb-6 shadow-lg ${isPaid
-            ? 'bg-green-50 border-green-500'
-            : 'bg-orange-50 border-orange-500'
-          }`}
-      >
-        <div className="flex items-center gap-4">
-          <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg ${isPaid ? 'bg-green-500' : 'bg-orange-500'
-            }`}>
-            {isPaid ? (
-              <CheckCircleIcon className="h-8 w-8 text-white" />
-            ) : (
+      {/* Payment Status Banner */}
+      {!isPaid && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="p-6 rounded-xl border-2 mb-6 shadow-lg bg-orange-50 border-orange-500"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg bg-orange-500">
               <DocumentCheckIcon className="h-8 w-8 text-white" />
-            )}
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-orange-700">Payment Required</h2>
+              <p className="text-sm mt-1 text-orange-600">
+                Complete payment to proceed with document verification
+              </p>
+            </div>
           </div>
-          <div className="flex-1">
-            <h2 className={`text-xl font-bold ${isPaid ? 'text-green-700' : 'text-orange-700'}`}>
-              {isPaid ? 'Application Verified & Ready' : 'Payment Required'}
-            </h2>
-            <p className={`text-sm mt-1 ${isPaid ? 'text-green-600' : 'text-orange-600'}`}>
-              {isPaid
-                ? 'Your application has been verified and is ready for download'
-                : 'Complete payment to unlock application download'}
-            </p>
+        </motion.div>
+      )}
+
+      {/* Verification Pending Banner */}
+      {isPaid && !isVerified && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="p-6 rounded-xl border-2 mb-6 shadow-lg bg-yellow-50 border-yellow-500"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg bg-yellow-500">
+              <ClockIcon className="h-8 w-8 text-white" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-yellow-700">Verification Pending</h2>
+              <p className="text-sm mt-1 text-yellow-600">
+                Your documents are under review by the CDOE Admin. Download will be available once verified.
+              </p>
+            </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      )}
+
+      {/* Verified Status Banner */}
+      {canDownload && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="p-6 rounded-xl border-2 mb-6 shadow-lg bg-green-50 border-green-500"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg bg-green-500">
+              <CheckCircleIcon className="h-8 w-8 text-white" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-green-700">Documents Verified & Ready</h2>
+              <p className="text-sm mt-1 text-green-600">
+                Your application has been verified by LSC admin and is ready for download
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Application Details Card */}
       <motion.div
@@ -242,12 +277,14 @@ const ApplicationDownloadDashboard = () => {
               <div className="flex items-start gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
                 <CheckCircleIcon className="h-6 w-6 text-green-600 mt-0.5" />
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Status</p>
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold ${isPaid
-                      ? 'bg-green-100 text-green-700 border border-green-300'
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Verification Status</p>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold ${canDownload
+                    ? 'bg-green-100 text-green-700 border border-green-300'
+                    : isPaid
+                      ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
                       : 'bg-orange-100 text-orange-700 border border-orange-300'
                     }`}>
-                    {isPaid ? 'VERIFIED' : 'PENDING PAYMENT'}
+                    {canDownload ? 'VERIFIED' : isPaid ? 'PENDING VERIFICATION' : 'PENDING PAYMENT'}
                   </span>
                 </div>
               </div>
@@ -289,12 +326,12 @@ const ApplicationDownloadDashboard = () => {
       >
         {/* Print Preview Card */}
         <motion.div
-          whileHover={{ scale: isPaid ? 1.03 : 1 }}
-          className={`bg-indigo-600 rounded-xl shadow-xl p-6 text-white relative overflow-hidden group ${isPaid
-              ? 'cursor-pointer'
-              : 'opacity-60 cursor-not-allowed'
+          whileHover={{ scale: canDownload ? 1.03 : 1 }}
+          className={`bg-indigo-600 rounded-xl shadow-xl p-6 text-white relative overflow-hidden group ${canDownload
+            ? 'cursor-pointer'
+            : 'opacity-60 cursor-not-allowed'
             }`}
-          onClick={isPaid ? handlePrintPreview : null}
+          onClick={canDownload ? handlePrintPreview : null}
         >
           <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
           <div className="relative z-10">
@@ -303,11 +340,13 @@ const ApplicationDownloadDashboard = () => {
             </div>
             <h3 className="text-xl font-bold mb-2">Print Preview</h3>
             <p className="text-sm text-indigo-100 mb-4">
-              {isPaid
+              {canDownload
                 ? 'View and print your application form'
-                : 'Available after payment'}
+                : !isPaid
+                  ? 'Available after payment'
+                  : 'Available after verification'}
             </p>
-            {isPaid ? (
+            {canDownload ? (
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <span>Open Preview</span>
                 <motion.div
@@ -327,12 +366,12 @@ const ApplicationDownloadDashboard = () => {
 
         {/* Direct Download Card */}
         <motion.div
-          whileHover={{ scale: isPaid ? 1.03 : 1 }}
-          className={`bg-blue-600 rounded-xl shadow-xl p-6 text-white relative overflow-hidden group ${isPaid
-              ? 'cursor-pointer'
-              : 'opacity-60 cursor-not-allowed'
+          whileHover={{ scale: canDownload ? 1.03 : 1 }}
+          className={`bg-blue-600 rounded-xl shadow-xl p-6 text-white relative overflow-hidden group ${canDownload
+            ? 'cursor-pointer'
+            : 'opacity-60 cursor-not-allowed'
             }`}
-          onClick={isPaid ? handleDirectDownload : null}
+          onClick={canDownload ? handleDirectDownload : null}
         >
           <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
           <div className="relative z-10">
@@ -341,11 +380,13 @@ const ApplicationDownloadDashboard = () => {
             </div>
             <h3 className="text-xl font-bold mb-2">Download PDF</h3>
             <p className="text-sm text-blue-100 mb-4">
-              {isPaid
+              {canDownload
                 ? 'Download form directly as PDF file'
-                : 'Available after payment'}
+                : !isPaid
+                  ? 'Available after payment'
+                  : 'Available after verification'}
             </p>
-            {isPaid ? (
+            {canDownload ? (
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <span>Download Now</span>
                 <motion.div
@@ -365,12 +406,12 @@ const ApplicationDownloadDashboard = () => {
 
         {/* Print Directly Card */}
         <motion.div
-          whileHover={{ scale: isPaid ? 1.03 : 1 }}
-          className={`bg-green-600 rounded-xl shadow-xl p-6 text-white relative overflow-hidden group ${isPaid
-              ? 'cursor-pointer'
-              : 'opacity-60 cursor-not-allowed'
+          whileHover={{ scale: canDownload ? 1.03 : 1 }}
+          className={`bg-green-600 rounded-xl shadow-xl p-6 text-white relative overflow-hidden group ${canDownload
+            ? 'cursor-pointer'
+            : 'opacity-60 cursor-not-allowed'
             }`}
-          onClick={isPaid ? handlePrintPreview : null}
+          onClick={canDownload ? handlePrintPreview : null}
         >
           <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
           <div className="relative z-10">
@@ -379,11 +420,13 @@ const ApplicationDownloadDashboard = () => {
             </div>
             <h3 className="text-xl font-bold mb-2">Quick Print</h3>
             <p className="text-sm text-green-100 mb-4">
-              {isPaid
+              {canDownload
                 ? 'Open print dialog immediately'
-                : 'Available after payment'}
+                : !isPaid
+                  ? 'Available after payment'
+                  : 'Available after verification'}
             </p>
-            {isPaid ? (
+            {canDownload ? (
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <span>Print Now</span>
                 <motion.div
@@ -403,7 +446,7 @@ const ApplicationDownloadDashboard = () => {
       </motion.div>
 
       {/* Instructions */}
-      {isPaid && (
+      {canDownload && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
