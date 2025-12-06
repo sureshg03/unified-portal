@@ -176,12 +176,20 @@ const StudentDetail = () => {
 
       console.log('Saving verification with payload:', payload);
 
-      const response = await axios.post('http://localhost:8000/api/lsc-admin/save-verification/', payload);
+      const response = await axios.post(
+        'http://localhost:8000/api/lsc-admin/save-verification/',
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
 
       console.log('Save verification response:', response.data);
 
-        if (response.data.status === 'success') {
-          toast.success('Verification details saved successfully!', { autoClose: 3000 });
+      if (response.data.status === 'success') {
+        toast.success('Verification details saved successfully!', { autoClose: 3000 });
         await fetchStudentDetails(); // Refresh data
       } else {
         toast.error(response.data.message || 'Failed to save verification details');
@@ -716,7 +724,7 @@ const StudentDetail = () => {
             <tr>
               <td className="app-header" style={{ width: '180px', fontWeight: 'bold' }}>Application No :</td>
               <td className="app-value" colSpan="2">{student.application_id}</td>
-              <td rowSpan="3" style={{ width: '150px', textAlign: 'center', verticalAlign: 'middle', padding: '10px' }}>
+              <td rowSpan="4" style={{ width: '150px', textAlign: 'center', verticalAlign: 'middle', padding: '10px' }}>
                 {student?.photo_url ? (
                   <img
                     src={`http://127.0.0.1:8000${student.photo_url}`}
@@ -725,6 +733,16 @@ const StudentDetail = () => {
                   />
                 ) : (
                   <div style={{ width: '130px', height: '160px', border: '2px solid #000', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5' }}>Photo</div>
+                )}
+              </td>
+            </tr>
+            <tr>
+              <td className="app-header" style={{ fontWeight: 'bold' }}>Enrollment No :</td>
+              <td className="app-value" colSpan="2">
+                {enrollmentNo ? (
+                  <span className="font-semibold text-green-700">{enrollmentNo}</span>
+                ) : (
+                  <span className="text-orange-600 text-sm">Pending</span>
                 )}
               </td>
             </tr>

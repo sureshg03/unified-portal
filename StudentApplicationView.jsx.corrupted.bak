@@ -1,0 +1,585 @@
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { ArrowLeft, Printer, Download, Loader2, Check, X, Eye } from 'lucide-react';
+
+const StudentApplicationView = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [student, setStudent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [academicYear, setAcademicYear] = useState('2025-26');
+
+  // Extract application ID from URL
+  const pathParts = location.pathname.split('/');
+  const studentDetailsIndex = pathParts.indexOf('student-details');
+  const applicationId = pathParts.slice(studentDetailsIndex + 1).join('/');
+
+  useEffect(() => {
+    if (applicationId) {
+      fetchStudentDetails();
+      fetchAcademicYear();
+    }
+  }, [applicationId]);
+
+  const fetchAcademicYear = async () => {
+    try {
+      const res = await axios.get('http://localhost:8000/portal/application-settings/active_academic_year/');
+      if (res.data.status === 'success' && res.data.academic_year) {
+        setAcademicYear(res.data.academic_year);
+      }
+    } catch (err) {
+      console.error('Error fetching academic year:', err);
+    }
+  };
+
+  const fetchStudentDetails = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `http://localhost:8000/api/lsc-admin/student-details/${applicationId}/`
+      );
+      
+      if (response.data?.status === 'success' && response.data?.data) {
+        setStudent(response.data.data);
+      } else {
+        toast.error('Failed to load student details');
+      }
+    } catch (error) {
+      console.error('Error fetching student details:', error);
+      toast.error('Failed to load student details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const formatAddress = (type) => {
+    if (!student) return 'N/A';
+    
+    const area = student[`${type}_area`] || '';
+    const town = student[`${type}_town`] || '';
+    const district = student[`${type}_district`] || '';
+    const state = student[`${type}_state`] || '';
+    const country = student[`${type}_country`] || '';
+    const pincode = student[`${type}_pincode`] || '';
+    
+    const parts = [area, town, district, state, country, pincode].filter(p => p);
+    return parts.length > 0 ? parts.join(', ') : 'Not Provided';
+  };
+
+  const parseSubjects = (subjectData) => {
+    if (!subjectData) return 'Not Specified';
+    
+    try {
+      if (typeof subjectData === 'string') {
+        try {
+          const parsed = JSON.parse(subjectData);
+          return Array.isArray(parsed) ? parsed.join(', ') : parsed;
+        } catch {
+          return subjectData;
+        }
+      } else if (Array.isArray(subjectData)) {
+        return subjectData.join(', ');
+      }
+      return String(subjectData);
+    } catch {
+      return 'Not Specified';
+    }
+  };
+
+  const parseMonthYear = (qual) => {
+    let monthOfPassing = '';
+    let yearOfPassing = '';
+    
+    if (qual.month_year || qual.month_year_of_passing) {
+      const monthYear = qual.month_year || qual.month_year_of_passing;
+      if (typeof monthYear === 'string' && monthYear.includes('/')) {
+        const parts = monthYear.split('/');
+        if (parts.length === 2) {
+          monthOfPassing = parts[0];
+          yearOfPassing = parts[1];
+        }
+      } else {
+        monthOfPassing = monthYear;
+      }
+    } else {
+      monthOfPassing = qual.month_of_passing || qual.month || '';
+      yearOfPassing = qual.year_of_passing || qual.year || '';
+    }
+    
+    // Convert month number to name
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    if (monthOfPassing && !isNaN(Number(monthOfPassing))) {
+      const monthNum = parseInt(monthOfPassing);
+      if (monthNum >= 1 && monthNum <= 12) {
+        monthOfPassing = monthNames[monthNum - 1];
+      }
+    }
+    
+    return `${monthOfPassing || 'N/A'} ${yearOfPassing || 'N/A'}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
+  if (!student) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <p className="text-lg text-gray-600 mb-4">Student details not found</p>
+        <button 
+          onClick={() => navigate(-1)}
+          className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+        >
+          Go Back
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {/* Print Styles */}
+      <>{`
+        @media print {
+          .no-print {
+            display !important;
+          }
+          body {
+            margin: 0;
+            padding: 0;
+          }
+          .print-container {
+            box-shadow !important;
+            margin: 0 !important;
+            padding: 20px !important;
+          }
+        }
+      `}<>
+
+      {/* Action Buttons */}
+      <>
+        <> navigate(-1)}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover-gray-700 transition-all shadow-lg"
+        >
+          <>
+          Back
+        <>
+        <>
+          <>
+          Print
+        <>
+      <>
+
+      {/* Main Content */}
+      <>
+        <>
+          {/* Header */}
+          <>
+            <>PUCDOE<>
+            
+            <>
+              <> { e.currentTarget.style.visibility = 'hidden'; }}
+              />
+            <>
+            
+            <>Periyar University<>
+            <>State University - NAAC 'A+' Grade - NIRF Rank 94<>
+            <>State Public University Rank 40 - SDG Institutions Rank Band: 11-50<>
+            <>Salem-636011, Tamilnadu, India.<>
+            
+            <>
+              CENTRE FOR DISTANCE AND ONLINE EDUCATION (CDOE)
+            <>
+            <>
+              Open and Distance Learning
+            <>
+          <>
+
+          <>
+            <>
+              Open and Distance Learning Programme (ODL) Admission for the Academic Year {student.academic_year || academicYear}
+            <>
+
+            {/* Application Info Box with Photo */}
+            <>
+              <>
+                <>
+                  <>
+                    <>Application No :<>{' '}
+                    <>{student.application_id || 'N/A'}<>
+                  <>
+                  <>
+                    {student.photo_url ? (
+                      <> {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.parentElement!.innerHTML = '<>Photo<>Not Uploaded<>';
+                        }}
+                      />
+                    ) : (
+                      <>
+                        Photo<>Not Uploaded
+                      <>
+                    )}
+                  <>
+                <>
+                <>
+                  <>
+                    <>Enrollment No :<>{' '}
+                    <>{student.enrollment_no || 'N/A'}<>
+                  <>
+                <>
+                <>
+                  <>
+                    <>Applied Date :<>{' '}
+                    <>{student.applied_date || new Date().toLocaleDateString('en-GB')}<>
+                  <>
+                <>
+                <>
+                  <>
+                    <>LSC :<>{' '}
+                    <>{student.lsc_name || `CDOE - Centre for Distance and Online Education (${student.lsc_code || 'LC2101'})`}<>
+                  <>
+                <>
+              <>
+            <>
+
+            {/* Main Details Table */}
+            <>
+              <>
+                <>
+                  <>1.<>
+                  <>Programme Applied<>
+                  <>:<>
+                  <>{student.programme || student.programme_applied || 'N/A'}<>
+                <>
+                <>
+                  <><>
+                  <>Course<>
+                  <>:<>
+                  <>{student.course || 'N/A'}<>
+                <>
+                <>
+                  <><>
+                  <>Medium<>
+                  <>:<>
+                  <>{student.medium || 'English'}<>
+                <>
+                <>
+                  <>2.<>
+                  <>Name of the Applicant<>
+                  <>:<>
+                  <>{student.student_name || student.name || student.name_initial || 'N/A'}<>
+                <>
+                <>
+                  <>3.<>
+                  <>Date of Birth<>
+                  <>:<>
+                  <>{student.dob || 'N/A'}<>
+                <>
+                <>
+                  <>4.<>
+                  <>(a) Name of the Father & Mother<>
+                  <>:<>
+                  <>{student.father_name || 'N/A'} - {student.mother_name || 'N/A'}<>
+                <>
+                <>
+                  <><>
+                  <>(b) Name of the Guardian<>
+                  <>:<>
+                  <>{student.guardian_name || ''}<>
+                <>
+                <>
+                  <>5.<>
+                  <>Father's & Mother's Occupation<>
+                  <>:<>
+                  <>{student.parent_occupation || student.father_occupation || 'N/A'}<>
+                <>
+                <>
+                  <>6.<>
+                  <>Gender<>
+                  <>:<>
+                  <>{student.gender || 'N/A'}<>
+                <>
+                <>
+                  <>7.<>
+                  <>Mother Tongue<>
+                  <>:<>
+                  <>{student.mother_tongue || 'N/A'}<>
+                <>
+                <>
+                  <>8.<>
+                  <>Nationality<>
+                  <>:<>
+                  <>{student.nationality || 'Indian'}<>
+                <>
+                <>
+                  <>9.<>
+                  <>Religion<>
+                  <>:<>
+                  <>{student.religion || 'N/A'}<>
+                <>
+                <>
+                  <>10.<>
+                  <>Community<>
+                  <>:<>
+                  <>{student.community || 'N/A'}<>
+                <>
+              <>
+            <>
+
+            {/* Address Section */}
+            <>
+              <>11. Communication Address<>
+              <>Permanent Address<>
+            <>
+
+            <>
+              <>
+                <>
+                  <>
+                    <>
+                      {formatAddress('comm')}
+                    <>
+                  <>
+                  <>
+                    <>
+                      {formatAddress('perm')}
+                    <>
+                  <>
+                <>
+              <>
+            <>
+
+            {/* Contact Details */}
+            <>
+              <>
+                <>
+                  <>12.<>
+                  <>Mobile No. / Telephone No.<>
+                  <>:<>
+                  <>{student.phone || student.mobile || 'N/A'}<>
+                <>
+                <>
+                  <>13.<>
+                  <>E-mail ID<>
+                  <>:<>
+                  <>{student.email || 'N/A'}<>
+                <>
+                <>
+                  <>14.<>
+                  <>(a)Aadhaar Card No. & Aadhaar Name<>
+                  <>:<>
+                  <>
+                    {student.aadhaar_number || student.aadhaar_no || 'N/A'}
+                    {student.aadhaar_name && <>{student.aadhaar_name}<>}
+                  <>
+                <>
+                <>
+                  <><>
+                  <>(b)ABC ID<>
+                  <>:<>
+                  <>{student.abc_id || ''}<>
+                <>
+                <>
+                  <><>
+                  <>(c)DEB ID<>
+                  <>:<>
+                  <>{student.deb_id || ''}<>
+                <>
+                <>
+                  <>15.<>
+                  <>Differently Abled<>
+                  <>:<>
+                  <>{student.differently_abled || 'No'}<>
+                <>
+                <>
+                  <>16.<>
+                  <>Blood Group<>
+                  <>:<>
+                  <>{student.blood_group || 'N/A'}<>
+                <>
+                <>
+                  <>17.<>
+                  <>Access to Internet<>
+                  <>:<>
+                  <>{student.internet_access || student.access_internet || 'Yes'}<>
+                <>
+              <>
+            <>
+
+            {/* Education Qualification */}
+            <>
+              18. Education Qualification
+            <>
+
+            <>
+              <>
+                <>
+                  <>Course<>
+                  <>Institution<>
+                  <>Board<>
+                  <>Subject Studied<>
+                  <>Register No<>
+                  <>%<>
+                  <>Month<>
+                  <>Year<>
+                  <>Mode<>
+                  <>Doc<>
+                <>
+              <>
+              <>
+                {student.qualifications && student.qualifications.length > 0 ? (
+                  student.qualifications.map((qual, idx) => {
+                    const { month, year } = parseMonthYear(qual);
+                    return (
+                      <>
+                        <>{qual.course || qual.exam_passed || 'N/A'}<>
+                        <>{qual.institution || qual.institute_name || qual.board_university || 'N/A'}<>
+                        <>{qual.board || qual.university || 'N/A'}<>
+                        <>{parseSubjects(qual.subjects_studied || qual.subject_studied || qual.subjects)}<>
+                        <>{qual.reg_no || qual.register_no || qual.register_number || 'N/A'}<>
+                        <>{qual.percentage || 'N/A'}<>
+                        <>{month}<>
+                        <>{year}<>
+                        <>{qual.mode_of_study || 'Regular'}<>
+                        <>{qual.document || qual.document_uploaded ? '✓' : '-'}<>
+                      <>
+                    );
+                  })
+                ) : (
+                  <>
+                    <>
+                      No educational qualification data available
+                    <>
+                  <>
+                )}
+              <>
+            <>
+
+            {/* Working Experience */}
+            <>
+              19. Working Experience (If Any)
+            <>
+
+            <>
+              <>
+                <>
+                  <>Working Status<>
+                  <>Organization<>
+                  <>Designation<>
+                  <>Years of Experience<>
+                <>
+              <>
+              <>
+                <>
+                  <>{student.current_designation || student.work_exp ? 'Yes' : 'No'}<>
+                  <>{student.current_institute || student.work_org || 'N/A'}<>
+                  <>{student.current_designation || student.work_des || 'N/A'}<>
+                  <>{student.years_experience || student.years_of_experience || 'N/A'}<>
+                <>
+              <>
+            <>
+
+            {/* Payment Status */}
+            <>
+              <>Application Fee Payment Details<>
+              <>
+                <>
+                  <>
+                    <>Order ID<>
+                    <>{student.order_id || 'N/A'}<>
+                    <>Amount<>
+                    <>₹ {student.amount || student.payment_amount || '236.00'}<>
+                    <>Status<>
+                    <>
+                      <>
+                        {student.payment_status === 'Paid' || student.payment_status === 'P' ? 'Paid' : 'Pending'}
+                      <>
+                    <>
+                  <>
+                  <>
+                    <>Bank Ref. No.<>
+                    <>{student.transaction_id || student.bank_ref_no || 'N/A'}<>
+                    <>Payment Mode<>
+                    <>{student.payment_mode || student.payment_method || 'Online'}<>
+                    <>Date<>
+                    <>{student.transaction_date || student.payment_date || new Date().toLocaleDateString('en-IN')}<>
+                  <>
+                <>
+              <>
+            <>
+
+            {/* Declaration */}
+            <>
+              <>Declaration<>
+              <>
+                I hereby declare that the information provided in this application form is true, complete and 
+                correct to the best of my knowledge and belief. I understand that any false information or 
+                suppression of facts may lead to cancellation of my admission at any stage.
+              <>
+              <>
+                I have carefully read and understood the eligibility criteria, rules and regulations, terms and 
+                conditions of admission to the Distance Education Programme of Periyar University and agree to 
+                abide by them. I also undertake to abide by the rules and regulations of the University as 
+                amended from time to time.
+              <>
+              <>
+                I understand that admission to the programme is provisional and subject to verification of 
+                original documents and eligibility criteria by the University. I agree to submit all required 
+                documents and certificates in original for verification when called upon by the University.
+              <>
+            <>
+
+            {/* Signature Section */}
+            <>
+              <>
+                {student.signature_url ? (
+                  <>
+                    <> { e.currentTarget.style.display = 'none'; }}
+                    />
+                  <>
+                ) : (
+                  <><>
+                )}
+                <>Signature of the Applicant<>
+              <>
+            <>
+
+            {/* Footer */}
+            <>
+              <>Centre for Distance and Online Education (CDOE)<>
+              <>Periyar University, Salem - 636011, Tamil Nadu, India<>
+              <>Phone: 0427-2345766, 2345520 | Email: <>info@periyaruniversity.ac.in<><>
+              <>© {new Date().getFullYear()} Periyar University. All Rights Reserved.<>
+              <>
+                Generated on: {new Date().toLocaleString('en-IN', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12
+                })}
+              <>
+            <>
+          <>
+        <>
+      <>
+    <>
+  );
+};
+
+export default StudentApplicationView;
+
+
+
