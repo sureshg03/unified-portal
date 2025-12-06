@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../../config/api';
 
 const ForgotPasswordForm = () => {
   const [email, setEmail] = useState('');
@@ -9,7 +10,7 @@ const ForgotPasswordForm = () => {
 
   const handleRequestOtp = async () => {
     try {
-      const res = await axios.post('http://localhost:8000/api/forgot-password/', { email });
+      const res = await axios.post(`${API_BASE_URL}/api/forgot-password/`, { email });
       if (res.data.status === 'success') {
         toast.success('OTP sent');
         navigate('/student/otp-verification', { state: { email } });
@@ -29,3 +30,5 @@ const ForgotPasswordForm = () => {
   );
 };
 export default ForgotPasswordForm;
+
+

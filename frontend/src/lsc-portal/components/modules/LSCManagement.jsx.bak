@@ -1,0 +1,732 @@
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { 
+  Plus, Edit, Trash2, Building2, Phone, Mail, MapPin, Key, Search, X, 
+  FileSpreadsheet, RefreshCw, Calendar, Users, TrendingUp, Sparkles, 
+  Clock, BarChart3, UserCheck, ChevronLeft, ChevronRight 
+} from 'lucide-react';
+import api from '@/lib/api';
+import * as XLSX from 'xlsx';
+
+
+
+export const LSCManagement = () => {
+  const { toast } = useToast();
+  const [lscCenters, setLscCenters] = useState<>([]);
+  const [filteredCenters, setFilteredCenters] = useState<>([]);
+  const [loading, setLoading] = useState(true);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingLsc, setEditingLsc] = useState<>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [formData, setFormData] = useState({
+    lsc_number: '',
+    lsc_name: '',
+    email: '',
+    mobile: '',
+    address: '',
+    password: '',
+    is_staff
+  });
+
+  useEffect(() => {
+    fetchLscCenters();
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredCenters(lscCenters);
+    } else {
+      const filtered = lscCenters.filter(lsc =>
+        lsc.lsc_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lsc.lsc_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lsc.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (lsc.mobile && lsc.mobile.includes(searchTerm))
+      );
+      setFilteredCenters(filtered);
+    }
+    setCurrentPage(1); // Reset to first page when search changes
+  }, [lscCenters, searchTerm]);
+
+  const fetchLscCenters = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/auth/lsc-centers/');
+      setLscCenters(response.data.results || []);
+    } catch (error) {
+      console.error('Error fetching LSC centers:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load LSC centers",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field] }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      lsc_number: '',
+      lsc_name: '',
+      email: '',
+      mobile: '',
+      address: '',
+      password: '',
+      is_staff
+    });
+  };
+
+  const handleCreate = async () => {
+    const existingLsc = lscCenters.find(lsc => lsc.lsc_number.toLowerCase() === formData.lsc_number.toLowerCase());
+    if (existingLsc) {
+      toast({ title: "Duplicate LSC Code", description: `LSC Center with code '${formData.lsc_number}' already exists.`, variant: "destructive" });
+      return;
+    }
+
+    const existingEmail = lscCenters.find(lsc => lsc.email.toLowerCase() === formData.email.toLowerCase());
+    if (existingEmail) {
+      toast({ title: "Duplicate Email", description: `LSC Center with email '${formData.email}' already exists.`, variant: "destructive" });
+      return;
+    }
+
+    try {
+      await api.post('/auth/lsc-centers/', formData);
+      toast({ title: "Success", description: `LSC Center ${formData.lsc_name} created successfully` });
+      setIsCreateDialogOpen(false);
+      resetForm();
+      fetchLscCenters();
+    } catch (error) {
+      const errorMessage = error.response?.data?.detail || error.response?.data?.errors || 'Failed to create LSC center';
+      toast({ title: "Error", description, variant: "destructive" });
+    }
+  };
+
+  const handleEdit = (lsc) => {
+    setEditingLsc(lsc);
+    setFormData({
+      lsc_number.lsc_number,
+      lsc_name.lsc_name,
+      email.email,
+      mobile.mobile || '',
+      address.address || '',
+      password: '',
+      is_staff.is_staff
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdate = async () => {
+    if (!editingLsc) return;
+
+    const existingLsc = lscCenters.find(lsc => lsc.lsc_number.toLowerCase() === formData.lsc_number.toLowerCase() && lsc.id !== editingLsc.id);
+    if (existingLsc) {
+      toast({ title: "Duplicate LSC Code", description: `LSC Center with code '${formData.lsc_number}' already exists.`, variant: "destructive" });
+      return;
+    }
+
+    const existingEmail = lscCenters.find(lsc => lsc.email.toLowerCase() === formData.email.toLowerCase() && lsc.id !== editingLsc.id);
+    if (existingEmail) {
+      toast({ title: "Duplicate Email", description: `LSC Center with email '${formData.email}' already exists.`, variant: "destructive" });
+      return;
+    }
+
+    try {
+      const updateData = { ...formData };
+      if (!updateData.password) delete updateData.password;
+
+      await api.put(`/auth/lsc-centers/${editingLsc.lsc_number}/`, updateData);
+      toast({ title: "Success", description: `LSC Center ${formData.lsc_name} updated successfully` });
+      setIsEditDialogOpen(false);
+      setEditingLsc(null);
+      resetForm();
+      fetchLscCenters();
+    } catch (error) {
+      const errorMessage = error.response?.data?.detail || error.response?.data?.errors || 'Failed to update LSC center';
+      toast({ title: "Error", description, variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (lsc) => {
+    if (!confirm(`Are you sure you want to delete LSC Center ${lsc.lsc_name}?`)) return;
+
+    try {
+      await api.delete(`/auth/lsc-centers/${lsc.lsc_number}/`);
+      toast({ title: "Success", description: `LSC Center ${lsc.lsc_name} deleted successfully` });
+      fetchLscCenters();
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to delete LSC center", variant: "destructive" });
+    }
+  };
+
+  const exportToExcel = () => {
+    try {
+      const exportData = filteredCenters.map((lsc, index) => ({
+        'S.No' + 1,
+        'LSC Code'.lsc_number,
+        'LSC Name'.lsc_name,
+        'Email'.email,
+        'Mobile'.mobile || 'N/A',
+        'Address'.address || 'N/A',
+        'Status'.is_active ? 'Active' : 'Inactive',
+        'Staff Member'.is_staff ? 'Yes' : 'No',
+        'Date Joined' Date(lsc.date_joined).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      ws['!cols'] = [{ wch: 6 }, { wch: 12 }, { wch: 25 }, { wch: 30 }, { wch: 15 }, { wch: 40 }, { wch: 10 }, { wch: 12 }, { wch: 18 }];
+      XLSX.utils.book_append_sheet(wb, ws, 'LSC Centers');
+      const filename = `LSC_Centers_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, filename);
+
+      toast({ title: "Export Successful", description: `Downloaded ${filteredCenters.length} center(s)` });
+    } catch (error) {
+      toast({ title: "Export Failed", description: "Failed to export data", variant: "destructive" });
+    }
+  };
+
+  // Pagination calculations
+  const totalItems = filteredCenters.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = filteredCenters.slice(startIndex, endIndex);
+
+  // Pagination handlers
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (value) => {
+    setItemsPerPage(Number(value));
+    setCurrentPage(1);
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage <>
+        <><>
+        <>Loading LSC Centers...<>
+      <>
+    );
+  }
+
+  return (
+    <>
+
+      {/* FIXED FLOATING ACTION BAR - NEVER DISAPPEARS */}
+      <>
+        <>
+          <>
+        <>
+
+        {/* ADD CENTER - PURE BUTTON */}
+        <> setIsCreateDialogOpen(true)}
+          className="h-10 px-4 bg-gradient-to-r from-blue-500 to-blue-600 hover-blue-600 hover-blue-700 text-white shadow-md hover-lg font-medium"
+        >
+          <>
+          Add Center
+        <>
+
+        <>
+          <>
+        <>
+      <>
+
+      {/* HEADER */}
+      <>
+        <><>
+        <>
+          <><>
+          <>
+            <>
+              <>
+                <>
+                  <>
+                    <><>
+                    <>
+                      <>
+                    <>
+                  <>
+                  <>
+                    <>
+                      LSC Management
+                    <>
+                    <>
+                      Manage and monitor LSC centers across your network
+                    <>
+                  <>
+                <>
+
+                <>
+                  <>
+                    <>
+                      <>
+                        <><><>
+                        <>
+                      <>
+                      <>{filteredCenters.length}<>
+                      <>Total Centers<>
+                    <>
+                  <>
+
+                  <>
+                    <>
+                      <>
+                        <><><>
+                        <>
+                      <>
+                      <>{currentTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}<>
+                      <>{currentTime.toLocaleDateString('en-US', { weekday: 'long' })}<>
+                    <>
+                  <>
+
+                  <>
+                    <>
+                      <>
+                        <><><>
+                        <><>
+                      <>
+                      <>{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}<>
+                      <>Live Time<>
+                    <>
+                  <>
+                <>
+              <>
+            <>
+          <>
+        <>
+      <>
+
+      {/* SEARCH BAR */}
+      <>
+        <>
+          <>
+            <>
+            <> setSearchTerm(e.target.value)}
+              className="pl-12 pr-12 h-12 text-base border-2 border-gray-200 focus-blue-400 rounded-xl shadow-sm hover-md transition-all font-medium"
+            />
+            {searchTerm && (
+              <> setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-red-100 hover-red-500 text-red-600 hover-white transition-all shadow-sm hover-md"
+                title="Clear search"
+              >
+                <>
+              <>
+            )}
+          <>
+          {searchTerm && (
+            <>
+              <>
+                {filteredCenters.length === 0 ? (
+                  <>
+                    <>
+                    <>No LSC centers found matching "{searchTerm}"<>
+                  <>
+                ) : (
+                  <>
+                    <>
+                    <>
+                      Found <>{filteredCenters.length}<> center(s)
+                    <>
+                  <>
+                )}
+              <>
+            <>
+          )}
+        <>
+      <>
+
+      {/* STATISTICS CARDS */}
+      <>
+        <>
+          <><>
+          <>
+            <>
+              <><><>
+              <>Total<>
+            <>
+            <>{filteredCenters.length}<>
+            <>{searchTerm ? `of ${lscCenters.length} total` : 'LSC Centers'}<>
+          <>
+        <>
+
+        <>
+          <><>
+          <>
+            <>
+              <><><>
+              <>Active<>
+            <>
+            <>
+              {filteredCenters.filter(lsc => lsc.is_active).length}
+            <>
+            <>Currently operational<>
+          <>
+        <>
+
+        <>
+          <><>
+          <>
+            <>
+              <><><>
+              <>Staff<>
+            <>
+            <>
+              {filteredCenters.filter(lsc => lsc.is_staff).length}
+            <>
+            <>With privileges<>
+          <>
+        <>
+
+        <>
+          <><>
+          <>
+            <>
+              <><><>
+              <>New<>
+            <>
+            <>
+              {filteredCenters.filter(lsc => {
+                const joined = new Date(lsc.date_joined);
+                const now = new Date();
+                return joined.getMonth() === now.getMonth() && joined.getFullYear() === now.getFullYear();
+              }).length}
+            <>
+            <>This month<>
+          <>
+        <>
+      <>
+
+      {/* TABLE */}
+      <>
+        <><>
+        <>
+          <>
+            <>
+              <><><>
+              LSC Centers Directory
+            <>
+            <>Complete overview of all registered LSC centers<>
+          <>
+          <>
+            {/* Show entries dropdown - moved to top right */}
+            {filteredCenters.length > 0 && (
+              <>
+                <>
+                  Show entries:
+                <>
+                <> handleItemsPerPageChange(e.target.value)}
+                  className="w-20 h-9 border-2 border-gray-200 focus-blue-400 rounded-lg bg-white shadow-sm hover-md transition-all px-3 text-sm font-medium focus-none focus-2 focus-blue-400/20"
+                >
+                  <>10<>
+                  <>25<>
+                  <>50<>
+                  <>100<>
+                <>
+              <>
+            )}
+            <> setIsCreateDialogOpen(true)}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover-blue-700 hover-indigo-700 text-white shadow-lg hover-xl transition-all duration-300 px-6 py-2 text-sm font-semibold rounded-lg"
+            >
+              <>
+              Add Centers
+            <>
+          <>
+        <>
+        <>
+          {filteredCenters.length === 0 ? (
+            <>
+              <><><>
+              <>{searchTerm ? 'No LSC Centers Found' : 'No LSC Centers Yet'}<>
+              <>
+                {searchTerm ? `No centers match your search for "${searchTerm}".` : 'Get started by creating your first LSC center'}
+              <>
+              {!searchTerm && (
+                <> setIsCreateDialogOpen(true)} className="bg-blue-600 hover-blue-700 text-white" size="lg">
+                  <> Add First LSC Center
+                <>
+              )}
+            <>
+          ) : (
+            <>
+              <>
+                <>
+                  <>
+                    <>LSC Code<>
+                    <>Name<>
+                    <>Contact<>
+                    <>Status<>
+                    <>Joined<>
+                    <>Actions<>
+                  <>
+                <>
+                <>
+                  {currentItems.map((lsc, index) => (
+                    <>
+                      <>
+                        <>
+                          <>
+                            <>
+                          <>
+                          <>{lsc.lsc_number}<>
+                        <>
+                      <>
+                      <><>{lsc.lsc_name}<><>
+                      <>
+                        <>
+                          <>
+                            <><><>
+                            <>{lsc.email}<>
+                          <>
+                          {lsc.mobile && (
+                            <>
+                              <><><>
+                              <>{lsc.mobile}<>
+                            <>
+                          )}
+                        <>
+                      <>
+                      <>
+                        <>
+                          <>
+                            {lsc.is_active ? 'Active' : 'Inactive'}
+                          <>
+                          {lsc.is_staff && <>Staff<>}
+                        <>
+                      <>
+                      <>
+                        <>
+                          <>
+                          <>
+                            {new Date(lsc.date_joined).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                          <>
+                        <>
+                      <>
+                      <>
+                        <>
+                          <> handleEdit(lsc)} className="border-2 border-blue-200 hover-blue-400 hover-blue-500 text-blue-600 hover-white shadow-sm hover-md group/btn" title="Edit">
+                            <>
+                          <>
+                          <> handleDelete(lsc)} className="border-2 border-red-200 hover-red-400 hover-red-500 text-red-600 hover-white shadow-sm hover-md group/btn" title="Delete">
+                            <>
+                          <>
+                        <>
+                      <>
+                    <>
+                  ))}
+                <>
+              <>
+            <>
+          )}
+
+          {/* PAGINATION */}
+          {filteredCenters.length > 0 && (
+            <>
+              {/* Pagination info and controls */}
+              <>
+                {/* Info text */}
+                <>
+                  Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
+                <>
+
+                {/* Page controls */}
+                <>
+                  <>
+                    <>
+                    <>Prev<>
+                  <>
+
+                  {/* Page numbers */}
+                  <>
+                    {Array.from({ length.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <>= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <> handlePageChange(pageNum)}
+                          className={`w-9 h-9 border-2 ${
+                            currentPage === pageNum
+                              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover-blue-700 hover-indigo-700 text-white shadow-lg'
+                              : 'border-gray-200 hover-blue-400 hover-blue-50 text-gray-700 hover-blue-700'
+                          } shadow-sm hover-md transition-all`}
+                        >
+                          {pageNum}
+                        <>
+                      );
+                    })}
+                  <>
+
+                  <>
+                    <>Next<>
+                    <>
+                  <>
+                <>
+              <>
+            <>
+          )}
+        <>
+      <>
+
+      {/* CREATE DIALOG */}
+      <>
+        <>
+          <>
+            <>
+              <><><>
+              <>
+                <>Create New LSC Center<>
+                <>Add a new LSC center to the system<>
+              <>
+            <>
+          <>
+          <>
+            <>
+              <>
+                <><>LSC Code *<>
+                <> handleInputChange('lsc_number', e.target.value)} className="h-10" />
+              <>
+              <>
+                <><>LSC Name *<>
+                <> handleInputChange('lsc_name', e.target.value)} className="h-10" />
+              <>
+            <>
+            <>
+              <>
+                <><>Email ID *<>
+                <> handleInputChange('email', e.target.value)} className="h-10" />
+              <>
+              <>
+                <><>Mobile Number<>
+                <> handleInputChange('mobile', e.target.value)} className="h-10" />
+              <>
+            <>
+            <>
+              <><>Address<>
+              <> handleInputChange('address', e.target.value)} rows={3} className="resize-none" />
+            <>
+            <>
+              <><>Password *<>
+              <> handleInputChange('password', e.target.value)} className="h-10" />
+              <>Include uppercase, numbers, min 8 chars<>
+            <>
+
+            <>
+              <>
+                <> handleInputChange('is_staff', e.target.checked)}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus-blue-500 focus-2"
+                />
+                <>
+                  <>
+                  Staff Member
+                <>
+              <>
+              <>Check this if this LSC center has administrative/staff privileges<>
+            <>
+          <>
+          <>
+            <> { setIsCreateDialogOpen(false); resetForm(); }} className="border border-gray-300 hover-gray-50">Cancel<>
+            <><>Create<>
+          <>
+        <>
+      <>
+
+      {/* EDIT DIALOG */}
+      <>
+        <>
+          <>
+            <>
+              <><><>
+              <>
+                <>Edit LSC Center<>
+                <>Update {editingLsc?.lsc_name}<>
+              <>
+            <>
+          <>
+          <>
+            <>
+              <>
+                <><>LSC Code *<>
+                <> handleInputChange('lsc_number', e.target.value)} className="h-10" />
+              <>
+              <>
+                <><>LSC Name *<>
+                <> handleInputChange('lsc_name', e.target.value)} className="h-10" />
+              <>
+            <>
+            <>
+              <>
+                <><>Email ID *<>
+                <> handleInputChange('email', e.target.value)} className="h-10" />
+              <>
+              <>
+                <><>Mobile Number<>
+                <> handleInputChange('mobile', e.target.value)} className="h-10" />
+              <>
+            <>
+            <>
+              <><>Address<>
+              <> handleInputChange('address', e.target.value)} rows={3} className="resize-none" />
+            <>
+            <>
+              <><>New Password (optional)<>
+              <> handleInputChange('password', e.target.value)} className="h-10" />
+              <>Leave empty to keep current password<>
+            <>
+
+            <>
+              <>
+                <> handleInputChange('is_staff', e.target.checked)}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus-blue-500 focus-2"
+                />
+                <>
+                  <>
+                  Staff Member
+                <>
+              <>
+              <>Check this if this LSC center has administrative/staff privileges<>
+            <>
+          <>
+          <>
+            <> { setIsEditDialogOpen(false); setEditingLsc(null); resetForm(); }} className="border border-gray-300 hover-gray-50">Cancel<>
+            <><>Update<>
+          <>
+        <>
+      <>
+    <>
+  );
+};
+
+

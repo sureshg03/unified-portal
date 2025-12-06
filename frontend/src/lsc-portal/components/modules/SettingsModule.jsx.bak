@@ -1,0 +1,625 @@
+import { useState, useEffect } from 'react';
+import {
+  Settings,
+  Calendar,
+  Users,
+  Bell,
+  Shield,
+  Wrench,
+  Save,
+  RefreshCw,
+  CheckCircle,
+  XCircle,
+  Clock,
+  AlertTriangle,
+  Globe,
+  Mail,
+  Phone,
+  Lock,
+  Eye,
+  EyeOff
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import api, { settingsAPI } from '@/lib/api';
+import { toast } from 'sonner';
+
+
+
+
+
+export const SettingsModule = () => {
+  const [applicationSettings, setApplicationSettings] = useState<>([]);
+  const [systemSettings, setSystemSettings] = useState<>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('applications');
+
+  // Form states
+  const [generalSettings, setGeneralSettings] = useState({
+    site_title: '',
+    contact_email: '',
+    support_phone: ''
+  });
+
+  const [notificationSettings, setNotificationSettings] = useState({
+    email_enabled,
+    sms_enabled
+  });
+
+  const [securitySettings, setSecuritySettings] = useState({
+    session_timeout: '3600',
+    max_login_attempts: '5'
+  });
+
+  const [maintenanceSettings, setMaintenanceSettings] = useState({
+    maintenance_mode
+  });
+
+  useEffect(() => {
+    // Temporarily disable API calls to prevent redirects
+    // fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      const [appResponse, generalResponse, notificationResponse, securityResponse, maintenanceResponse] = await Promise.allSettled([
+        settingsAPI.getApplicationSettings(),
+        settingsAPI.getSystemSettingsByType('GENERAL'),
+        settingsAPI.getSystemSettingsByType('NOTIFICATION'),
+        settingsAPI.getSystemSettingsByType('SECURITY'),
+        settingsAPI.getSystemSettingsByType('MAINTENANCE')
+      ]);
+
+      // Handle application settings
+      if (appResponse.status === 'fulfilled') {
+        setApplicationSettings(appResponse.value.data);
+      } else {
+        console.warn('Failed to load application settings:', appResponse.reason);
+        // Set empty array if API fails
+        setApplicationSettings([]);
+      }
+
+      // Handle system settings with fallbacks
+      const processSettingsSafely = (response) => {
+        if (response.status === 'fulfilled') {
+          return response.value.data.reduce((acc, setting) => {
+            acc[setting.key] = setting.value === 'true' ? true .value === 'false' ? false .value;
+            return acc;
+          }, {});
+        } else {
+          console.warn('Failed to load system settings:', response.reason);
+          return {};
+        }
+      };
+
+      setGeneralSettings(prev => ({ ...prev, ...processSettingsSafely(generalResponse) }));
+      setNotificationSettings(prev => ({ ...prev, ...processSettingsSafely(notificationResponse) }));
+      setSecuritySettings(prev => ({ ...prev, ...processSettingsSafely(securityResponse) }));
+      setMaintenanceSettings(prev => ({ ...prev, ...processSettingsSafely(maintenanceResponse) }));
+
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+      // Don't show error toast here as it might cause logout
+      // The API interceptor handles 401 errors
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleApplicationStatus = async (setting) => {
+    try {
+      const response = await settingsAPI.toggleApplicationStatus(setting.id);
+      setApplicationSettings(prev =>
+        prev.map(s => s.id === setting.id ? response.data )
+      );
+      toast.success(`${setting.application_type} application ${response.data.is_open ? 'opened' : 'closed'}`);
+    } catch (error) {
+      console.error('Error toggling application status:', error);
+      // Don't redirect on API errors, just show error message
+      if (error.response?.status === 401) {
+        toast.error('Authentication required. Please log in again.');
+      } else {
+        toast.error('Failed to update application status. This feature may not be available yet.');
+      }
+    }
+  };
+
+  const updateApplicationDeadlines = async (setting, openingDate, closingDate) => {
+    try {
+      const response = await settingsAPI.updateApplicationDeadlines(setting.id, {
+        opening_date,
+        closing_date
+      });
+      setApplicationSettings(prev =>
+        prev.map(s => s.id === setting.id ? response.data )
+      );
+      toast.success('Application deadlines updated successfully');
+    } catch (error) {
+      console.error('Error updating deadlines:', error);
+      // Don't redirect on API errors
+      if (error.response?.status === 401) {
+        toast.error('Authentication required. Please log in again.');
+      } else {
+        toast.error('Failed to update deadlines. This feature may not be available yet.');
+      }
+    }
+  };
+
+  const saveSystemSettings = async (settingType, settings, any>) => {
+    try {
+      setSaving(true);
+
+      // Update each setting
+      for (const [key, value] of Object.entries(settings)) {
+        try {
+          // First try to update existing setting
+          const existingSettings = systemSettings.filter(s => s.setting_type === settingType && s.key === key);
+          if (existingSettings.length > 0) {
+            await settingsAPI.updateSystemSetting(existingSettings[0].id, {
+              ...existingSettings[0],
+              value(value)
+            });
+          } else {
+            // Create new setting
+            await settingsAPI.createSystemSetting({
+              setting_type,
+              key,
+              value(value),
+              description: `${settingType} setting for ${key}`,
+              is_active
+            });
+          }
+        } catch (error) {
+          console.error(`Error updating ${key}:`, error);
+          // Continue with other settings instead of failing completely
+        }
+      }
+
+      toast.success('Settings saved successfully');
+      await fetchSettings(); // Refresh data
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      // Don't redirect on API errors
+      if (error.response?.status === 401) {
+        toast.error('Authentication required. Please log in again.');
+      } else {
+        toast.error('Failed to save settings. This feature may not be available yet.');
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getApplicationStatusColor = (setting) => {
+    if (!setting.is_open) return 'bg-red-100 text-red-800 border-red-200';
+    // Check if within deadline (if opening_date exists and current date is after opening, or no opening date set)
+    const now = new Date();
+    const openingDate = setting.opening_date ? new Date(setting.opening_date) ;
+    const closingDate = setting.closing_date ? new Date(setting.closing_date) ;
+    
+    if (closingDate && now > closingDate) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    if (openingDate && now <> {
+    if (!setting.is_open) return 'Closed';
+    // Check if within deadline
+    const now = new Date();
+    const openingDate = setting.opening_date ? new Date(setting.opening_date) ;
+    const closingDate = setting.closing_date ? new Date(setting.closing_date) ;
+    
+    if (closingDate && now > closingDate) return 'Expired';
+    if (openingDate && now <>
+        <>
+          <>
+          <>Loading settings...<>
+        <>
+      <>
+    );
+  }
+
+  // Always show fallback UI since settings API is not implemented yet
+  const hasData = false;
+
+  if (!hasData) {
+    return (
+      <>
+        <>
+          <>
+            <>Settings<>
+            <>Manage application settings, system configuration, and preferences<>
+          <>
+        <>
+
+        <>
+          <>
+            <>
+              <>
+              <>Settings Management<>
+            <>
+            <>
+              Advanced settings and configuration options
+            <>
+          <>
+          <>
+            <>
+              <>
+              <>Settings Coming Soon<>
+              <>
+                The advanced settings management system is currently under development. 
+                This feature will allow you to configure application settings, system preferences, 
+                notifications, security policies, and maintenance options.
+              <>
+              <>
+                <>
+                  <>
+                  <>General<>
+                <>
+                <>
+                  <>
+                  <>Notifications<>
+                <>
+                <>
+                  <>
+                  <>Security<>
+                <>
+                <>
+                  <>
+                  <>Maintenance<>
+                <>
+              <>
+              <>
+                For now, you can manage your account through the "Change Password" section.
+              <>
+            <>
+          <>
+        <>
+      <>
+    );
+  }
+
+  return (
+    <>
+      <>
+        <>
+          <>Settings<>
+          <>Manage application settings, system configuration, and preferences<>
+        <>
+      <>
+
+      <>
+        <>
+          <>
+            <>
+            <>Applications<>
+          <>
+          <>
+            <>
+            <>General<>
+          <>
+          <>
+            <>
+            <>Notifications<>
+          <>
+          <>
+            <>
+            <>Security<>
+          <>
+          <>
+            <>
+            <>Maintenance<>
+          <>
+        <>
+
+        {/* Applications Tab */}
+        <>
+          <>
+            <>
+              <>
+                <>
+                <>Application Management<>
+              <>
+              <>
+                Control application openings, deadlines, and capacity limits
+              <>
+            <>
+            <>
+              {applicationSettings.map((setting) => (
+                <>
+                  <>
+                    <>
+                      <>
+                        <>{setting.application_type} Applications<>
+                        <>
+                          {getApplicationStatusText(setting)}
+                        <>
+                      <>
+                      <>
+                        <> toggleApplicationStatus(setting)}
+                        />
+                        <>
+                          {setting.is_open ? 'Open' : 'Closed'}
+                        <>
+                      <>
+                    <>
+                  <>
+                  <>
+                    <>
+                      <>
+                        <>Opening Date<>
+                        <> {
+                            const closingDate = (document.getElementById(`closing-${setting.id}`) as HTMLInputElement)?.value;
+                            if (e.target.value && closingDate) {
+                              updateApplicationDeadlines(setting, e.target.value, closingDate);
+                            }
+                          }}
+                        />
+                      <>
+                      <>
+                        <>Closing Date<>
+                        <> {
+                            const openingDate = (document.getElementById(`opening-${setting.id}`) as HTMLInputElement)?.value;
+                            if (openingDate && e.target.value) {
+                              updateApplicationDeadlines(setting, openingDate, e.target.value);
+                            }
+                          }}
+                        />
+                      <>
+                    <>
+
+                    <>
+                      <>
+                        <>Max Applications<>
+                        <> {
+                            // TODO max applications update
+                          }}
+                        />
+                      <>
+                      <>
+                        <>Current Applications<>
+                        <>
+                          <>{setting.current_applications}<>
+                          <>
+                            / {setting.max_applications}
+                          <>
+                        <>
+                      <>
+                    <>
+
+                    <>
+                      <>Description<>
+                      <> {
+                          // TODO description update
+                        }}
+                      />
+                    <>
+
+                    <>
+                      <>Instructions<>
+                      <> {
+                          // TODO instructions update
+                        }}
+                      />
+                    <>
+                  <>
+                <>
+              ))}
+            <>
+          <>
+        <>
+
+        {/* General Tab */}
+        <>
+          <>
+            <>
+              <>
+                <>
+                <>General Settings<>
+              <>
+              <>
+                Basic system configuration and contact information
+              <>
+            <>
+            <>
+              <>
+                <>
+                  <>Site Title<>
+                  <> setGeneralSettings(prev => ({ ...prev, site_title.target.value }))}
+                    placeholder="Enter site title"
+                  />
+                <>
+                <>
+                  <>Contact Email<>
+                  <> setGeneralSettings(prev => ({ ...prev, contact_email.target.value }))}
+                    placeholder="admin@example.com"
+                  />
+                <>
+                <>
+                  <>Support Phone<>
+                  <> setGeneralSettings(prev => ({ ...prev, support_phone.target.value }))}
+                    placeholder="+91-1234567890"
+                  />
+                <>
+              <>
+
+              <>
+                <> saveSystemSettings('GENERAL', generalSettings)}
+                  disabled={saving}
+                  className="flex items-center space-x-2"
+                >
+                  {saving ? <> : <>}
+                  <>{saving ? 'Saving...' : 'Save Changes'}<>
+                <>
+              <>
+            <>
+          <>
+        <>
+
+        {/* Notifications Tab */}
+        <>
+          <>
+            <>
+              <>
+                <>
+                <>Notification Settings<>
+              <>
+              <>
+                Configure how and when notifications are sent
+              <>
+            <>
+            <>
+              <>
+                <>
+                  <>
+                    <>Email Notifications<>
+                    <>
+                      Send notifications via email
+                    <>
+                  <>
+                  <>
+                      setNotificationSettings(prev => ({ ...prev, email_enabled }))
+                    }
+                  />
+                <>
+
+                <>
+                  <>
+                    <>SMS Notifications<>
+                    <>
+                      Send notifications via SMS
+                    <>
+                  <>
+                  <>
+                      setNotificationSettings(prev => ({ ...prev, sms_enabled }))
+                    }
+                  />
+                <>
+              <>
+
+              <>
+                <>
+                <>
+                  SMS notifications may incur additional charges. Make sure your SMS gateway is configured.
+                <>
+              <>
+
+              <>
+                <> saveSystemSettings('NOTIFICATION', notificationSettings)}
+                  disabled={saving}
+                  className="flex items-center space-x-2"
+                >
+                  {saving ? <> : <>}
+                  <>{saving ? 'Saving...' : 'Save Changes'}<>
+                <>
+              <>
+            <>
+          <>
+        <>
+
+        {/* Security Tab */}
+        <>
+          <>
+            <>
+              <>
+                <>
+                <>Security Settings<>
+              <>
+              <>
+                Configure security policies and access controls
+              <>
+            <>
+            <>
+              <>
+                <>
+                  <>Session Timeout (seconds)<>
+                  <> setSecuritySettings(prev => ({ ...prev, session_timeout.target.value }))}
+                    placeholder="3600"
+                  />
+                  <>
+                    Time in seconds before automatic logout
+                  <>
+                <>
+                <>
+                  <>Max Login Attempts<>
+                  <> setSecuritySettings(prev => ({ ...prev, max_login_attempts.target.value }))}
+                    placeholder="5"
+                  />
+                  <>
+                    Number of failed attempts before account lockout
+                  <>
+                <>
+              <>
+
+              <>
+                <> saveSystemSettings('SECURITY', securitySettings)}
+                  disabled={saving}
+                  className="flex items-center space-x-2"
+                >
+                  {saving ? <> : <>}
+                  <>{saving ? 'Saving...' : 'Save Changes'}<>
+                <>
+              <>
+            <>
+          <>
+        <>
+
+        {/* Maintenance Tab */}
+        <>
+          <>
+            <>
+              <>
+                <>
+                <>Maintenance Settings<>
+              <>
+              <>
+                System maintenance and downtime management
+              <>
+            <>
+            <>
+              <>
+                <>
+                  <>Maintenance Mode<>
+                  <>
+                    Enable maintenance mode to temporarily disable the portal
+                  <>
+                <>
+                <>
+                    setMaintenanceSettings(prev => ({ ...prev, maintenance_mode }))
+                  }
+                />
+              <>
+
+              {maintenanceSettings.maintenance_mode && (
+                <>
+                  <>
+                  <>
+                    Maintenance mode is currently enabled. The portal is not accessible to regular users.
+                  <>
+                <>
+              )}
+
+              <>
+                <> saveSystemSettings('MAINTENANCE', maintenanceSettings)}
+                  disabled={saving}
+                  className="flex items-center space-x-2"
+                >
+                  {saving ? <> : <>}
+                  <>{saving ? 'Saving...' : 'Save Changes'}<>
+                <>
+              <>
+            <>
+          <>
+        <>
+      <>
+    <>
+  );
+};
+
+

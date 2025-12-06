@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -19,7 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { clearAuthData, getUserInfo, getLSCCode, getLSCName } from '@/lib/auth';
-import { StudentAdmissionDetails } from './modules/StudentAdmissionDetails';
+import { AdmissionManagement } from './modules/AdmissionManagement';
 import { CounsellorInformation } from './modules/CounsellorInformation';
 import { AttendanceModule } from './modules/AttendanceModule';
 import { AssignmentMarks } from './modules/AssignmentMarks';
@@ -57,7 +57,7 @@ export const UserDashboard = () => {
   const handleLogout = () => {
     clearAuthData();
     toast({
-      title: "✅ Logged Out",
+      title: "Γ£à Logged Out",
       description: "You have been successfully logged out.",
       duration: 3000,
     });
@@ -180,7 +180,7 @@ export const UserDashboard = () => {
         );
       
       case 'admissions':
-        return <StudentAdmissionDetails />;
+        return <AdmissionManagement />;
       
       case 'counselor':
         return <CounsellorInformation />;

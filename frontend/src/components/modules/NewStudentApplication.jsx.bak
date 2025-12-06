@@ -1,0 +1,466 @@
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, UserPlus, Calendar, AlertCircle, ExternalLink, CheckCircle2, XCircle, Sparkles, Clock, RefreshCw } from 'lucide-react';
+import api from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
+
+
+
+export const NewStudentApplication = () => {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState<>(null);
+  const [error, setError] = useState<>(null);
+  const [lastRefresh, setLastRefresh] = useState<>(new Date());
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [previousStatus, setPreviousStatus] = useState<>(null);
+
+  console.log('NewStudentApplication component mounted');
+  console.log('Loading:', loading, 'Settings:', settings, 'Error:', error);
+
+  useEffect(() => {
+    console.log('useEffect triggered - fetching settings');
+    fetchApplicationSettings();
+  }, []);
+
+  // Auto-refresh every 5 seconds for real-time status updates
+  useEffect(() => {
+    if (!autoRefreshEnabled) return;
+
+    const intervalId = setInterval(() => {
+      console.log('Auto-refreshing application status...');
+      fetchApplicationSettings(true); // Pass true for background refresh (no loading state)
+    }, 5000); // 5 seconds - faster real-time updates
+
+    return () => clearInterval(intervalId);
+  }, [autoRefreshEnabled]);
+
+  // Listen for visibility changes - refresh when user returns to tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('Tab became visible - refreshing data');
+        fetchApplicationSettings(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  // Listen for window focus - refresh when user focuses window
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('Window focused - refreshing data');
+      fetchApplicationSettings(true);
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+
+  const fetchApplicationSettings = async (isBackgroundRefresh = false) => {
+    try {
+      // Only show loading state on initial load, not on background refreshes
+      if (!isBackgroundRefresh) {
+        setLoading(true);
+      }
+      setError(null);
+      
+      console.log('Fetching application settings...');
+      
+      // Fetch active application settings
+      const response = await api.get('/application-settings/');
+      
+      console.log('Application settings response:', response.data);
+      
+      if (response.data && response.data.length > 0) {
+        // Get the first active setting or the most recent one
+        const activeSetting = response.data.find((s) => s.is_active && (s.is_open || s.status === 'OPEN')) || response.data[0];
+        console.log('Selected setting:', activeSetting);
+        
+        // Detect status change and show notification
+        const currentStatus = activeSetting.is_open || activeSetting.status === 'OPEN' ? 'OPEN' : 'CLOSED';
+        if (isBackgroundRefresh && previousStatus !== null && previousStatus !== currentStatus) {
+          // Status changed! Show notification
+          if (currentStatus === 'OPEN') {
+            toast({
+              title: "🎉 Applications Now Open!",
+              description: `Applications for ${activeSetting.admission_year} are now accepting submissions. You can guide students to apply.`,
+              variant: "default",
+              className: "bg-green-50 border-green-500",
+            });
+          } else {
+            toast({
+              title: "Applications Closed",
+              description: `The application period for ${activeSetting.admission_year} has been closed by admin.`,
+              variant: "default",
+              className: "bg-red-50 border-red-500",
+            });
+          }
+        }
+        
+        setPreviousStatus(currentStatus);
+        setSettings(activeSetting);
+        setLastRefresh(new Date());
+      } else {
+        console.log('No application settings found');
+        setError('No application settings found. Please contact administrator.');
+      }
+    } catch (err) {
+      console.error('Error fetching application settings:', err);
+      setError(err.response?.data?.message || 'Failed to fetch application settings');
+    } finally {
+      if (!isBackgroundRefresh) {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleManualRefresh = () => {
+    toast({
+      title: "Refreshing...",
+      description: "Checking for application status updates",
+    });
+    fetchApplicationSettings();
+  };
+
+  // Get LSC info from localStorage
+  const getLSCInfo = () => {
+    const userInfoStr = localStorage.getItem('user_info');
+    let lscCode = '';
+    let lscName = '';
+    
+    if (userInfoStr) {
+      try {
+        const userInfo = JSON.parse(userInfoStr);
+        lscCode = userInfo.lsc_code || userInfo.lsc_number || userInfo.lscNumber || userInfo.lscCode || '';
+        lscName = userInfo.lsc_name || userInfo.lscName || userInfo.center_name || userInfo.centerName || userInfo.admin_name || userInfo.adminName || '';
+      } catch (e) {
+        console.error('Error parsing user info:', e);
+      }
+    }
+    
+    return { lscCode, lscName };
+  };
+
+  // Generate unique referral URL with LSC code and name
+  const generateReferralURL = () => {
+    const { lscCode, lscName } = getLSCInfo();
+    if (!lscCode) return `${window.location.origin}/student/signup`;
+    
+    // Create URL with query parameters
+    const params = new URLSearchParams();
+    params.set('ref', lscCode);
+    if (lscName) params.set('center', lscName);
+    
+    return `${window.location.origin}/student/signup?${params.toString()}`;
+  };
+
+  const handleNavigateToStudentSignup = () => {
+    const { lscCode, lscName } = getLSCInfo();
+    
+    console.log('LSC Info:', { lscCode, lscName });
+    
+    // Store in sessionStorage so signup page can access it
+    sessionStorage.setItem('referral_lsc_code', lscCode);
+    sessionStorage.setItem('referral_lsc_name', lscName);
+    
+    // Open student signup with referral URL
+    const referralURL = generateReferralURL();
+    console.log('Opening referral URL:', referralURL);
+    window.open(referralURL, '_blank');
+  };
+
+  const formatDate = (dateString) => {
+    try {
+      return new Date(dateString).toLocaleDateString('en-IN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  if (loading) {
+    return (
+      <>
+        <>
+          <>
+          <>Loading application status...<>
+        <>
+      <>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <>
+          <>
+          <>{error}<>
+        <>
+      <>
+    );
+  }
+
+  if (!settings) {
+    return (
+      <>
+        <>
+          <>
+            <>No Application Settings<>
+            <>Application settings have not been configured yet.<>
+          <>
+          <>
+            <>
+              Please contact the system administrator to configure application settings.
+            <>
+          <>
+        <>
+      <>
+    );
+  }
+
+  const isOpen = settings.is_open || settings.status === 'OPEN';
+
+  return (
+    <>
+      <>
+        {/* Modern Header with Refresh */}
+        <>
+          <>
+            <>
+              <>
+                <>
+              <>
+              <>
+                <>
+                  Student Applications
+                <>
+                <>
+                  <>
+                  Last updated: {lastRefresh.toLocaleTimeString()}
+                <>
+              <>
+            <>
+            <>
+              <>
+                {isOpen ? (
+                  <><> OPEN<>
+                ) : (
+                  <><> CLOSED<>
+                )}
+              <>
+              <>
+                <>
+              <>
+            <>
+          <>
+        <>
+
+        {/* Status Card */}
+        <>
+          <>
+          
+          <>
+            <>
+              <>
+                <>
+                  <>
+                  {settings.admission_year} Academic Year
+                <>
+                <>
+                  Application Code: <>{settings.admission_code}<> • Type: <>{settings.admission_type}<>
+                <>
+              <>
+            <>
+          <>
+
+          <>
+            {/* Application Period Timeline */}
+            <>
+              <>
+                <>
+                  <>Opening Date<>
+                  <>
+                    <>
+                    <>{formatDate(settings.opening_date)}<>
+                  <>
+                <>
+                <>
+                  <>
+                <>
+                <>
+                  <>Closing Date<>
+                  <>
+                    <>{formatDate(settings.closing_date)}<>
+                    <>
+                  <>
+                <>
+              <>
+            <>
+
+            {/* Main Action Section - Conditional on Status */}
+            {isOpen ? (
+              <>
+                {/* Success Alert with Animation */}
+                <>
+                  <>
+                  <>
+                    🎉 <>Great News!<> Applications are now OPEN for {settings.admission_year}. Help students start their journey today!
+                  <>
+                <>
+
+                {/* Professional Call-to-Action Card */}
+                <>
+                  <>
+                    <>
+                      <>
+                        <>
+                          <>
+                        <>
+                      <>
+                      <>
+                        <>
+                          Help Students Apply Now
+                        <>
+                        <>
+                          Click the button below to open the student signup portal. Guide prospective students through the application process and help them secure their admission for the {settings.admission_year} academic year.
+                        <>
+                        
+                        <>
+                          <>
+                          Open Student Signup Portal
+                         
+                        <>
+
+                        <>
+                          <>
+                          Opens in a new tab • Students can create account and apply instantly
+                        <>
+                      <>
+                    <>
+                  <>
+                <>
+
+                {/* Share URL Card with Unique Referral Link */}
+                <>
+                  <>
+                    <>
+                      <>
+                      Your Unique Referral Link
+                    <>
+                    <>
+                      {(() => {
+                        const { lscCode, lscName } = getLSCInfo();
+                        return lscCode ? `Personalized for ${lscName} (${lscCode})` : 'Share this link with students';
+                      })()}
+                    <>
+                  <>
+                  <>
+                    <>
+                      <>
+                        ✨ Unique URL for Your Center
+                      <>
+                      <>
+                        Students who register through this link will be automatically linked to your LSC center.
+                      <>
+                    <>
+                    
+                    <>
+                      <>
+                        {generateReferralURL()}
+                      <>
+                    <>
+                    
+                    <>
+                      <> {
+                          const url = generateReferralURL();
+                          navigator.clipboard.writeText(url);
+                          toast({
+                            title: "✅ Link Copied!",
+                            description: "Your unique referral link copied to clipboard",
+                          });
+                        }}
+                        className="border-indigo-300 hover-indigo-100"
+                      >
+                        📋 Copy Link
+                      <>
+                      <> {
+                          const url = generateReferralURL();
+                          const { lscName } = getLSCInfo();
+                          const message = `🎓 Apply for admission at ${lscName}!\n\nRegister here: ${url}`;
+                          navigator.clipboard.writeText(message);
+                          toast({
+                            title: "✅ Message Copied!",
+                            description: "Share this message on WhatsApp, SMS, or social media",
+                          });
+                        }}
+                        className="border-green-300 hover-green-100"
+                      >
+                        💬 Copy Message
+                      <>
+                    <>
+                  <>
+                <>
+              <>
+            ) : (
+              <>
+                {/* Closed Status Alert */}
+                <>
+                  <>
+                  <>
+                    <>Applications Closed.<> The application period has ended. Students cannot submit new applications at this time.
+                  <>
+                <>
+
+                {/* Closed State Card */}
+                <>
+                  <>
+                    <>
+                      <>
+                    <>
+                    <>
+                      Application Period Ended
+                    <>
+                    <>
+                      The admission application window for {settings.admission_year} ({settings.admission_code}) is currently closed. 
+                      Please check back when applications reopen.
+                    <>
+                  <>
+                <>
+
+                {/* Info Card */}
+                <>
+                  <>
+                    <>
+                      <>
+                      <>
+                        <>
+                          Waiting for Applications to Open?
+                        <>
+                        <>
+                          This page automatically refreshes every 5 seconds. You'll see the status change instantly when admin opens applications!
+                        <>
+                      <>
+                    <>
+                  <>
+                <>
+              <>
+            )}
+
+          <>
+        <>
+      <>
+    <>
+  );
+};
+
+
+

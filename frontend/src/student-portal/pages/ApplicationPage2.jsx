@@ -47,25 +47,15 @@ const CustomCheckbox = ({ name, checked, onChange, disabled, label, section }) =
 
   const colors = colorStyles[section] || colorStyles.personal;
 
-  // Get the actual color values based on section
   const getBgColor = () => {
-    switch (section) {
-      case 'parent': return '#059669'; // green-600
-      case 'additional': return '#9333ea'; // purple-600
-      case 'communication': return '#4f46e5'; // indigo-600
-      case 'permanent': return '#dc2626'; // red-600
-      default: return '#2563eb'; // blue-600
-    }
-  };
-
-  const getBorderColor = () => {
-    switch (section) {
-      case 'parent': return '#34d399'; // green-400
-      case 'additional': return '#c084fc'; // purple-400
-      case 'communication': return '#818cf8'; // indigo-400
-      case 'permanent': return '#f87171'; // red-400
-      default: return '#60a5fa'; // blue-400
-    }
+    const bgColors = {
+      personal: '#2563eb',
+      parent: '#16a34a',
+      additional: '#9333ea',
+      communication: '#4f46e5',
+      permanent: '#dc2626',
+    };
+    return bgColors[section] || bgColors.personal;
   };
 
   return (
@@ -77,24 +67,29 @@ const CustomCheckbox = ({ name, checked, onChange, disabled, label, section }) =
           checked={checked}
           onChange={onChange}
           disabled={disabled}
-          style={{
-            borderColor: getBorderColor(),
-            backgroundColor: checked ? getBgColor() : 'transparent',
-          }}
-          className={`peer h-6 w-6 rounded-md border-2 focus:ring-2 ${colors.focusRing} transition duration-200 appearance-none cursor-pointer`}
+          className="sr-only peer"
         />
-        <svg
-          className="absolute w-4 h-4 text-white pointer-events-none top-1 left-1 transition-opacity duration-200"
-          style={{ opacity: checked ? 1 : 0 }}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
+        <div 
+          className={`h-6 w-6 rounded-md border-2 ${colors.border} ${colors.focusRing} transition duration-200 flex items-center justify-center cursor-pointer`}
+          style={{
+            backgroundColor: checked ? getBgColor() : 'transparent',
+            borderColor: checked ? getBgColor() : undefined,
+          }}
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-        </svg>
+          {checked && (
+            <svg
+              className="w-4 h-4 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+        </div>
       </div>
-      <span className="text-gray-800 font-roboto text-sm">{label}</span>
+      <span className="text-gray-800 font-roboto text-lg">{label}</span>
     </label>
   );
 };
@@ -142,11 +137,12 @@ const ApplicationPage2 = () => {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [highlightInfo, setHighlightInfo] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const debIdRef = useRef(null);
   const abcIdRef = useRef(null);
-  const [showModal, setShowModal] = useState(false);
+
   useEffect(() => {
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 300);
@@ -366,7 +362,7 @@ const ApplicationPage2 = () => {
           boxShadow: '0 6px 12px rgba(0, 0, 0, 0.15)',
           fontWeight: '500',
         },
-        icon: '❌',
+        icon: '⚠️',
         duration: 4000,
       });
       return;
@@ -447,15 +443,14 @@ const ApplicationPage2 = () => {
       backgroundColor: 'rgba(255, 255, 255, 0.8)',
       backdropFilter: 'blur(4px)',
       borderRadius: '0.75rem',
-      padding: '0.375rem',
+      padding: '0.5rem',
       boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
       border: '1px solid rgba(139, 92, 246, 0.2)',
       fontFamily: 'Roboto, sans-serif',
-      fontWeight: 400,
-      fontSize: '0.875rem',
+      fontWeight: 500,
+      fontSize: '1.125rem',
       color: '#1f2937',
       transition: 'all 0.3s ease',
-      minHeight: '42px',
       '&:hover': {
         borderColor: '#8b5cf6',
         boxShadow: '0 0 10px rgba(139, 92, 246, 0.2)',
@@ -471,11 +466,10 @@ const ApplicationPage2 = () => {
     option: (provided, state) => ({
       ...provided,
       fontFamily: 'Roboto, sans-serif',
-      fontWeight: 400,
-      fontSize: '0.875rem',
+      fontWeight: 500,
+      fontSize: '1.125rem',
       color: state.isSelected ? '#ffffff' : '#1f2937',
       backgroundColor: state.isSelected ? '#8b5cf6' : state.isFocused ? 'rgba(139, 92, 246, 0.1)' : 'transparent',
-      padding: '0.5rem 0.75rem',
       '&:hover': {
         backgroundColor: 'rgba(139, 92, 246, 0.1)',
       },
@@ -483,12 +477,10 @@ const ApplicationPage2 = () => {
     singleValue: (provided) => ({
       ...provided,
       color: '#1f2937',
-      fontSize: '0.875rem',
     }),
     placeholder: (provided) => ({
       ...provided,
       color: 'rgba(75, 85, 99, 0.7)',
-      fontSize: '0.875rem',
     }),
   };
 
@@ -504,25 +496,21 @@ const ApplicationPage2 = () => {
         <StepProgressBar currentStep="/application/page2" />
         <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-10 border border-purple-200/40">
           <div className="flex flex-col items-center mb-8">
-            <h2 className="text-3xl font-bold font-montserrat bg-clip-text text-transparent bg-gradient-to-r from-purple-700 to-indigo-900 tracking-tight text-center">
+            <h2 className="text-4xl font-extrabold font-montserrat bg-clip-text text-transparent bg-gradient-to-r from-purple-700 to-indigo-900 tracking-tight text-center">
               Application Form - Personal Details
             </h2>
             <motion.button
               onClick={() => setShowModal(true)}
               whileHover={{ scale: 1.2, boxShadow: '0 0 25px rgba(234, 179, 8, 0.7)' }}
               whileTap={{ scale: 0.95 }}
-              className={`absolute right-8 top-8 w-12 h-12 flex items-center justify-center rounded-full text-white font-inter font-semibold text-base transition duration-300
-                ${
-                  highlightInfo
-                    ? 'bg-yellow-500 shadow-yellow-500/50 animate-bounce infinite ring-4 ring-yellow-400'
-                    : 'bg-purple-900'
-                }`}
+              className={`absolute right-8 top-8 w-12 h-12 flex items-center justify-center rounded-full text-white font-inter font-bold text-xl transition duration-300
+                ${highlightInfo ? 'bg-yellow-500 shadow-yellow-500/50 animate-bounce infinite ring-4 ring-yellow-400' : 'bg-purple-900'}`}
               title="Click for DEB ID and ABC ID instructions"
             >
               i
             </motion.button>
           </div>
-          <p className="text-base font-roboto mb-6 text-center">
+          <p className="text-lg font-roboto mb-6 text-center">
             <span className="text-red-600 font-bold">Please fill in all required fields.</span>{' '}
             <span className="text-yellow-600 font-bold">For help with DEB ID or ABC ID, click the " <span className="text-red-600 font-bold">i</span> " button above for instructions.</span>
           </p>
@@ -538,8 +526,7 @@ const ApplicationPage2 = () => {
           <form onSubmit={handleSubmit} className="space-y-10">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="space-y-8 bg-white/80 p-6 rounded-xl shadow-sm border border-purple-100/50">
-                              <AnimatePresence>
-                <h3 className="text-lg font-semibold font-montserrat bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-600 mb-6 tracking-tight">
+                <h3 className="text-2xl font-bold font-montserrat bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-600 mb-6 tracking-tight">
                   Personal Information
                 </h3>
                 {[
@@ -550,7 +537,7 @@ const ApplicationPage2 = () => {
                   { name: 'name_as_aadhaar', label: 'Name as per Aadhaar', type: 'text' },
                 ].map(({ name, label, type, ref, pattern }) => (
                   <div key={name}>
-                    <label className="block text-sm font-medium text-gray-800 font-roboto mb-2 tracking-wide">
+                    <label className="block text-lg font-semibold text-gray-800 font-roboto mb-3 tracking-wide">
                       {label} <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -562,15 +549,13 @@ const ApplicationPage2 = () => {
                       disabled={loading}
                       ref={ref}
                       pattern={pattern}
-                      className="w-full p-3 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-blue-300 shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition duration-300 font-roboto text-sm text-gray-900 placeholder-gray-400/70 hover:border-blue-400 hover:shadow-blue-200/50"
+                      className="w-full p-4 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-blue-300 shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition duration-300 font-roboto font-medium text-lg text-gray-900 placeholder-gray-400/70 hover:border-blue-400 hover:shadow-blue-200/50"
                     />
                     {errors[name] && <p className="text-red-500 text-base mt-2 font-roboto">{errors[name]}</p>}
                   </div>
                 ))}
                 <div>
-                  </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-800 font-roboto mb-2 tracking-wide">
+                  <label className="block text-lg font-semibold text-gray-800 font-roboto mb-3 tracking-wide">
                     Date of Birth <span className="text-red-500">*</span>
                   </label>
                   <DatePicker
@@ -582,7 +567,7 @@ const ApplicationPage2 = () => {
                     showYearDropdown
                     showMonthDropdown
                     dropdownMode="scroll"
-                    className="w-full p-3 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-blue-300 shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition duration-300 font-roboto text-sm text-gray-900 placeholder-gray-400/70 hover:border-blue-400 hover:shadow-blue-200/50"
+                    className="w-full p-4 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-blue-300 shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition duration-300 font-roboto font-medium text-lg text-gray-900 placeholder-gray-400/70 hover:border-blue-400 hover:shadow-blue-200/50"
                     wrapperClassName="w-full"
                     popperClassName="custom-datepicker-popper"
                     calendarClassName="custom-datepicker"
@@ -590,7 +575,7 @@ const ApplicationPage2 = () => {
                   {errors.dob && <p className="text-red-500 text-base mt-2 font-roboto">{errors.dob}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-800 font-roboto mb-2 tracking-wide">
+                  <label className="block text-lg font-semibold text-gray-800 font-roboto mb-3 tracking-wide">
                     Gender <span className="text-red-500">*</span>
                   </label>
                   <Select
@@ -605,11 +590,9 @@ const ApplicationPage2 = () => {
                   />
                   {errors.gender && <p className="text-red-500 text-base mt-2 font-roboto">{errors.gender}</p>}
                 </div>
-                              </AnimatePresence>
               </div>
               <div className="space-y-8 bg-white/80 p-6 rounded-xl shadow-sm border border-green-100/50">
-                              <AnimatePresence>
-                <h3 className="text-lg font-semibold font-montserrat bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-teal-600 mb-6 tracking-tight">
+                <h3 className="text-2xl font-bold font-montserrat bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-teal-600 mb-6 tracking-tight">
                   Parent/Guardian Information
                 </h3>
                 <div className="flex items-center space-x-6">
@@ -633,13 +616,13 @@ const ApplicationPage2 = () => {
                 {formData.parent_selected && (
                   <>
                     {[
-                      { name: 'father_name', label: 'Father’s Name' },
-                      { name: 'father_occupation', label: 'Father’s Occupation' },
-                      { name: 'mother_name', label: 'Mother’s Name' },
-                      { name: 'mother_occupation', label: 'Mother’s Occupation' },
+                      { name: 'father_name', label: "Father's Name" },
+                      { name: 'father_occupation', label: "Father's Occupation" },
+                      { name: 'mother_name', label: "Mother's Name" },
+                      { name: 'mother_occupation', label: "Mother's Occupation" },
                     ].map(({ name, label }) => (
                       <div key={name}>
-                        <label className="block text-sm font-medium text-gray-800 font-roboto mb-2 tracking-wide">
+                        <label className="block text-lg font-semibold text-gray-800 font-roboto mb-3 tracking-wide">
                           {label} <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -648,7 +631,7 @@ const ApplicationPage2 = () => {
                           value={formData[name]}
                           onChange={handleChange}
                           disabled={loading}
-                          className="w-full p-3 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-green-300 shadow-sm focus:ring-2 focus:ring-green-400 focus:border-green-400 outline-none transition duration-300 font-roboto text-sm text-gray-900 placeholder-gray-400/70 hover:border-green-400 hover:shadow-green-200/50"
+                          className="w-full p-4 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-green-300 shadow-sm focus:ring-2 focus:ring-green-400 focus:border-green-400 outline-none transition duration-300 font-roboto font-medium text-lg text-gray-900 placeholder-gray-400/70 hover:border-green-400 hover:shadow-green-200/50"
                         />
                         {errors[name] && <p className="text-red-500 text-base mt-2 font-roboto">{errors[name]}</p>}
                       </div>
@@ -658,11 +641,11 @@ const ApplicationPage2 = () => {
                 {formData.guardian_selected && (
                   <>
                     {[
-                      { name: 'guardian_name', label: 'Guardian’s Name' },
-                      { name: 'guardian_occupation', label: 'Guardian’s Occupation' },
+                      { name: 'guardian_name', label: "Guardian's Name" },
+                      { name: 'guardian_occupation', label: "Guardian's Occupation" },
                     ].map(({ name, label }) => (
                       <div key={name}>
-                        <label className="block text-sm font-medium text-gray-800 font-roboto mb-2 tracking-wide">
+                        <label className="block text-lg font-semibold text-gray-800 font-roboto mb-3 tracking-wide">
                           {label} <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -671,17 +654,16 @@ const ApplicationPage2 = () => {
                           value={formData[name]}
                           onChange={handleChange}
                           disabled={loading}
-                          className="w-full p-3 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-green-300 shadow-sm focus:ring-2 focus:ring-green-400 focus:border-green-400 outline-none transition duration-300 font-roboto text-sm text-gray-900 placeholder-gray-400/70 hover:border-green-400 hover:shadow-green-200/50"
+                          className="w-full p-4 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-green-300 shadow-sm focus:ring-2 focus:ring-green-400 focus:border-green-400 outline-none transition duration-300 font-roboto font-medium text-lg text-gray-900 placeholder-gray-400/70 hover:border-green-400 hover:shadow-green-200/50"
                         />
                         {errors[name] && <p className="text-red-500 text-base mt-2 font-roboto">{errors[name]}</p>}
                       </div>
                     ))}
                   </>
                 )}
-                              </AnimatePresence>
               </div>
               <div className="space-y-8 bg-white/80 p-6 rounded-xl shadow-sm border border-purple-100/50">
-                <h3 className="text-lg font-semibold font-montserrat bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 mb-6 tracking-tight">
+                <h3 className="text-2xl font-bold font-montserrat bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 mb-6 tracking-tight">
                   Additional Information
                 </h3>
                 {[
@@ -692,7 +674,7 @@ const ApplicationPage2 = () => {
                   { name: 'blood_group', label: 'Blood Group', type: 'text', maxLength: 10 },
                 ].map(({ name, label, type, maxLength }) => (
                   <div key={name}>
-                    <label className="block text-sm font-medium text-gray-800 font-roboto mb-2 tracking-wide">
+                    <label className="block text-lg font-semibold text-gray-800 font-roboto mb-3 tracking-wide">
                       {label} <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -702,13 +684,13 @@ const ApplicationPage2 = () => {
                       onChange={handleChange}
                       disabled={loading}
                       maxLength={maxLength}
-                      className="w-full p-3 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-purple-300 shadow-sm focus:ring-2 focus:ring-purple-400 focus:border-purple-400 outline-none transition duration-300 font-roboto text-sm text-gray-900 placeholder-gray-400/70 hover:border-purple-400 hover:shadow-purple-200/50"
+                      className="w-full p-4 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-purple-300 shadow-sm focus:ring-2 focus:ring-purple-400 focus:border-purple-400 outline-none transition duration-300 font-roboto font-medium text-lg text-gray-900 placeholder-gray-400/70 hover:border-purple-400 hover:shadow-purple-200/50"
                     />
                     {errors[name] && <p className="text-red-500 text-base mt-2 font-roboto">{errors[name]}</p>}
                   </div>
                 ))}
                 <div>
-                  <label className="block text-sm font-medium text-gray-800 font-roboto mb-2 tracking-wide">
+                  <label className="block text-lg font-semibold text-gray-800 font-roboto mb-3 tracking-wide">
                     Differently Abled <span className="text-red-500">*</span>
                   </label>
                   <Select
@@ -725,7 +707,7 @@ const ApplicationPage2 = () => {
                 </div>
                 {formData.differently_abled === 'Yes' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-800 font-roboto mb-2 tracking-wide">
+                    <label className="block text-lg font-semibold text-gray-800 font-roboto mb-3 tracking-wide">
                       Type of Disability <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -734,13 +716,13 @@ const ApplicationPage2 = () => {
                       value={formData.disability_type}
                       onChange={handleChange}
                       disabled={loading}
-                      className="w-full p-3 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-purple-300 shadow-sm focus:ring-2 focus:ring-purple-400 focus:border-purple-400 outline-none transition duration-300 font-roboto text-sm text-gray-900 placeholder-gray-400/70 hover:border-purple-400 hover:shadow-purple-200/50"
+                      className="w-full p-4 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-purple-300 shadow-sm focus:ring-2 focus:ring-purple-400 focus:border-purple-400 outline-none transition duration-300 font-roboto font-medium text-lg text-gray-900 placeholder-gray-400/70 hover:border-purple-400 hover:shadow-purple-200/50"
                     />
                     {errors.disability_type && <p className="text-red-500 text-base mt-2 font-roboto">{errors.disability_type}</p>}
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-800 font-roboto mb-2 tracking-wide">
+                  <label className="block text-lg font-semibold text-gray-800 font-roboto mb-3 tracking-wide">
                     Access to Internet <span className="text-red-500">*</span>
                   </label>
                   <Select
@@ -757,7 +739,7 @@ const ApplicationPage2 = () => {
                 </div>
               </div>
               <div className="space-y-8 bg-white/80 p-6 rounded-xl shadow-sm border border-purple-100/50">
-                <h3 className="text-lg font-semibold font-montserrat bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600 mb-6 tracking-tight">
+                <h3 className="text-2xl font-bold font-montserrat bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600 mb-6 tracking-tight">
                   Communication Address
                 </h3>
                 {[
@@ -768,7 +750,7 @@ const ApplicationPage2 = () => {
                   { name: 'comm_town', label: 'Town/Village', type: 'text' },
                 ].map(({ name, label, type, pattern }) => (
                   <div key={name}>
-                    <label className="block text-sm font-medium text-gray-800 font-roboto mb-2 tracking-wide">
+                    <label className="block text-lg font-semibold text-gray-800 font-roboto mb-3 tracking-wide">
                       {label} <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -778,13 +760,13 @@ const ApplicationPage2 = () => {
                       onChange={handleChange}
                       disabled={loading}
                       pattern={pattern}
-                      className="w-full p-3 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-indigo-300 shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 outline-none transition duration-300 font-roboto text-sm text-gray-900 placeholder-gray-400/70 hover:border-indigo-400 hover:shadow-indigo-200/50"
+                      className="w-full p-4 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-indigo-300 shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 outline-none transition duration-300 font-roboto font-medium text-lg text-gray-900 placeholder-gray-400/70 hover:border-indigo-400 hover:shadow-indigo-200/50"
                     />
                     {errors[name] && <p className="text-red-500 text-base mt-2 font-roboto">{errors[name]}</p>}
                   </div>
                 ))}
                 <div>
-                  <label className="block text-sm font-medium text-gray-800 font-roboto mb-2 tracking-wide">
+                  <label className="block text-lg font-semibold text-gray-800 font-roboto mb-3 tracking-wide">
                     Area <span className="text-red-500">*</span>
                   </label>
                   <Select
@@ -801,7 +783,7 @@ const ApplicationPage2 = () => {
                 </div>
               </div>
               <div className="space-y-8 bg-white/80 p-6 rounded-xl shadow-sm border border-purple-100/50">
-                <h3 className="text-lg font-semibold font-montserrat bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-orange-600 mb-6 tracking-tight">
+                <h3 className="text-2xl font-bold font-montserrat bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-orange-600 mb-6 tracking-tight">
                   Permanent Address
                 </h3>
                 <CustomCheckbox
@@ -820,7 +802,7 @@ const ApplicationPage2 = () => {
                   { name: 'perm_town', label: 'Town/Village', type: 'text' },
                 ].map(({ name, label, type, pattern }) => (
                   <div key={name}>
-                    <label className="block text-sm font-medium text-gray-800 font-roboto mb-2 tracking-wide">
+                    <label className="block text-lg font-semibold text-gray-800 font-roboto mb-3 tracking-wide">
                       {label} <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -830,7 +812,7 @@ const ApplicationPage2 = () => {
                       onChange={handleChange}
                       disabled={formData.same_as_comm || loading}
                       pattern={pattern}
-                      className={`w-full p-3 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-red-300 shadow-sm focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none transition duration-300 font-roboto text-sm text-gray-900 placeholder-gray-400/70 hover:border-red-400 hover:shadow-red-200/50 ${
+                      className={`w-full p-4 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-red-300 shadow-sm focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none transition duration-300 font-roboto font-medium text-lg text-gray-900 placeholder-gray-400/70 hover:border-red-400 hover:shadow-red-200/50 ${
                         formData.same_as_comm ? 'bg-gray-100/70 cursor-not-allowed' : ''
                       }`}
                     />
@@ -838,7 +820,7 @@ const ApplicationPage2 = () => {
                   </div>
                 ))}
                 <div>
-                  <label className="block text-sm font-medium text-gray-800 font-roboto mb-2 tracking-wide">
+                  <label className="block text-lg font-semibold text-gray-800 font-roboto mb-3 tracking-wide">
                     Area <span className="text-red-500">*</span>
                   </label>
                   <Select
@@ -862,7 +844,7 @@ const ApplicationPage2 = () => {
                 whileHover={{ scale: 1.05, boxShadow: '0 0 15px rgba(107, 114, 128, 0.4)' }}
                 whileTap={{ scale: 0.95 }}
                 disabled={loading}
-                className="px-5 py-2.5 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition duration-300 font-roboto font-medium text-sm shadow-lg flex items-center"
+                className="px-8 py-4 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition duration-300 font-roboto font-bold text-lg shadow-lg flex items-center"
               >
                 <ArrowLeft className="h-5 w-5 mr-2" />
                 Back
@@ -873,7 +855,7 @@ const ApplicationPage2 = () => {
                 whileHover={{ scale: 1.05, boxShadow: '0 0 15px rgba(234, 179, 8, 0.4)' }}
                 whileTap={{ scale: 0.95 }}
                 disabled={loading}
-                className="px-5 py-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-xl hover:from-yellow-600 hover:to-yellow-700 transition duration-300 font-roboto font-medium text-sm shadow-lg flex items-center"
+                className="px-8 py-4 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-xl hover:from-yellow-600 hover:to-yellow-700 transition duration-300 font-roboto font-bold text-lg shadow-lg flex items-center"
               >
                 <RefreshCcw className="h-5 w-5 mr-2" />
                 Reset
@@ -883,7 +865,7 @@ const ApplicationPage2 = () => {
                 whileHover={{ scale: 1.05, boxShadow: '0 0 15px rgba(124, 58, 237, 0.4)' }}
                 whileTap={{ scale: 0.95 }}
                 disabled={loading}
-                className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 disabled:from-purple-300 disabled:to-indigo-300 transition duration-300 font-roboto font-medium text-sm shadow-lg flex items-center"
+                className="px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 disabled:from-purple-300 disabled:to-indigo-300 transition duration-300 font-roboto font-bold text-lg shadow-lg flex items-center"
               >
                 <SparklesIcon className="h-5 w-5 mr-2" />
                 Save and Next
@@ -905,7 +887,7 @@ const ApplicationPage2 = () => {
               onClick={scrollToTop}
               whileHover={{ scale: 1.1, boxShadow: '0 0 15px rgba(139, 92, 246, 0.6)' }}
               whileTap={{ scale: 0.95 }}
-              className="p-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center"
+              className="p-4 bg-gradient-to-r from-blue-600 to-blue-600 text-white rounded-full shadow-lg flex items-center justify-center"
             >
               <ArrowUp className="h-6 w-6" />
             </motion.button>
@@ -927,13 +909,13 @@ const ApplicationPage2 = () => {
               className="bg-white/95 backdrop-blur-2xl rounded-2xl p-10 w-full shadow-2xl border border-purple-300/50 relative overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-purple-100/30 to-indigo-100/30" />
-              <h3 className="text-lg font-bold font-inter bg-clip-text text-transparent bg-gradient-to-r from-purple-700 to-indigo-900 mb-6 tracking-tight relative z-10">
+              <h3 className="text-3xl font-extrabold font-inter bg-clip-text text-transparent bg-gradient-to-r from-purple-700 to-indigo-900 mb-8 tracking-tight relative z-10">
                 DEB ID & ABC ID Instructions
               </h3>
-              <div className="space-y-6 relative z-10">
+              <div className="space-y-8 relative z-10">
                 <div>
-                  <h4 className="text-base font-semibold text-gray-800 font-inter">DEB ID</h4>
-                  <p className="text-gray-700 font-inter text-sm">
+                  <h4 className="text-xl font-bold text-gray-800 font-inter">DEB ID</h4>
+                  <p className="text-gray-700 font-inter font-medium text-lg">
                     The DEB ID (Digital Education Board ID) is a unique identifier for students registered with the Digital Education Board. To obtain your DEB ID:
                     <ul className="list-disc pl-6 mt-3 space-y-2">
                       <li>Visit the official DEB portal at <a href="https://www.deb.gov.in" target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:underline font-semibold">www.deb.gov.in</a>.</li>
@@ -946,8 +928,8 @@ const ApplicationPage2 = () => {
                   </p>
                 </div>
                 <div>
-                  <h4 className="text-base font-semibold text-gray-800 font-inter">ABC ID</h4>
-                  <p className="text-gray-700 font-inter text-sm">
+                  <h4 className="text-xl font-bold text-gray-800 font-inter">ABC ID</h4>
+                  <p className="text-gray-700 font-inter font-medium text-lg">
                     The ABC ID (Academic Bank of Credits ID) is required for credit accumulation and transfer. To create an ABC ID:
                     <ul className="list-disc pl-6 mt-3 space-y-2">
                       <li>Go to the ABC portal at <a href="https://www.abc.gov.in" target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:underline font-semibold">www.abc.gov.in</a>.</li>
@@ -965,7 +947,7 @@ const ApplicationPage2 = () => {
                   onClick={() => setShowModal(false)}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 transition duration-300 font-inter font-medium text-sm shadow-lg"
+                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-600 text-white rounded-xl hover:from-purple-700 hover:to-purple-700 transition duration-300 font-inter font-bold text-lg shadow-lg"
                 >
                   Close
                 </motion.button>
@@ -1041,7 +1023,7 @@ const ApplicationPage2 = () => {
           font-family: 'Roboto', sans-serif;
           font-size: 16px;
           border-radius: 12px;
-          box-shadow: 0 4px 14px rgba(0, 118, 255, 0.2);
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
         }
         .react-datepicker__month-dropdown,
         .react-datepicker__year-dropdown {
@@ -1075,7 +1057,3 @@ const ApplicationPage2 = () => {
 };
 
 export default ApplicationPage2;
-
-
-
-

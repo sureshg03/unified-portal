@@ -146,7 +146,7 @@ class StudentDetailsSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 from rest_framework import serializers
-from .models import ApplicationPayment, AllCourses
+from .models import ApplicationPayment, Courses
 
 class PaymentsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -159,5 +159,10 @@ class PaymentsSerializer(serializers.ModelSerializer):
 
 class CoursesSerializer(serializers.ModelSerializer):
     class Meta:
-        model = AllCourses
+        model = Courses
         fields = ['degree', 'application_fee']
+
+class AddCourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Courses
+        fields = ['course_short_code', 'course_full_name', 'branch_name', 'num_semesters', 'num_years', 'course_code', 'degree', 'application_fee', 'language', 'code2']

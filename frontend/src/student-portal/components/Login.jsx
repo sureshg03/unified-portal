@@ -141,6 +141,14 @@ const Login = () => {
         </motion.svg>
       ),
     });
+    const formatAxiosError = (error) => {
+      if (!error) return 'Unknown error';
+      const status = error.response?.status;
+      const data = error.response?.data;
+      if (status || data) return `${status || ''} - ${JSON.stringify(data)}`;
+      return error.message || String(error);
+    };
+
     try {
       const res = await axios.post('http://localhost:8000/api/login/', {
         email: form.email,
@@ -164,7 +172,8 @@ const Login = () => {
         });
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Login error.', {
+      console.error('Login error response:', err.response || err);
+      toast.error(err.response?.data?.message || formatAxiosError(err) || 'Login error.', {
         position: 'top-center',
         icon: <XCircleIcon className="h-5 w-5 text-red-500" />,
         className: 'bg-gradient-to-r from-red-600 to-red-500 text-white rounded-xl shadow-xl font-nunito',

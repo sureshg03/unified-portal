@@ -8,14 +8,25 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 // LSC Portal Components
 import { LoginPage as LSCLogin } from '@/components/LoginPage';
-import { AdminDashboard } from '@/components/AdminDashboard';
-import { UserDashboard } from '@/components/UserDashboard';
+import { AdminDashboard } from '@/lsc-portal/components/AdminDashboard';
+import { UserDashboard } from '@/lsc-portal/components/UserDashboard';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { isAuthenticated as isLSCAuthenticated, isAdmin, isLSCUser } from '@/lib/auth';
 import NotFound from './lsc-portal/pages/NotFound';
+import { AdmissionManagement } from './lsc-portal/components/modules/AdmissionManagement';
+import { AddCourses } from './lsc-portal/components/modules/AddCourses';
+import { SettingsModule } from './lsc-portal/components/modules/SettingsModule';
+import { ReportsModule } from './lsc-portal/components/modules/ReportsModule';
+import { CounsellorInformation } from './lsc-portal/components/modules/CounsellorInformation';
+import { AttendanceModule } from './lsc-portal/components/modules/AttendanceModule';
+import { AssignmentMarks } from './lsc-portal/components/modules/AssignmentMarks';
+import { LSCManagement } from './lsc-portal/components/modules/LSCManagement';
+import { ChangePassword } from './lsc-portal/components/modules/ChangePassword';
+import { NewStudentApplication } from '@/components/modules/NewStudentApplication';
 
 // Student Admission Portal Components
 import SignupForm from './student-portal/components/SignupForm';
@@ -34,6 +45,8 @@ import ApplicationPage5 from './student-portal/pages/ApplicationPage5';
 import SubmittedApplication from './student-portal/pages/SubmittedApplication';
 import ViewApplication from './student-portal/components/ViewApplication';
 import PaymentPage from './student-portal/pages/PaymentPage';
+import DocumentResubmission from './components/modules/DocumentResubmission';
+import ResubmissionSuccess from './components/modules/ResubmissionSuccess';
 
 const queryClient = new QueryClient();
 
@@ -125,10 +138,9 @@ const App = () => {
             {/* Main Landing Page */}
             <Route path="/" element={<LandingPage />} />
             
-            {/* ========================================
-                CDOE LSC PORTAL ROUTES
-            ======================================== */}
             <Route path="/lsc" element={<LSCLandingPage />} />
+            
+            <Route path="/lsc/admin" element={<Navigate to="/lsc/dashboard/admin" replace />} />
             
             <Route 
               path="/lsc/login" 
@@ -143,11 +155,7 @@ const App = () => {
             
             <Route 
               path="/lsc/dashboard/admin/*" 
-              element={
-                <ProtectedRoute requireAdmin={true}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } 
+              element={<AdminDashboard />} 
             />
             
             <Route 
@@ -179,6 +187,10 @@ const App = () => {
             <Route path="/student/application/submitted" element={<SubmittedApplication />} />
             <Route path="/student/dashboard/view/*" element={<ViewApplication />} />
             <Route path="/student/application/payment" element={<PaymentPage />} />
+            
+            {/* Document Resubmission Routes */}
+            <Route path="/resubmit-documents/:token" element={<DocumentResubmission />} />
+            <Route path="/resubmission-success" element={<ResubmissionSuccess />} />
             
             {/* Catch-all 404 route */}
             <Route path="*" element={<NotFound />} />

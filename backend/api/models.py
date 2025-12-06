@@ -99,6 +99,12 @@ class Application(models.Model):
     )
     is_active = models.BooleanField(default=True)
     
+    # Document Validation & Verification fields
+    document_validation = models.JSONField(blank=True, null=True, help_text="Stores document validation status")
+    verified_date = models.DateTimeField(blank=True, null=True, help_text="Date when verification was completed")
+    verified_by = models.CharField(max_length=255, blank=True, null=True, help_text="Name/ID of person who verified")
+    enrollment_no = models.CharField(max_length=50, blank=True, null=True, help_text="Generated enrollment number (e.g., A25PBA21010001)")
+    
     def __str__(self):
         return f"{self.user.email} - Application"
 
@@ -190,10 +196,10 @@ class Courses(models.Model):
     num_semesters = models.IntegerField()
     num_years = models.IntegerField()
     course_code = models.CharField(max_length=50)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    degree = models.CharField(max_length=50)
+    degree = models.CharField(max_length=100)
     application_fee = models.DecimalField(max_digits=10, decimal_places=2, default=236.00)
+    language = models.CharField(max_length=50, blank=True, null=True)
+    code2 = models.CharField(max_length=50, blank=True, null=True)
 
     class Meta:
         db_table = 'tbl_course'
@@ -202,29 +208,6 @@ class Courses(models.Model):
         return self.degree
 
 
-
-# api/models.py
-from django.db import models
-from django.contrib.auth.models import User
-
-class AllCourses(models.Model):
-    id = models.AutoField(primary_key=True)
-    course_short_code = models.CharField(max_length=50)
-    course_full_name = models.CharField(max_length=200)
-    branch_name = models.CharField(max_length=100)
-    num_semesters = models.IntegerField()
-    num_years = models.IntegerField()
-    course_code = models.CharField(max_length=50)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    degree = models.CharField(max_length=50)
-    application_fee = models.DecimalField(max_digits=10, decimal_places=2, default=236.00)  # Added field
-
-    class Meta:
-        db_table = 'allcourses'
-
-    def __str__(self):
-        return self.degree
 
 # api/models.py
 class ApplicationPayment(models.Model):

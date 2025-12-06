@@ -8,8 +8,8 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from .models import Student, Application, StudentDetails, Courses, Payment, ApplicationPayment, AllCourses
-from .serializers import ApplicationSerializer, StudentDetailsSerializer
+from .models import Student, Application, StudentDetails, Payment, ApplicationPayment, Courses
+from .serializers import ApplicationSerializer, StudentDetailsSerializer, AddCourseSerializer
 from .utils import get_real_academic_year
 from .models import StudentDetails, MarksheetUpload
 import random
@@ -112,7 +112,7 @@ def signup(request):
             student_data['lsc_name'] = lsc_name
             logger.info(f"Student signup via LSC: {lsc_code} - {lsc_name}")
         
-        Student.objects.using('online_edu').create(**student_data)
+        Student.objects.create(**student_data)
         cache.delete(email)
         logger.info(f"Signup successful for email: {email}")
         return Response({
@@ -159,16 +159,43 @@ def login_view(request):
         }, status=status.HTTP_400_BAD_REQUEST)
     
     try:
-        student = Student.objects.using('online_edu').get(email=email, password=password, is_verified=True)
+        logger.info(f"Login attempt: email={email}, password_present={bool(password)}")
+        student = Student.objects.get(email=email, password=password, is_verified=True)
         
         # Create or get User in default database for token authentication
-        user, created = User.objects.using('default').get_or_create(
-            username=email, 
-            defaults={'email': email}
-        )
+        # Handle duplicate users by getting the first one or creating new
+        try:
+            user = User.objects.using('default').filter(username=email).first()
+            if not user:
+                user = User.objects.using('default').create_user(
+                    username=email,
+                    email=email
+                )
+                created = True
+                logger.info(f"Created new user for {email}")
+            else:
+                created = False
+                # Update email if missing
+                if not user.email:
+                    user.email = email
+                    user.save()
+                logger.info(f"Found existing user for {email}")
+        except Exception as user_error:
+            logger.error(f"Error handling user: {str(user_error)}")
+            # Fallback: get any user with this username
+            user = User.objects.using('default').filter(username=email).first()
+            if not user:
+                raise Exception("Failed to get or create user")
+            created = False
         
-        # Create token in default database
-        token, _ = Token.objects.using('default').get_or_create(user=user)
+        # Create token in default database, handle duplicates
+        try:
+            token, _ = Token.objects.using('default').get_or_create(user=user)
+        except Token.MultipleObjectsReturned:
+            # If multiple tokens exist, delete old ones and create new
+            logger.warning(f"Multiple tokens found for {email}, cleaning up")
+            Token.objects.using('default').filter(user=user).delete()
+            token = Token.objects.using('default').create(user=user)
         
         logger.info(f"Login successful for {email}")
         return Response({
@@ -179,12 +206,12 @@ def login_view(request):
     except Student.DoesNotExist:
         logger.warning(f"Invalid login attempt for {email}")
         # Check if the email exists but is unverified or has wrong password
-        if Student.objects.using('online_edu').filter(email=email, is_verified=False).exists():
+        if Student.objects.filter(email=email, is_verified=False).exists():
             return Response({
                 'status': 'error',
                 'message': 'Your account is not verified. Please verify your email with the OTP.'
             }, status=status.HTTP_401_UNAUTHORIZED)
-        elif Student.objects.using('online_edu').filter(email=email).exists():
+        elif Student.objects.filter(email=email).exists():
             return Response({
                 'status': 'error',
                 'message': 'Incorrect password. Please try again or reset your password.'
@@ -195,7 +222,9 @@ def login_view(request):
                 'message': 'No account found with this email. Please sign up or check your email.'
             }, status=status.HTTP_401_UNAUTHORIZED)
     except Exception as e:
+        import traceback
         logger.error(f"Login error for {email}: {str(e)}")
+        logger.error(traceback.format_exc())
         return Response({
             'status': 'error',
             'message': 'An unexpected error occurred. Please try again later.'
@@ -209,7 +238,7 @@ def login_view(request):
 def forgot_password(request):
     email = request.data.get('email')
     try:
-        Student.objects.using('online_edu').get(email=email)
+        Student.objects.get(email=email)
         otp = str(random.randint(100000, 999999))
         cache.set(email, {'otp': otp, 'time': time.time()}, timeout=300)
         send_mail(
@@ -251,13 +280,13 @@ def reset_password(request):
         return Response({'status': 'error', 'message': 'OTP not verified'}, status=status.HTTP_403_FORBIDDEN)
 
     try:
-        student = Student.objects.using('online_edu').get(email=email)
+        student = Student.objects.get(email=email)
         student.set_password(new_password)
         # Update User in default database
         user = User.objects.using('default').get(username=email)
         user.set_password(new_password)
         user.save(using='default')
-        student.save(using='online_edu')
+        student.save()
         cache.delete(email)
         return Response({'status': 'success', 'message': 'Password reset successful'}, status=status.HTTP_200_OK)
     except Student.DoesNotExist:
@@ -269,7 +298,7 @@ def reset_password(request):
 def get_user_profile(request):
     try:
         user = request.user
-        student = Student.objects.using('online_edu').filter(email=user.email).first()
+        student = Student.objects.filter(email=user.email).first()
         return Response(
             {
                 "status": "success",
@@ -329,9 +358,12 @@ logger = logging.getLogger(__name__)
 @permission_classes([AllowAny])
 def get_courses(request):
     try:
-        courses = Courses.objects.all().values('degree')
+        courses = Courses.objects.all().values(
+            'id', 'course_short_code', 'course_full_name', 'degree', 'branch_name',
+            'num_semesters', 'num_years', 'course_code', 'language', 'code2', 'application_fee'
+        )
         course_list = list(courses)
-        logger.info(f"Fetched {len(course_list)} courses: {[course['degree'] for course in course_list]}")
+        logger.info(f"Fetched {len(course_list)} courses")
         return Response({
             'status': 'success',
             'data': course_list
@@ -344,11 +376,113 @@ def get_courses(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
+def add_course(request):
+    try:
+        serializer = AddCourseSerializer(data=request.data)
+        if serializer.is_valid():
+            course = serializer.save()
+            logger.info(f"Course added successfully: {course.degree}")
+            return Response({
+                'status': 'success',
+                'message': 'Course added successfully',
+                'data': serializer.data
+            }, status=status.HTTP_201_CREATED)
+        else:
+            logger.error(f"Serializer validation errors: {serializer.errors}")
+            return Response({
+                'status': 'error',
+                'message': 'Validation failed',
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        logger.error(f"Error adding course: {str(e)}")
+        return Response({
+            'status': 'error',
+            'message': f'Error adding course: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['PUT'])
+@permission_classes([AllowAny])
+def update_course(request, course_id):
+    try:
+        course = Courses.objects.get(id=course_id)
+        serializer = AddCourseSerializer(course, data=request.data, partial=True)
+        if serializer.is_valid():
+            course = serializer.save()
+            logger.info(f"Course updated successfully: {course.degree}")
+            return Response({
+                'status': 'success',
+                'message': 'Course updated successfully',
+                'data': serializer.data
+            }, status=status.HTTP_200_OK)
+        else:
+            logger.error(f"Serializer validation errors: {serializer.errors}")
+            return Response({
+                'status': 'error',
+                'message': 'Validation failed',
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+    except Courses.DoesNotExist:
+        logger.error(f"Course with id {course_id} not found")
+        return Response({
+            'status': 'error',
+            'message': 'Course not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error updating course: {str(e)}")
+        return Response({
+            'status': 'error',
+            'message': f'Error updating course: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def delete_course(request, course_id):
+    try:
+        course = Courses.objects.get(id=course_id)
+        course_name = course.course_full_name
+        course.delete()
+        logger.info(f"Course deleted successfully: {course_name} (ID: {course_id})")
+        return Response({
+            'status': 'success',
+            'message': f'Course "{course_name}" deleted successfully'
+        }, status=status.HTTP_200_OK)
+    except Courses.DoesNotExist:
+        logger.error(f"Course with id {course_id} not found")
+        return Response({
+            'status': 'error',
+            'message': 'Course not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error deleting course: {str(e)}")
+        return Response({
+            'status': 'error',
+            'message': f'Error deleting course: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def delete_all_courses(request):
+    try:
+        deleted_count, _ = Courses.objects.all().delete()
+        logger.info(f"All courses deleted successfully. Count: {deleted_count}")
+        return Response({
+            'status': 'success',
+            'message': f'All {deleted_count} courses deleted successfully'
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.error(f"Error deleting all courses: {str(e)}")
+        return Response({
+            'status': 'error',
+            'message': f'Error deleting all courses: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def save_application_page1(request):
     user = request.user
     data = request.data.copy()
-    data['user'] = user.id
     data['email'] = user.email
 
     academic_year = data.get('academic_year')
@@ -362,20 +496,47 @@ def save_application_page1(request):
         return Response({"status": "error", "message": "Invalid course selected."}, status=400)
 
     try:
-        application = Application.objects.get(user=user, academic_year=academic_year)
-        serializer = ApplicationSerializer(application, data=data, partial=True)
-    except Application.DoesNotExist:
-        serializer = ApplicationSerializer(data=data)
+        # Look up existing application by email and academic_year
+        application = Application.objects.filter(email=user.email, academic_year=academic_year).first()
+        
+        if application:
+            # Update existing application
+            for key, value in data.items():
+                if key != 'user' and hasattr(application, key):
+                    setattr(application, key, value)
+            # Keep existing user reference
+            application.save()
+            return Response({
+                "status": "success",
+                "message": "Form saved successfully",
+                "data": ApplicationSerializer(application).data
+            })
+        else:
+            # Create new application - manually handle user to avoid duplicate lookup
+            # Get first user with matching email to avoid MultipleObjectsReturned
+            user_instance = User.objects.filter(username=user.email).first()
+            if not user_instance:
+                user_instance = user
+            
+            # Remove user from data if present
+            data.pop('user', None)
+            
+            # Create application without user field first
+            application = Application(**data)
+            application.user = user_instance
+            application.save()
+            
+            return Response({
+                "status": "success",
+                "message": "Form saved successfully",
+                "data": ApplicationSerializer(application).data
+            })
 
-    if serializer.is_valid():
-        serializer.save()
-        return Response({
-            "status": "success",
-            "message": "Form saved successfully",
-            "data": serializer.data
-        })
-
-    return Response({"status": "error", "errors": serializer.errors}, status=400)
+    except Exception as e:
+        import traceback
+        logger.error(f"Error saving application page1 for {user.email}: {str(e)}")
+        logger.error(traceback.format_exc())
+        return Response({"status": "error", "message": str(e)}, status=500)
     
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -412,23 +573,33 @@ def save_application_page2(request):
         if data.get('differently_abled') != 'Yes':
             data['disability_type'] = None
 
-        # Save or update Application
-        instance, created = Application.objects.get_or_create(
-            user=user,
-            defaults={'email': user.email}
-        )
-
-        serializer = ApplicationSerializer(instance, data=data, partial=True)
-
-        if serializer.is_valid():
-            serializer.save()
+        # Find or create Application using email to avoid duplicate user issues
+        application = Application.objects.filter(email=user.email).first()
+        
+        if application:
+            # Update existing application
+            data.pop('user', None)  # Remove user field if present
+            for key, value in data.items():
+                if hasattr(application, key):
+                    setattr(application, key, value)
+            application.save()
             return Response({'message': 'Application saved successfully'}, status=200)
         else:
-            print('Serializer errors:', serializer.errors)
-            return Response(serializer.errors, status=400)
+            # Create new application - manually handle user to avoid duplicate lookup
+            user_instance = User.objects.filter(username=user.email).first()
+            if not user_instance:
+                user_instance = user
+            
+            data.pop('user', None)  # Remove user field if present
+            application = Application(**data)
+            application.user = user_instance
+            application.save()
+            return Response({'message': 'Application saved successfully'}, status=200)
 
     except Exception as e:
-        print('Exception:', str(e))
+        import traceback
+        logger.error(f'Error saving application page2 for {user.email}: {str(e)}')
+        logger.error(traceback.format_exc())
         return Response({'error': str(e)}, status=400)
 
 
@@ -612,7 +783,7 @@ def verify_dummy_payment(request):
         amount = 236.00  # Default application fee
         try:
             if application.course:
-                course = AllCourses.objects.filter(degree=application.course).first()
+                course = Courses.objects.filter(degree=application.course).first()
                 if course:
                     amount = float(course.application_fee)
         except Exception as e:
@@ -892,8 +1063,8 @@ def get_autofill_application(request):
     user = request.user
 
     try:
-        # Query from online_edu database
-        application = Application.objects.using('online_edu').filter(user=user).first()
+        # Query from unified database
+        application = Application.objects.filter(user=user).first()
         if not application:
             return Response({
                 'status': 'success',
@@ -1093,7 +1264,14 @@ def upload_documents(request):
                 'transfer_certificate': 'Transfer_Certificate',
             }
             folder_name = folder_mapping[doc_type]
-            file_name = f"{email.replace('@', '_at_').replace('.', '_')}_{doc_type}_{file.name}"
+            
+            # Sanitize filename - remove spaces, special characters, and limit length
+            import re
+            safe_original_name = re.sub(r'[^\w\-_\.]', '_', file.name)  # Replace special chars with underscore
+            safe_original_name = re.sub(r'_+', '_', safe_original_name)  # Replace multiple underscores with single
+            safe_original_name = safe_original_name[:50]  # Limit filename length
+            
+            file_name = f"{email.replace('@', '_at_').replace('.', '_')}_{doc_type}_{safe_original_name}"
             
             try:
                 # Upload to local storage
@@ -1196,19 +1374,19 @@ def upload_marksheet(request):
     email = request.POST.get('email') or request.data.get('email')
     if not email:
         logger.info(f"Email not in request, looking up for user: {user.username}")
-        try:
-            # Try Student model first
-            student = Student.objects.using('online_edu').get(email=user.email)
+        # Try Student model first using filter().first() to avoid MultipleObjectsReturned
+        student = Student.objects.filter(email=user.email).first()
+        if student:
             email = student.email
             logger.info(f"Got email from Student model: {email}")
-        except Student.DoesNotExist:
+        else:
             logger.warning(f"Student record not found for user: {user.username}, trying Application model")
-            try:
-                # Try Application model
-                application = Application.objects.get(user=user)
+            # Try Application model using filter().first() to avoid duplicate issues
+            application = Application.objects.filter(email=user.email).first()
+            if application:
                 email = application.email
                 logger.info(f"Got email from Application model: {email}")
-            except Application.DoesNotExist:
+            else:
                 logger.error(f"No Student or Application record found for user: {user.username}")
                 return Response({
                     'status': 'error',
@@ -1271,16 +1449,22 @@ def upload_marksheet(request):
         folder_path = folder_paths[folder_name]
         logger.info(f"Uploading to folder: {folder_name} for qualification_type: {qualification_type}")
 
-        # Upload to local storage
-        file_name = f"{email.replace('@', '_at_').replace('.', '_')}_{qualification_type}_{file.name}"
+        # Upload to local storage - sanitize filename to remove spaces and special characters
+        sanitized_filename = file.name.replace(' ', '_').replace('(', '').replace(')', '').replace('[', '').replace(']', '')
+        file_name = f"{email.replace('@', '_at_').replace('.', '_')}_{qualification_type.replace('.', '')}_{sanitized_filename}"
         file_url = upload_to_local_storage(temp_file_path, file_name, folder_path)
         logger.info(f"File uploaded to local storage: {file_url}")
 
-        # Update StudentDetails
-        student_details, _ = StudentDetails.objects.get_or_create(
-            user=user,
-            defaults={'email': email, 'name_initial': ''}
-        )
+        # Update StudentDetails - use filter().first() to avoid duplicate user issues
+        student_details = StudentDetails.objects.filter(email=email).first()
+        if not student_details:
+            # Create new student details
+            user_instance = User.objects.filter(username=user.email).first() or user
+            student_details = StudentDetails.objects.create(
+                user=user_instance,
+                email=email,
+                name_initial=''
+            )
         url_field = {
             'S.S.L.C': 'sslc_marksheet_url',
             'HSC': 'hsc_marksheet_url',
@@ -1370,30 +1554,49 @@ def get_application_preview(request):
         user = request.user
         data = {}
 
-        # Fetch Student data
+        # Fetch Student data - handle duplicates
         try:
-            student = Student.objects.using('online_edu').get(email=user.email)
-            data['student'] = StudentSerializer(student).data
-        except Student.DoesNotExist:
+            student = Student.objects.filter(email=user.email).first()
+            if student:
+                data['student'] = StudentSerializer(student).data
+            else:
+                data['student'] = None
+        except Exception as e:
+            logger.error(f"Error fetching Student for {user.email}: {str(e)}")
             data['student'] = None
 
-        # Fetch Application data
+        # Fetch Application data - handle duplicates
         try:
-            application = Application.objects.using('online_edu').get(email=user.email)
-            data['application'] = ApplicationSerializer(application).data
-        except Application.DoesNotExist:
+            application = Application.objects.filter(email=user.email).first()
+            if application:
+                data['application'] = ApplicationSerializer(application).data
+            else:
+                data['application'] = None
+        except Exception as e:
+            logger.error(f"Error fetching Application for {user.email}: {str(e)}")
             data['application'] = None
 
-        # Fetch StudentDetails data
+        # Fetch StudentDetails data - use email-based lookup
         try:
-            student_details = StudentDetails.objects.get(user=user)
-            data['student_details'] = StudentDetailsSerializer(student_details).data
-        except StudentDetails.DoesNotExist:
+            student_details = StudentDetails.objects.filter(email=user.email).first()
+            if student_details:
+                data['student_details'] = StudentDetailsSerializer(student_details).data
+            else:
+                data['student_details'] = None
+        except Exception as e:
+            logger.error(f"Error fetching StudentDetails for {user.email}: {str(e)}")
             data['student_details'] = None
 
-        # Fetch MarksheetUpload data
-        marksheet_uploads = MarksheetUpload.objects.filter(student__user=user)
-        data['marksheet_uploads'] = MarksheetUploadSerializer(marksheet_uploads, many=True).data
+        # Fetch MarksheetUpload data - use email-based lookup
+        try:
+            if student:
+                marksheet_uploads = MarksheetUpload.objects.filter(student=student)
+                data['marksheet_uploads'] = MarksheetUploadSerializer(marksheet_uploads, many=True).data
+            else:
+                data['marksheet_uploads'] = []
+        except Exception as e:
+            logger.error(f"Error fetching MarksheetUploads for {user.email}: {str(e)}")
+            data['marksheet_uploads'] = []
 
         return Response({
             'status': 'success',
@@ -1899,7 +2102,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .models import ApplicationPayment, Application, Student, AllCourses, Courses
+from .models import ApplicationPayment, Application, Student, Courses
 from .serializers import PaymentsSerializer
 import logging
 from datetime import datetime

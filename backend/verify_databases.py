@@ -16,7 +16,7 @@ print("="*60)
 
 databases = {
     'default': 'lsc_portal_db',
-    'online_edu': 'online_edu', 
+    'default': 'cdoe_db', 
     'lsc_admindb': 'lsc_admindb'
 }
 

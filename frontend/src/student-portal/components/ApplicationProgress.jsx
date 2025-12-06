@@ -232,19 +232,19 @@ const ApplicationProgress = () => {
             <h4 className="font-bold text-gray-900 mb-2">Important Information</h4>
             <ul className="space-y-2 text-sm text-gray-700">
               <li className="flex items-start gap-2">
-                <span className="text-indigo-600 mt-1">•</span>
+                <span className="text-indigo-600 mt-1">ΓÇó</span>
                 <span>You will receive email notifications at each stage of verification</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-indigo-600 mt-1">•</span>
+                <span className="text-indigo-600 mt-1">ΓÇó</span>
                 <span>Document verification typically takes 2-3 business days</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-indigo-600 mt-1">•</span>
+                <span className="text-indigo-600 mt-1">ΓÇó</span>
                 <span>Contact support if verification takes longer than expected</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-indigo-600 mt-1">•</span>
+                <span className="text-indigo-600 mt-1">ΓÇó</span>
                 <span>
                   Support Email:{' '}
                   <a href="mailto:cdoe@periyaruniversity.ac.in" className="text-indigo-600 font-semibold hover:underline">

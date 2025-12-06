@@ -1,5 +1,4 @@
-# utils.py
-import requests
+﻿import requests
 import os
 import shutil
 from django.conf import settings
@@ -13,84 +12,70 @@ def get_real_academic_year():
         return f"{current_year}-{current_year + 1}"
     except Exception as e:
         print("Error fetching real-time:", e)
-        # fallback to system time if API fails
         from datetime import datetime
         current_year = datetime.now().year
         return f"{current_year}-{current_year + 1}"
 
 def create_user_folder_structure(email):
-    """
-    Create a folder structure for the user to store documents locally.
-    Structure: MEDIA_ROOT/student_documents/{email}/
-        - SSLC/
-        - HSC/
-        - UG/
-        - Semester/
-        - Photo/
-        - Signature/
-        - Community_Certificate/
-        - Aadhar_Card/
-        - Transfer_Certificate/
-    
-    Returns: Dictionary with folder names and their absolute paths
-    """
-    # Sanitize email for folder name
     safe_email = email.replace('@', '_at_').replace('.', '_')
-    
-    # Base path for student documents
     base_path = os.path.join(settings.MEDIA_ROOT, 'student_documents', safe_email)
-    
-    # Define subfolders
-    subfolders = [
-        'SSLC',
-        'HSC', 
-        'UG',
-        'Semester',
-        'Photo',
-        'Signature',
-        'Community_Certificate',
-        'Aadhar_Card',
-        'Transfer_Certificate'
-    ]
-    
-    # Create directories
+    subfolders = ['SSLC', 'HSC', 'UG', 'Semester', 'Photo', 'Signature', 'Community_Certificate', 'Aadhar_Card', 'Transfer_Certificate']
     folder_paths = {}
     for subfolder in subfolders:
         folder_path = os.path.join(base_path, subfolder)
         Path(folder_path).mkdir(parents=True, exist_ok=True)
         folder_paths[subfolder] = folder_path
-    
     return folder_paths
 
-
 def upload_to_local_storage(file_path, file_name, folder_path):
-    """
-    Upload a file to local storage and return its relative URL path.
-    
-    Args:
-        file_path: Path to the temporary file
-        file_name: Name to save the file as
-        folder_path: Destination folder path
-    
-    Returns:
-        Relative URL path to access the file
-    """
     try:
-        # Full destination path
-        dest_path = os.path.join(folder_path, file_name)
+        print(f"DEBUG - file_path: {file_path}")
+        print(f"DEBUG - file_name: {file_name}")
+        print(f"DEBUG - folder_path: {folder_path}")
+        print(f"DEBUG - file_path exists: {os.path.exists(file_path)}")
         
-        # Copy file to destination
-        shutil.copy2(file_path, dest_path)
+        # Ensure the folder exists - use extended-length path prefix for Windows
+        folder_path_obj = Path(folder_path)
+        folder_path_obj.mkdir(parents=True, exist_ok=True)
+        print(f"DEBUG - folder created/verified: {folder_path}")
         
-        # Generate relative URL path
-        # Extract path relative to MEDIA_ROOT
+        # Shorten filename if too long (Windows has 260 char path limit)
+        # Extract extension
+        name_parts = file_name.rsplit('.', 1)
+        base_name = name_parts[0]
+        extension = name_parts[1] if len(name_parts) > 1 else ''
+        
+        # Calculate available space for filename (leave room for path + extension)
+        max_name_length = 50  # Conservative limit for filename itself
+        if len(base_name) > max_name_length:
+            # Keep first part and add hash of full name
+            import hashlib
+            name_hash = hashlib.md5(base_name.encode()).hexdigest()[:8]
+            base_name = f"{base_name[:max_name_length-9]}_{name_hash}"
+        
+        shortened_filename = f"{base_name}.{extension}" if extension else base_name
+        dest_path = os.path.join(folder_path, shortened_filename)
+        
+        # Use extended-length path prefix for Windows long paths
+        if os.name == 'nt' and not dest_path.startswith('\\\\?\\'):
+            dest_path_long = '\\\\?\\' + os.path.abspath(dest_path)
+            file_path_long = '\\\\?\\' + os.path.abspath(file_path) if not file_path.startswith('\\\\?\\') else file_path
+        else:
+            dest_path_long = dest_path
+            file_path_long = file_path
+            
+        print(f"DEBUG - dest_path: {dest_path}")
+        print(f"DEBUG - dest_path length: {len(dest_path)}")
+        
+        shutil.copy2(file_path_long, dest_path_long)
+        print(f"DEBUG - file copied successfully")
+        
         relative_path = os.path.relpath(dest_path, settings.MEDIA_ROOT)
-        
-        # Convert to URL path (use forward slashes)
         url_path = relative_path.replace('\\', '/')
-        
-        # Return URL path that will be served by Django
         return f"{settings.MEDIA_URL}{url_path}"
-    
     except Exception as e:
+        print(f"DEBUG - Error in upload_to_local_storage: {str(e)}")
+        print(f"DEBUG - Error type: {type(e)}")
+        import traceback
+        traceback.print_exc()
         raise Exception(f"Failed to upload file to local storage: {str(e)}")

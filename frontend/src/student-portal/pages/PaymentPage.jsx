@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { Toaster, toast } from 'react-hot-toast';
+import { API_BASE_URL } from '../../config/api';
 import { 
   ArrowLeftIcon, 
   CheckCircleIcon, 
@@ -18,7 +19,7 @@ import {
   BuildingLibraryIcon
 } from '@heroicons/react/24/outline';
 import { generateReceiptPDF } from '../utils/pdfGenerator';
-import { generateApplicationFormPDF } from '../utils/applicationFormPDF';
+import { generateComprehensiveApplicationPDF } from '../utils/comprehensiveApplicationPDF';
 
 const PaymentPage = () => {
   const navigate = useNavigate();
@@ -44,663 +45,412 @@ const PaymentPage = () => {
       }
 
       const response = await axios.get(
-        'http://localhost:8000/api/application-payment-data/',
+        `${API_BASE_URL}/api/application-payment-data/`,
         { headers: { Authorization: `Token ${token}` } }
       );
 
       if (response.data.status === 'success') {
         setApplicationData(response.data.data);
-        setError(null);
+        setPaymentDetails(response.data.payment_details);
       } else {
-        setError(response.data.message || 'Failed to load application data');
+        setError('Failed to load application data');
+        toast.error('Failed to load application data');
       }
-    } catch (error) {
-      console.error('Error fetching application data:', error);
-      const errorMsg = error.response?.data?.message || 'Failed to load application data. Please complete your profile and application first.';
-      setError(errorMsg);
-      toast.error(errorMsg);
+    } catch (err) {
+      console.error('Error fetching application data:', err);
+      setError('Failed to load application data');
+      toast.error('Failed to load application data');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDummyPayment = async () => {
+  const handlePayment = async () => {
+    if (!applicationData || !paymentDetails) {
+      toast.error('Application data not loaded');
+      return;
+    }
+
+    setProcessing(true);
+
     try {
-      setProcessing(true);
       const token = localStorage.getItem('token');
+      const paymentData = {
+        application_id: applicationData.id,
+        amount: paymentDetails.total_amount,
+        payment_method: 'razorpay',
+        payment_type: 'application_fee'
+      };
 
-      if (!token) {
-        toast.error('Please log in again.');
-        navigate('/login');
-        return;
-      }
+      // Initialize Razorpay payment
+      const options = {
+        key: 'rzp_test_your_key_here', // Replace with your Razorpay key
+        amount: paymentDetails.total_amount * 100, // Amount in paisa
+        currency: 'INR',
+        name: 'Periyar University - CDOE',
+        description: 'Application Fee Payment',
+        image: '/Logo.png',
+        handler: async function (response) {
+          try {
+            // Verify payment on backend
+            const verifyResponse = await axios.post(
+              'http://localhost:8000/api/verify-payment/',
+              {
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+                application_id: applicationData.id
+              },
+              { headers: { Authorization: `Token ${token}` } }
+            );
 
-      const response = await axios.post(
-        'http://localhost:8000/api/verify-dummy-payment/',
-        {},
-        { headers: { Authorization: `Token ${token}` } }
-      );
+            if (verifyResponse.data.status === 'success') {
+              toast.success('Payment successful!');
 
-      if (response.data.status === 'success') {
-        toast.success('Payment completed successfully!');
-        
-        // Store payment details for display
-        setPaymentDetails({
-          application_id: response.data.application_id,
-          transaction_id: response.data.data?.transaction_id || `TXN${Date.now()}`,
-          bank_transaction_id: response.data.data?.bank_transaction_id || `BANK${Date.now()}`,
-          order_id: response.data.data?.order_id || `ORD${Date.now()}`,
-          amount: response.data.data?.amount || '354.00',
-          payment_mode: 'DUMMY_GATEWAY',
-          transaction_date: new Date().toLocaleString(),
-          status: 'SUCCESS'
-        });
+              // Generate receipt
+              await generateReceiptPDF({
+                applicationData,
+                paymentDetails: {
+                  ...paymentDetails,
+                  transaction_id: response.razorpay_payment_id,
+                  payment_date: new Date().toISOString()
+                }
+              });
 
-        // Refresh application data to show updated Application ID
-        await fetchApplicationData();
-      } else {
-        toast.error(response.data.message || 'Payment verification failed');
-      }
+              // Navigate to success page
+              setTimeout(() => {
+                navigate('/student/submitted');
+              }, 2000);
+            } else {
+              toast.error('Payment verification failed');
+            }
+          } catch (error) {
+            console.error('Payment verification error:', error);
+            toast.error('Payment verification failed');
+          }
+        },
+        prefill: {
+          name: applicationData.student?.name || '',
+          email: applicationData.student?.email || '',
+          contact: applicationData.student?.phone || ''
+        },
+        notes: {
+          address: 'Periyar University - Salem'
+        },
+        theme: {
+          color: '#3B82F6'
+        },
+        modal: {
+          ondismiss: function() {
+            setProcessing(false);
+            toast.error('Payment cancelled');
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+
     } catch (error) {
-      console.error('Error verifying payment:', error);
-      const errorMsg = error.response?.data?.message || error.response?.data?.error || 'An error occurred during payment';
-      toast.error(errorMsg);
-    } finally {
+      console.error('Payment initialization error:', error);
+      toast.error('Failed to initialize payment');
       setProcessing(false);
     }
   };
 
   const handleDownloadReceipt = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast.error('Please log in again.');
-        navigate('/login');
-        return;
-      }
-
-      const loadingToast = toast.loading('Generating payment receipt...');
-      
-      const response = await axios.get(
-        'http://localhost:8000/api/download-receipt/',
-        { 
-          headers: { Authorization: `Token ${token}` },
-          responseType: 'json'
-        }
-      );
-
-      if (response.data.status === 'success') {
-        toast.dismiss(loadingToast);
-        toast.success('Receipt generated successfully!');
-        
-        // Log the receipt data for debugging
-        console.log('Receipt Data:', response.data.data);
-        console.log('Transaction ID:', response.data.data.transaction_id);
-        console.log('Bank Transaction ID:', response.data.data.bank_transaction_id);
-        console.log('Order ID:', response.data.data.order_id);
-        
-        // Generate PDF with the receipt data
-        generateReceiptPDF(response.data.data);
-      }
-    } catch (error) {
-      toast.dismiss();
-      console.error('Error downloading receipt:', error);
-      toast.error(error.response?.data?.message || 'Failed to download receipt');
-    }
-  };
-
-  const handleDownloadApplication = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast.error('Please log in again.');
-        navigate('/login');
-        return;
-      }
-
-      const loadingToast = toast.loading('Generating application form...');
-      
-      const response = await axios.get(
-        'http://localhost:8000/api/download-application/',
-        { 
-          headers: { Authorization: `Token ${token}` },
-          responseType: 'json'
-        }
-      );
-
-      if (response.data.status === 'success') {
-        toast.dismiss(loadingToast);
-        toast.success('Application form generated successfully!');
-        
-        // Log the data for debugging
-        console.log('Application Data:', response.data.data);
-        
-        // Generate PDF matching PUCDOE.pdf reference format exactly
-        generateApplicationFormPDF(response.data.data);
-      }
-    } catch (error) {
-      toast.dismiss();
-      console.error('Error downloading application:', error);
-      toast.error(error.response?.data?.message || 'Failed to download application');
-    }
-  };
-
-  const handleClearPayment = async () => {
-    if (!window.confirm('Are you sure you want to clear your payment and start a new application? This will reset your current application.')) {
+    if (!applicationData || !paymentDetails) {
+      toast.error('Application data not available');
       return;
     }
 
     try {
-      setProcessing(true);
-      const token = localStorage.getItem('token');
-
-      if (!token) {
-        toast.error('Please log in again.');
-        navigate('/login');
-        return;
-      }
-
-      const response = await axios.post(
-        'http://localhost:8000/api/clear-payment/',
-        {},
-        { headers: { Authorization: `Token ${token}` } }
-      );
-
-      if (response.data.status === 'success') {
-        toast.success('✅ Payment cleared successfully! You can now start a new application.');
-        
-        setTimeout(() => {
-          navigate('/application/page1');
-        }, 2000);
-      } else {
-        toast.error(response.data.message || 'Failed to clear payment');
-      }
+      await generateReceiptPDF({
+        applicationData,
+        paymentDetails
+      });
+      toast.success('Receipt downloaded successfully');
     } catch (error) {
-      console.error('Error clearing payment:', error);
-      toast.error(error.response?.data?.message || 'An error occurred while clearing payment');
-    } finally {
-      setProcessing(false);
+      console.error('Receipt generation error:', error);
+      toast.error('Failed to generate receipt');
+    }
+  };
+
+  const handleDownloadApplication = async () => {
+    if (!applicationData) {
+      toast.error('Application data not available');
+      return;
+    }
+
+    try {
+      await generateComprehensiveApplicationPDF(applicationData);
+      toast.success('Application downloaded successfully');
+    } catch (error) {
+      console.error('Application generation error:', error);
+      toast.error('Failed to generate application PDF');
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mb-4"></div>
-          <p className="text-gray-600 text-lg">Loading application data...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white rounded-lg shadow-lg p-8 text-center"
+        >
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading payment details...</p>
+        </motion.div>
       </div>
     );
   }
 
-  if (error || !applicationData) {
+  if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-8 px-4">
-        <Toaster position="top-right" />
-        <div className="max-w-4xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-            <button onClick={() => navigate('/student/dashboard')} className="flex items-center text-indigo-600 hover:text-indigo-800 mb-4 transition-colors">
-              <ArrowLeftIcon className="h-5 w-5 mr-2" />
-              Back to Dashboard
-            </button>
-          </motion.div>
-          
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div className="bg-gradient-to-r from-red-600 to-orange-600 p-8 text-white">
-              <div className="flex items-center justify-center mb-4">
-                <XCircleIcon className="h-16 w-16" />
-              </div>
-              <h2 className="text-3xl font-bold text-center mb-2">Payment Not Available</h2>
-              <p className="text-center text-red-100 text-lg">{error || 'Student profile not found'}</p>
-            </div>
-            
-            <div className="p-8">
-              <div className="text-center space-y-4">
-                <p className="text-gray-600">Please complete your student profile and application before proceeding to payment.</p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <motion.button 
-                    whileHover={{ scale: 1.02 }} 
-                    whileTap={{ scale: 0.98 }} 
-                    onClick={() => navigate('/student/dashboard')} 
-                    className="px-6 py-3 bg-gray-200 text-gray-800 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
-                  >
-                    Back to Dashboard
-                  </motion.button>
-                  <motion.button 
-                    whileHover={{ scale: 1.02 }} 
-                    whileTap={{ scale: 0.98 }} 
-                    onClick={() => navigate('/application/page1')} 
-                    className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors"
-                  >
-                    Start Application
-                  </motion.button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white rounded-lg shadow-lg p-8 text-center max-w-md"
+        >
+          <div className="text-red-500 text-4xl mb-4">⚠️</div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => navigate('/student/dashboard')}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Back to Dashboard
+          </button>
+        </motion.div>
       </div>
     );
   }
-
-  const { student, application } = applicationData;
-  const isPaid = application.payment_status === 'P';
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6 px-4">
-      <Toaster position="top-right" />
-      
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 py-8 px-4">
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <button 
-            onClick={() => navigate('/student/dashboard')} 
-            className="flex items-center text-gray-600 hover:text-gray-800 mb-4 transition-colors"
-          >
-            <ArrowLeftIcon className="h-5 w-5 mr-2" />
-            <span className="text-sm font-medium">Back to Dashboard</span>
-          </button>
-          
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-lg shadow-lg p-6 mb-8"
+        >
           <div className="flex items-center justify-between">
+            <button
+              onClick={() => navigate('/student/dashboard')}
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              <ArrowLeftIcon className="h-5 w-5" />
+              <span>Back to Dashboard</span>
+            </button>
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-gray-900">Payment Portal</h1>
+              <p className="text-gray-600">Complete your application payment</p>
+            </div>
+            <div className="w-20"></div> {/* Spacer */}
+          </div>
+        </motion.div>
+
+        {/* Application Summary */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white rounded-lg shadow-lg p-6 mb-8"
+        >
+          <div className="flex items-center space-x-3 mb-6">
+            <UserCircleIcon className="h-6 w-6 text-blue-600" />
+            <h2 className="text-xl font-semibold text-gray-900">Application Summary</h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <div>
+                <span className="text-sm font-medium text-gray-500">Application ID:</span>
+                <p className="text-gray-900">{applicationData?.id || 'N/A'}</p>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-gray-500">Student Name:</span>
+                <p className="text-gray-900">{applicationData?.student?.name || 'N/A'}</p>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-gray-500">Email:</span>
+                <p className="text-gray-900">{applicationData?.student?.email || 'N/A'}</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <span className="text-sm font-medium text-gray-500">Course:</span>
+                <p className="text-gray-900">{applicationData?.course || 'N/A'}</p>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-gray-500">Academic Year:</span>
+                <p className="text-gray-900">{applicationData?.academic_year || 'N/A'}</p>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-gray-500">Application Date:</span>
+                <p className="text-gray-900">
+                  {applicationData?.created_at ? new Date(applicationData.created_at).toLocaleDateString() : 'N/A'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Payment Details */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white rounded-lg shadow-lg p-6 mb-8"
+        >
+          <div className="flex items-center space-x-3 mb-6">
+            <BanknotesIcon className="h-6 w-6 text-green-600" />
+            <h2 className="text-xl font-semibold text-gray-900">Payment Details</h2>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-6">
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-lg font-medium text-gray-700">Application Fee</span>
+              <span className="text-2xl font-bold text-gray-900">₹{paymentDetails?.application_fee || 0}</span>
+            </div>
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-lg font-medium text-gray-700">Processing Fee</span>
+              <span className="text-lg text-gray-600">₹{paymentDetails?.processing_fee || 0}</span>
+            </div>
+            <div className="border-t border-gray-300 pt-4">
+              <div className="flex justify-between items-center">
+                <span className="text-xl font-bold text-gray-900">Total Amount</span>
+                <span className="text-3xl font-bold text-green-600">₹{paymentDetails?.total_amount || 0}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-center space-x-4 text-sm text-gray-600">
+            <div className="flex items-center space-x-2">
+              <ShieldCheckIcon className="h-4 w-4 text-green-500" />
+              <span>Secure Payment</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <ClockIcon className="h-4 w-4 text-blue-500" />
+              <span>Instant Processing</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <ReceiptPercentIcon className="h-4 w-4 text-purple-500" />
+              <span>Receipt Generated</span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Payment Methods */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-white rounded-lg shadow-lg p-6 mb-8"
+        >
+          <div className="flex items-center space-x-3 mb-6">
+            <CreditCardIcon className="h-6 w-6 text-blue-600" />
+            <h2 className="text-xl font-semibold text-gray-900">Payment Method</h2>
+          </div>
+
+          <div className="border-2 border-blue-200 rounded-lg p-4 bg-blue-50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <BuildingLibraryIcon className="h-8 w-8 text-blue-600" />
+                <div>
+                  <h3 className="font-semibold text-gray-900">Razorpay</h3>
+                  <p className="text-sm text-gray-600">Secure online payment gateway</p>
+                </div>
+              </div>
+              <CheckCircleIcon className="h-6 w-6 text-green-500" />
+            </div>
+          </div>
+
+          <div className="mt-4 text-sm text-gray-600">
+            <p>• All major credit/debit cards accepted</p>
+            <p>• Net Banking and UPI payments supported</p>
+            <p>• EMI options available for amounts above ₹5,000</p>
+          </div>
+        </motion.div>
+
+        {/* Action Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="bg-white rounded-lg shadow-lg p-6"
+        >
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={handlePayment}
+              disabled={processing}
+              className="flex-1 bg-green-600 text-white py-4 px-8 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-3 text-lg font-semibold"
+            >
+              {processing ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span>Processing Payment...</span>
+                </>
+              ) : (
+                <>
+                  <CreditCardIcon className="h-6 w-6" />
+                  <span>Pay ₹{paymentDetails?.total_amount || 0}</span>
+                  <ArrowRightIcon className="h-5 w-5" />
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-500 mb-4">
+              By proceeding with payment, you agree to our terms and conditions
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={handleDownloadApplication}
+                className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition-colors"
+              >
+                <DocumentArrowDownIcon className="h-5 w-5" />
+                <span>Download Application</span>
+              </button>
+              {paymentDetails?.payment_status === 'completed' && (
+                <button
+                  onClick={handleDownloadReceipt}
+                  className="flex items-center space-x-2 text-green-600 hover:text-green-800 transition-colors"
+                >
+                  <DocumentArrowDownIcon className="h-5 w-5" />
+                  <span>Download Receipt</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Important Notes */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mt-8"
+        >
+          <div className="flex items-start space-x-3">
+            <CalendarIcon className="h-6 w-6 text-yellow-600 mt-0.5" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-1">
-                Payment & Application Portal
-              </h1>
-              <p className="text-sm text-gray-600">
-                Complete your payment to generate Application ID and download receipt
-              </p>
-            </div>
-            
-            {isPaid && (
-              <div className="flex items-center space-x-2 bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-lg">
-                <CheckCircleIcon className="h-5 w-5" />
-                <span className="text-sm font-semibold">Payment Completed</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Left Column - Student & Application Info */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Student Card */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 p-6 text-white">
-                <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                    <UserCircleIcon className="h-10 w-10" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg">{student.name}</h3>
-                    <p className="text-sm text-indigo-100">{student.email}</p>
-                  </div>
-                </div>
-                
-                {application.application_id && (
-                  <div className="mt-4 pt-4 border-t border-white/20">
-                    <p className="text-xs text-indigo-200 mb-1">Application ID</p>
-                    <p className="font-mono text-sm font-semibold">{application.application_id}</p>
-                  </div>
-                )}
-              </div>
-              
-              <div className="p-6 space-y-3">
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">LSC Center</span>
-                  <span className="text-sm font-semibold text-gray-900">{student.lsc_code}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">LSC Name</span>
-                  <span className="text-sm font-semibold text-gray-900 text-right">{student.lsc_name}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">Mode of Study</span>
-                  <span className="text-sm font-semibold text-gray-900">{application.mode_of_study}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">Academic Year</span>
-                  <span className="text-sm font-semibold text-gray-900">{application.academic_year}</span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-gray-600">Payment Status</span>
-                  <span className={`text-sm font-semibold flex items-center space-x-1 ${isPaid ? 'text-green-600' : 'text-orange-600'}`}>
-                    {isPaid ? <CheckCircleIcon className="h-4 w-4" /> : <ClockIcon className="h-4 w-4" />}
-                    <span>{isPaid ? 'Paid' : 'Pending'}</span>
-                  </span>
-                </div>
-              </div>
+              <h3 className="font-semibold text-yellow-800 mb-2">Important Notes</h3>
+              <ul className="text-sm text-yellow-700 space-y-1">
+                <li>• Payment is non-refundable once the application is processed</li>
+                <li>• Keep the payment receipt for future reference</li>
+                <li>• For payment related queries, contact the admission office</li>
+                <li>• Processing time: 2-3 business days after successful payment</li>
+              </ul>
             </div>
           </div>
-
-          {/* Right Column - Payment Section */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Payment Gateway Card */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="border-b border-gray-200 p-6">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <CreditCardIcon className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900">Payment Gateway</h2>
-                    <p className="text-sm text-gray-600">Complete your application fee payment</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-6">
-                <AnimatePresence mode="wait">
-                  {!isPaid ? (
-                    <div className="space-y-6">
-                      {/* Payment Amount Card */}
-                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-5 shadow-sm">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
-                              <BanknotesIcon className="h-6 w-6 text-white" />
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-600 uppercase tracking-wide font-medium">Application Fee</p>
-                              <p className="text-3xl font-bold text-gray-900">₹354.00</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <span className="inline-block bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">
-                              One-time
-                            </span>
-                            <p className="text-xs text-gray-500 mt-1">Including GST</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between pt-3 border-t border-blue-200">
-                          <span className="text-sm text-gray-600">Gateway Charges</span>
-                          <span className="text-sm font-semibold text-gray-900">₹0.00</span>
-                        </div>
-                        <div className="flex items-center justify-between pt-2">
-                          <span className="text-sm font-bold text-gray-900">Total Amount</span>
-                          <span className="text-lg font-bold text-blue-600">₹354.00</span>
-                        </div>
-                      </div>
-
-                      {/* Payment Gateway Button */}
-                      {processing ? (
-                        <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-xl p-8 text-white shadow-lg">
-                          <div className="text-center space-y-4">
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                              className="w-16 h-16 border-4 border-white border-t-transparent rounded-full mx-auto"
-                            />
-                            <div>
-                              <p className="text-lg font-semibold">Processing Payment...</p>
-                              <p className="text-sm text-green-100 mt-1">Please wait, do not refresh this page</p>
-                            </div>
-                            <div className="bg-white/20 rounded-lg p-3">
-                              <div className="flex items-center justify-center space-x-2 text-sm">
-                                <ShieldCheckIcon className="h-5 w-5" />
-                                <span>Secure Transaction in Progress</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={handleDummyPayment}
-                          className="group relative w-full sm:w-auto bg-gradient-to-r from-green-600 to-green-600 hover:from-green-700 hover:to-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-shadow duration-200 shadow-md hover:shadow-lg inline-flex items-center gap-3 justify-center"
-                        >
-                          <span className="inline-flex items-center justify-center w-10 h-10 bg-white/20 rounded-md">
-                            <ShieldCheckIcon className="h-5 w-5 text-white" />
-                          </span>
-                          <span className="text-sm">Pay Now</span>
-                          <span className="text-sm font-mono ml-1">₹354.00</span>
-                          <ArrowRightIcon className="h-4 w-4 ml-1 opacity-90" />
-                        </button>
-                      )}
-
-                      {/* Security Badges */}
-                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="text-center">
-                            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                              <ShieldCheckIcon className="h-6 w-6 text-green-600" />
-                            </div>
-                            <p className="text-xs font-semibold text-gray-700">SSL Secured</p>
-                            <p className="text-xs text-gray-500">256-bit Encryption</p>
-                          </div>
-                          <div className="text-center border-l border-r border-gray-300">
-                            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                              <BuildingLibraryIcon className="h-6 w-6 text-blue-600" />
-                            </div>
-                            <p className="text-xs font-semibold text-gray-700">Bank Grade</p>
-                            <p className="text-xs text-gray-500">PCI DSS Certified</p>
-                          </div>
-                          <div className="text-center">
-                            <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                              <CheckCircleIcon className="h-6 w-6 text-indigo-600" />
-                            </div>
-                            <p className="text-xs font-semibold text-gray-700">Instant</p>
-                            <p className="text-xs text-gray-500">Real-time Processing</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Payment Methods */}
-                      <div className="text-center">
-                        <p className="text-xs text-gray-500 mb-2">Accepted Payment Methods</p>
-                        <div className="flex items-center justify-center space-x-3">
-                          <span className="px-3 py-1 bg-white border border-gray-300 rounded text-xs font-semibold text-gray-700 shadow-sm">Cards</span>
-                          <span className="px-3 py-1 bg-white border border-gray-300 rounded text-xs font-semibold text-gray-700 shadow-sm">UPI</span>
-                          <span className="px-3 py-1 bg-white border border-gray-300 rounded text-xs font-semibold text-gray-700 shadow-sm">Net Banking</span>
-                          <span className="px-3 py-1 bg-white border border-gray-300 rounded text-xs font-semibold text-gray-700 shadow-sm">Wallets</span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="text-center space-y-5 py-8"
-                    >
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: "spring", stiffness: 200, damping: 10 }}
-                        className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-xl"
-                      >
-                        <CheckCircleIcon className="h-12 w-12 text-white" />
-                      </motion.div>
-                      <div>
-                        <h3 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h3>
-                        <p className="text-sm text-gray-600">Your transaction has been completed successfully</p>
-                      </div>
-                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6 shadow-sm">
-                        <p className="text-xs text-gray-600 mb-2 uppercase tracking-wide font-medium">Application ID Generated</p>
-                        <p className="font-mono text-xl font-bold text-gray-900 mb-3">{application.application_id}</p>
-                        <div className="inline-flex items-center space-x-2 bg-green-100 text-green-700 px-4 py-2 rounded-full">
-                          <CheckCircleIcon className="h-4 w-4" />
-                          <span className="text-xs font-semibold">Verified & Active</span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-
-            {/* Transaction Details Table */}
-            {(isPaid || paymentDetails) && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                      <ReceiptPercentIcon className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-white">Transaction Details</h2>
-                      <p className="text-sm text-blue-100">Complete payment information</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <tbody className="divide-y divide-gray-100">
-                        <tr className="hover:bg-gray-50 transition-colors">
-                          <td className="py-3 pr-4 font-semibold text-gray-700">Application ID</td>
-                          <td className="py-3 font-mono font-semibold text-indigo-600">{application.application_id}</td>
-                        </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                          <td className="py-3 pr-4 font-semibold text-gray-700">Transaction ID</td>
-                          <td className="py-3 font-mono text-gray-900">{paymentDetails?.transaction_id || `TXN${Date.now()}`}</td>
-                        </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                          <td className="py-3 pr-4 font-semibold text-gray-700">Bank Transaction ID</td>
-                          <td className="py-3 font-mono text-gray-900">{paymentDetails?.bank_transaction_id || `BANK${Date.now()}`}</td>
-                        </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                          <td className="py-3 pr-4 font-semibold text-gray-700">Order ID</td>
-                          <td className="py-3 font-mono text-gray-900">{paymentDetails?.order_id || `ORD${Date.now()}`}</td>
-                        </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                          <td className="py-3 pr-4 font-semibold text-gray-700">Transaction Amount</td>
-                          <td className="py-3 font-bold text-green-600 text-lg">₹{paymentDetails?.amount || '354.00'}</td>
-                        </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                          <td className="py-3 pr-4 font-semibold text-gray-700">Payment Mode</td>
-                          <td className="py-3 text-gray-900">{paymentDetails?.payment_mode || 'DUMMY_GATEWAY'}</td>
-                        </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                          <td className="py-3 pr-4 font-semibold text-gray-700">Gateway Name</td>
-                          <td className="py-3 text-gray-900">TEST_BANK</td>
-                        </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                          <td className="py-3 pr-4 font-semibold text-gray-700">Transaction Date</td>
-                          <td className="py-3 text-gray-900 flex items-center space-x-2">
-                            <CalendarIcon className="h-4 w-4 text-indigo-500" />
-                            <span>{paymentDetails?.transaction_date || new Date().toLocaleString()}</span>
-                          </td>
-                        </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                          <td className="py-3 pr-4 font-semibold text-gray-700">Payment Status</td>
-                          <td className="py-3">
-                            <span className="inline-flex items-center space-x-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-green-90 to-emerald-90 text-green-600 shadow-sm">
-                              <CheckCircleIcon className="h-4 w-4" />
-                              <span>SUCCESS</span>
-                            </span>
-                          </td>
-                        </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                          <td className="py-3 pr-4 font-semibold text-gray-700">Response Code</td>
-                          <td className="py-3 text-gray-900">01</td>
-                        </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                          <td className="py-3 pr-4 font-semibold text-gray-700">Response Message</td>
-                          <td className="py-3 text-gray-900">Txn Success</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center">
-                <span className="w-1 h-5 bg-indigo-600 rounded-full mr-2"></span>
-                Quick Actions
-              </h3>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {isPaid && (
-                  <>
-                    <motion.button
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={handleDownloadReceipt}
-                      className="group inline-flex items-center gap-3 p-3 bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 rounded-lg transition-shadow duration-200 shadow-sm"
-                      title="Download Payment Receipt"
-                    >
-                      <div className="w-10 h-10 flex items-center justify-center bg-white/20 rounded-md">
-                        <DocumentArrowDownIcon className="h-5 w-5 text-white" />
-                      </div>
-                      <div className="text-left">
-                        <div className="text-sm font-semibold text-white">Receipt</div>
-                        <div className="text-xs text-green-100">Download PDF</div>
-                      </div>
-                    </motion.button>
-                    
-                    <motion.button
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={handleDownloadApplication}
-                      className="group inline-flex items-center gap-3 p-3 bg-gradient-to-br from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 rounded-lg transition-shadow duration-200 shadow-sm"
-                      title="Download Application Form"
-                    >
-                      <div className="w-10 h-10 flex items-center justify-center bg-white/20 rounded-md">
-                        <DocumentArrowDownIcon className="h-5 w-5 text-white" />
-                      </div>
-                      <div className="text-left">
-                        <div className="text-sm font-semibold text-white">Application</div>
-                        <div className="text-xs text-indigo-100">Download PDF</div>
-                      </div>
-                    </motion.button>
-                  </>
-                )}
-                
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={handleClearPayment}
-                  disabled={processing}
-                  className="group inline-flex items-center gap-3 p-3 bg-gradient-to-br from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 rounded-lg transition-shadow duration-200 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-                  title="Clear Payment & Start New Application"
-                >
-                  <div className="w-10 h-10 flex items-center justify-center bg-white/20 rounded-md">
-                    {processing ? (
-                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                    ) : (
-                      <ArrowLeftIcon className="h-5 w-5 text-white" />
-                    )}
-                  </div>
-                  <div className="text-left">
-                    <div className="text-sm font-semibold text-white">Clear</div>
-                    <div className="text-xs text-red-100">Reset & Restart</div>
-                  </div>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => navigate('/student/dashboard')}
-                  className="group inline-flex items-center gap-3 p-3 bg-gradient-to-br from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 rounded-lg transition-shadow duration-200 shadow-sm"
-                  title="Go to Dashboard"
-                >
-                  <div className="w-10 h-10 flex items-center justify-center bg-white/20 rounded-md">
-                    <UserCircleIcon className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-sm font-semibold text-white">Dashboard</div>
-                    <div className="text-xs text-purple-100">Go to Home</div>
-                  </div>
-                </motion.button>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="mt-8 text-center">
-              <div className="inline-flex items-center space-x-2 bg-white px-6 py-3 rounded-lg shadow-sm border border-gray-200">
-                <ShieldCheckIcon className="h-5 w-5 text-green-600" />
-                <span className="text-sm text-gray-600">Secure Payment Gateway • Instant Processing • 24/7 Support</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        </motion.div>
       </div>
+      <Toaster position="top-right" />
     </div>
   );
 };

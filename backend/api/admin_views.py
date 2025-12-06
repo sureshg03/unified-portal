@@ -10,7 +10,7 @@ from rest_framework import status
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.conf import settings
-from django.db import transaction
+from django.db import transaction, connections
 from datetime import datetime
 import logging
 import smtplib
@@ -19,8 +19,55 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 from .models import Application, StudentDetails, ApplicationPayment, Student, MarksheetUpload
+from .send_invalid_document_email import (
+    send_invalid_document_notification,
+    verify_resubmission_token,
+    mark_resubmission_complete
+)
 
 logger = logging.getLogger(__name__)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_lsc_centers(request):
+    """
+    Fetch all LSC centers from lsc_auth_lscuser table in lsc_portal database
+    """
+    try:
+        from django.db import connections
+        
+        with connections['default'].cursor() as cursor:
+            cursor.execute("""
+                SELECT DISTINCT lsc_number, lsc_name 
+                FROM lsc_auth_lscuser 
+                WHERE lsc_number IS NOT NULL AND lsc_name IS NOT NULL
+                ORDER BY lsc_number
+            """)
+            rows = cursor.fetchall()
+            
+            lsc_centers = [
+                {
+                    'lsc_code': row[0],
+                    'lsc_name': row[1]
+                }
+                for row in rows
+            ]
+            
+        return Response({
+            'status': 'success',
+            'count': len(lsc_centers),
+            'data': lsc_centers
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error fetching LSC centers: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return Response({
+            'status': 'error',
+            'message': f'Failed to fetch LSC centers: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET'])
@@ -44,7 +91,9 @@ def get_student_admissions(request):
         eligibility_status = request.GET.get('eligibility_status', None)
 
         # Fetch applications with payment info
-        applications = Application.objects.using('online_edu').select_related('user').all()
+        applications = Application.objects.select_related('user').all()
+        
+        logger.info(f"Total applications found: {applications.count()}")
 
         # Apply filters
         if lsc_code:
@@ -63,13 +112,29 @@ def get_student_admissions(request):
         student_list = []
         for idx, app in enumerate(applications, 1):
             try:
+                # Get user information safely
+                user_obj = None
+                username = 'N/A'
+                user_date_joined = None
+                try:
+                    user_obj = app.user
+                    username = user_obj.username if user_obj else 'N/A'
+                    user_date_joined = user_obj.date_joined if user_obj else None
+                except:
+                    pass
+
                 # Get student details
-                student_details = StudentDetails.objects.using('online_edu').filter(
-                    user=app.user
-                ).first()
+                student_details = None
+                if user_obj:
+                    try:
+                        student_details = StudentDetails.objects.filter(
+                            user=user_obj
+                        ).first()
+                    except:
+                        pass
 
                 # Get payment information
-                payment = ApplicationPayment.objects.using('online_edu').filter(
+                payment = ApplicationPayment.objects.filter(
                     application_id=app.application_id
                 ).first()
 
@@ -88,7 +153,7 @@ def get_student_admissions(request):
                 student_data = {
                     'sno': idx,
                     'application_no': app.application_id or 'N/A',
-                    'name': app.name_initial or app.user.username,
+                    'name': app.name_initial or username,
                     'email': app.email,
                     'programme': app.programme_applied or 'N/A',
                     'course': app.course or 'N/A',
@@ -97,14 +162,14 @@ def get_student_admissions(request):
                     'payment_amount': float(payment.amount) if payment else 0.00,
                     'transaction_id': payment.transaction_id if payment else None,
                     'transaction_date': payment.transaction_date.strftime('%Y-%m-%d %H:%M:%S') if payment and payment.transaction_date else None,
-                    'applied_date': app.user.date_joined.strftime('%Y-%m-%d') if app.user.date_joined else None,
+                    'applied_date': user_date_joined.strftime('%Y-%m-%d') if user_date_joined else None,
                     'lsc_code': app.application_id.split('/')[2] if app.application_id and '/' in app.application_id else None,
                     'has_documents': has_documents,
                     'eligibility_verified': hasattr(app, 'eligibility_verified') and app.eligibility_verified,
                     'eligibility_status': getattr(app, 'eligibility_status', None),
                     'enrollment_no': getattr(app, 'enrollment_no', None),
                     'admission_confirmed': getattr(app, 'admission_confirmed', False),
-                    'phone': app.user.username if '@' not in app.user.username else None,
+                    'phone': username if username and '@' not in username else None,
                     'dob': app.dob.strftime('%Y-%m-%d') if app.dob else None,
                     'gender': app.gender,
                     'aadhaar_no': app.aadhaar_no,
@@ -141,31 +206,36 @@ def get_student_details(request, application_id):
     Get detailed information for a specific student including all documents
     """
     try:
+        logger.info(f"Fetching student details for application_id: {application_id}")
+        
         # Fetch application
-        application = Application.objects.using('online_edu').filter(
+        application = Application.objects.filter(
             application_id=application_id
         ).first()
 
         if not application:
+            logger.warning(f"Application not found: {application_id}")
             return Response({
                 'status': 'error',
-                'message': 'Application not found'
+                'message': f'Application not found with ID: {application_id}'
             }, status=status.HTTP_404_NOT_FOUND)
 
-        # Get student details
-        student_details = StudentDetails.objects.using('online_edu').filter(
-            user=application.user
-        ).first()
+        # Get student details - query by user_id instead of user relationship
+        student_details = None
+        if application and application.user_id:
+            student_details = StudentDetails.objects.filter(
+                user_id=application.user_id
+            ).first()
 
         # Get payment info
-        payment = ApplicationPayment.objects.using('online_edu').filter(
+        payment = ApplicationPayment.objects.filter(
             application_id=application_id
         ).first()
 
         # Get marksheet uploads
         marksheet_uploads = []
         if student_details:
-            uploads = MarksheetUpload.objects.using('online_edu').filter(
+            uploads = MarksheetUpload.objects.filter(
                 student=student_details
             )
             marksheet_uploads = [{
@@ -174,100 +244,128 @@ def get_student_details(request, application_id):
                 'uploaded_at': upload.uploaded_at.strftime('%Y-%m-%d %H:%M:%S')
             } for upload in uploads]
 
+        # Get user information safely
+        user_obj = None
+        user_date_joined = None
+        try:
+            if application and application.user_id:
+                from django.contrib.auth.models import User
+                user_obj = User.objects.filter(id=application.user_id).first()
+                if user_obj:
+                    user_date_joined = user_obj.date_joined
+        except Exception as e:
+            logger.warning(f"Error fetching user for application {application_id}: {e}")
+            user_obj = None
+
+        # Extract contact information
+        email = getattr(application, 'email', None) or (user_obj.email if user_obj else None) or 'N/A'
+        phone = getattr(student_details, 'phone', None) or getattr(application, 'phone', None) or 'N/A'
+
         # Build comprehensive response
         response_data = {
+            'application_id': application.application_id,
             'application_no': application.application_id,
-            'applied_date': application.user.date_joined.strftime('%d-%m-%Y') if application.user.date_joined else None,
-            'lsc_code': application.application_id.split('/')[2] if application.application_id and '/' in application.application_id else None,
+            'applied_date': user_date_joined.strftime('%d-%m-%Y') if user_date_joined else None,
+            'lsc_code': application.application_id.split('/')[2] if application.application_id and '/' in application.application_id else 'N/A',
+            'lsc_name': f"CDOE - Centre for Distance and Online Education ({application.application_id.split('/')[2]})" if application.application_id and '/' in application.application_id else None,
             
             # Programme Information
-            'programme_applied': application.programme_applied,
-            'course': application.course,
-            'medium': application.medium,
-            'mode_of_study': application.mode_of_study,
-            'academic_year': application.academic_year,
+            'programme': application.programme_applied or 'N/A',
+            'programme_applied': application.programme_applied or 'N/A',
+            'course': getattr(application, 'course', None),
+            'medium': getattr(application, 'medium', None),
+            'mode_of_study': getattr(application, 'mode_of_study', None),
+            'academic_year': getattr(application, 'academic_year', None),
             
             # Personal Information
-            'name': application.name_initial,
+            'name': application.name_initial or 'N/A',
+            'student_name': application.name_initial or 'N/A',
+            'name_initial': application.name_initial or 'N/A',
             'dob': application.dob.strftime('%d-%m-%Y') if application.dob else None,
-            'gender': application.gender,
-            'father_name': application.father_name,
-            'mother_name': application.mother_name,
-            'guardian_name': application.guardian_name,
-            'nationality': application.nationality,
-            'religion': application.religion,
-            'community': application.community,
-            'aadhaar_no': application.aadhaar_no,
-            'name_as_aadhaar': application.name_as_aadhaar,
-            'abc_id': application.abc_id,
-            'deb_id': application.deb_id,
-            'differently_abled': application.differently_abled,
-            'blood_group': application.blood_group,
-            'access_internet': application.access_internet,
+            'gender': getattr(application, 'gender', None),
+            'father_name': getattr(application, 'father_name', None),
+            'mother_name': getattr(application, 'mother_name', None),
+            'guardian_name': getattr(application, 'guardian_name', None),
+            'parent_occupation': getattr(application, 'parent_occupation', None),
+            'father_occupation': getattr(application, 'father_occupation', None),
+            'mother_tongue': getattr(application, 'mother_tongue', None),
+            'nationality': getattr(application, 'nationality', 'Indian'),
+            'religion': getattr(application, 'religion', None),
+            'community': getattr(application, 'community', None),
+            'aadhaar_no': getattr(application, 'aadhaar_no', None),
+            'aadhaar_number': getattr(application, 'aadhaar_no', None),
+            'aadhaar_name': getattr(application, 'name_as_aadhaar', None),
+            'name_as_aadhaar': getattr(application, 'name_as_aadhaar', None),
+            'abc_id': getattr(application, 'abc_id', None),
+            'deb_id': getattr(application, 'deb_id', None),
+            'differently_abled': 'Yes' if getattr(application, 'differently_abled', False) else 'No',
+            'blood_group': getattr(application, 'blood_group', None),
+            'internet_access': getattr(application, 'access_internet', 'Yes'),
+            'access_internet': getattr(application, 'access_internet', 'Yes'),
             
             # Contact Information
-            'email': application.email,
-            'phone': application.user.username if '@' not in application.user.username else None,
+            'email': email,
+            'phone': phone,
+            'mobile': phone,
             
-            # Address Information
-            'comm_address': {
-                'town': application.comm_town,
-                'district': application.comm_district,
-                'state': application.comm_state,
-                'pincode': application.comm_pincode,
-                'country': application.comm_country,
-                'area': application.comm_area
-            },
-            'perm_address': {
-                'town': application.perm_town,
-                'district': application.perm_district,
-                'state': application.perm_state,
-                'pincode': application.perm_pincode,
-                'country': application.perm_country,
-                'area': application.perm_area
-            },
+            # Address Information - Flat structure
+            'comm_area': getattr(application, 'comm_area', None),
+            'comm_town': getattr(application, 'comm_town', None),
+            'comm_district': getattr(application, 'comm_district', None),
+            'comm_state': getattr(application, 'comm_state', None),
+            'comm_pincode': getattr(application, 'comm_pincode', None),
+            'comm_country': getattr(application, 'comm_country', None),
+            'perm_area': getattr(application, 'perm_area', None),
+            'perm_town': getattr(application, 'perm_town', None),
+            'perm_district': getattr(application, 'perm_district', None),
+            'perm_state': getattr(application, 'perm_state', None),
+            'perm_pincode': getattr(application, 'perm_pincode', None),
+            'perm_country': getattr(application, 'perm_country', None),
             
             # Education Qualifications
-            'qualifications': student_details.qualifications if student_details else [],
+            'qualifications': student_details.qualifications if student_details and hasattr(student_details, 'qualifications') else [],
+            'tenth_percentage': None,
+            'twelfth_percentage': None,
+            'graduation_percentage': None,
             
             # Working Experience
-            'current_designation': student_details.current_designation if student_details else None,
-            'current_institute': student_details.current_institute if student_details else None,
-            'years_experience': student_details.years_experience if student_details else 0,
-            'annual_income': student_details.annual_income if student_details else 0,
+            'current_designation': student_details.current_designation if student_details and hasattr(student_details, 'current_designation') else None,
+            'current_institute': student_details.current_institute if student_details and hasattr(student_details, 'current_institute') else None,
+            'years_experience': student_details.years_experience if student_details and hasattr(student_details, 'years_experience') else 0,
+            'years_of_experience': student_details.years_experience if student_details and hasattr(student_details, 'years_experience') else 0,
+            'annual_income': student_details.annual_income if student_details and hasattr(student_details, 'annual_income') else 0,
             
-            # Payment Information
+            # Payment Information - Flat structure
             'payment_status': 'Paid' if application.payment_status == 'P' else 'Unpaid',
-            'payment_details': {
-                'order_id': payment.order_id if payment else None,
-                'amount': float(payment.amount) if payment else 0.00,
-                'transaction_id': payment.transaction_id if payment else None,
-                'bank_transaction_id': payment.bank_transaction_id if payment else None,
-                'transaction_date': payment.transaction_date.strftime('%Y-%m-%d %H:%M:%S') if payment and payment.transaction_date else None,
-                'payment_mode': payment.payment_mode if payment else None,
-                'bank_name': payment.bank_name if payment else None,
-                'status': payment.payment_status if payment else None
-            },
+            'order_id': payment.order_id if payment else None,
+            'amount': float(payment.amount) if payment and payment.amount else 236.00,
+            'payment_amount': float(payment.amount) if payment and payment.amount else 236.00,
+            'transaction_id': payment.transaction_id if payment else None,
+            'bank_ref_no': payment.bank_transaction_id if payment else None,
+            'transaction_date': payment.transaction_date.strftime('%d-%m-%Y %H:%M') if payment and payment.transaction_date else None,
+            'payment_date': payment.transaction_date.strftime('%d-%m-%Y') if payment and payment.transaction_date else None,
+            'payment_mode': payment.payment_mode if payment else 'Online',
+            'payment_method': payment.payment_mode if payment else 'Online',
             
-            # Document URLs
-            'documents': {
-                'photo': student_details.photo_url if student_details else None,
-                'signature': student_details.signature_url if student_details else None,
-                'sslc_marksheet': student_details.sslc_marksheet_url if student_details else None,
-                'hsc_marksheet': student_details.hsc_marksheet_url if student_details else None,
-                'ug_marksheet': student_details.ug_marksheet_url if student_details else None,
-                'community_certificate': student_details.community_certificate_url if student_details else None,
-                'aadhaar_card': student_details.aadhaar_url if student_details else None,
-                'transfer_certificate': student_details.transfer_certificate_url if student_details else None,
-                'semester_marksheets': marksheet_uploads
-            },
+            # Document URLs - Direct fields
+            'photo_url': student_details.photo_url if student_details and hasattr(student_details, 'photo_url') else None,
+            'signature_url': student_details.signature_url if student_details and hasattr(student_details, 'signature_url') else None,
+            'sslc_marksheet_url': student_details.sslc_marksheet_url if student_details and hasattr(student_details, 'sslc_marksheet_url') else None,
+            'hsc_marksheet_url': student_details.hsc_marksheet_url if student_details and hasattr(student_details, 'hsc_marksheet_url') else None,
+            'ug_marksheet_url': student_details.ug_marksheet_url if student_details and hasattr(student_details, 'ug_marksheet_url') else None,
+            'community_certificate_url': student_details.community_certificate_url if student_details and hasattr(student_details, 'community_certificate_url') else None,
+            'aadhaar_url': student_details.aadhaar_url if student_details and hasattr(student_details, 'aadhaar_url') else None,
+            'transfer_certificate_url': student_details.transfer_certificate_url if student_details and hasattr(student_details, 'transfer_certificate_url') else None,
             
             # Verification Status
             'eligibility_verified': getattr(application, 'eligibility_verified', False),
-            'eligibility_status': getattr(application, 'eligibility_status', None),
+            'eligibility_status': getattr(application, 'eligibility_status', 'Pending'),
             'verification_remarks': getattr(application, 'verification_remarks', None),
             'verified_by': getattr(application, 'verified_by', None),
             'verified_date': getattr(application, 'verified_date', None),
+            
+            # Document Validation (includes resubmitted documents)
+            'document_validation': getattr(application, 'document_validation', {}),
             
             # Admission Status
             'admission_confirmed': getattr(application, 'admission_confirmed', False),
@@ -275,6 +373,7 @@ def get_student_details(request, application_id):
             'rejection_reason': getattr(application, 'rejection_reason', None),
         }
 
+        logger.info(f"Successfully fetched details for application: {application_id}")
         return Response({
             'status': 'success',
             'data': response_data
@@ -772,4 +871,498 @@ def send_semester_fee_notification(request):
         return Response({
             'status': 'error',
             'message': f'Failed to send notification: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+# Add these new endpoints to the end of admin_views.py
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def validate_document(request):
+    """
+    Validate or invalidate a specific document
+    """
+    try:
+        application_id = request.data.get('application_id')
+        document_type = request.data.get('document_type')
+        is_valid = request.data.get('is_valid')
+        logger.info(f"Validate Document API called with: application_id={application_id}, document_type={document_type}, is_valid={is_valid}")
+
+        if not all([application_id, document_type is not None, is_valid is not None]):
+            return Response({
+                'status': 'error',
+                'message': 'Missing required fields'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Fetch application
+        application = Application.objects.using('online_edu').filter(
+            application_id=application_id
+        ).first()
+
+        if not application:
+            return Response({
+                'status': 'error',
+                'message': 'Application not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Update document validation status
+        doc_validation = getattr(application, 'document_validation', {}) or {}
+        doc_validation[document_type] = is_valid
+        application.document_validation = doc_validation
+        application.save(using='online_edu')
+
+        logger.info(f"Document {document_type} validated as {is_valid} for {application_id}")
+
+        return Response({
+            'status': 'success',
+            'message': 'Document validation updated'
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        logger.error(f"Error validating document: {str(e)}")
+        return Response({
+            'status': 'error',
+            'message': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def generate_enrollment_number(request):
+    """
+    Generate enrollment number: A25PBA2101000
+    - A25: From portal_applicationsettings.admission_code in lsc_admin database
+    - PBA: From programme (currently hardcoded, can be made dynamic)
+    - 2101: From api_application.lsc_code (extract numbers only)
+    - 0001: Sequential number
+    """
+    try:
+        from django.db import connections
+        application_id = request.data.get('application_id')
+        logger.info(f"Generate Enrollment API called with: application_id={application_id}")
+
+        if not application_id:
+            return Response({
+                'status': 'error',
+                'message': 'application_id is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Fetch application
+        application = Application.objects.using('online_edu').filter(
+            application_id=application_id
+        ).first()
+
+        if not application:
+            return Response({
+                'status': 'error',
+                'message': 'Application not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Extract LSC code (remove LC prefix, keep only numbers)
+        lsc_code_full = application.application_id.split('/')[2] if '/' in application.application_id else 'LC2101'
+        lsc_code = lsc_code_full.replace('LC', '')  # Remove LC, keep 2101
+
+        # Get admission code from portal_applicationsettings in lsc_admin database
+        admission_code = 'A25'  # Default
+        try:
+            with connections['lsc_admin'].cursor() as cursor:
+                cursor.execute("""
+                    SELECT admission_code 
+                    FROM portal_applicationsettings 
+                    WHERE is_open = TRUE 
+                    ORDER BY id DESC 
+                    LIMIT 1
+                """)
+                row = cursor.fetchone()
+                if row and row[0]:
+                    admission_code = row[0]
+        except Exception as e:
+            logger.warning(f"Could not fetch admission_code from lsc_admin: {e}")
+
+        # Get programme code (first 3 letters of programme in uppercase)
+        programme = application.programme_applied or 'DIPLOMA'
+        if 'PG' in programme.upper() or 'POST' in programme.upper() or 'MBA' in programme.upper() or 'MCA' in programme.upper():
+            programme_code = 'PBA'  # Postgraduate
+        elif 'UG' in programme.upper() or 'BACHELOR' in programme.upper() or 'B.SC' in programme.upper() or 'B.COM' in programme.upper():
+            programme_code = 'UGA'  # Undergraduate
+        else:
+            programme_code = 'DIP'  # Diploma
+
+        # Get the next sequential number for this LSC and programme
+        # Count existing enrollments with same pattern
+        count = Application.objects.using('online_edu').filter(
+            enrollment_no__startswith=f"{admission_code}{programme_code}{lsc_code}"
+        ).count()
+
+        sequential_number = str(count + 1).zfill(4)  # Pad with zeros: 0001, 0002, etc.
+
+        # Generate final enrollment number
+        enrollment_no = f"{admission_code}{programme_code}{lsc_code}{sequential_number}"
+
+        logger.info(f"Generated enrollment number: {enrollment_no} for {application_id}")
+
+        return Response({
+            'status': 'success',
+            'enrollment_no': enrollment_no
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        logger.error(f"Error generating enrollment number: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return Response({
+            'status': 'error',
+            'message': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@transaction.atomic
+def save_verification(request):
+    """
+    Save complete verification details including eligibility, admission status, and enrollment number
+    """
+    try:
+        application_id = request.data.get('application_id')
+        logger.info(f"Save Verification API called with: application_id={application_id}, payload_fields={list(request.data.keys())}")
+        eligibility_status = request.data.get('eligibility_status')
+        eligibility_reason = request.data.get('eligibility_reason', '')
+        admission_status = request.data.get('admission_status')
+        admission_reason = request.data.get('admission_reason', '')
+        enrollment_no = request.data.get('enrollment_no', '')
+        document_validation = request.data.get('document_validation', {})
+
+        if not application_id:
+            return Response({
+                'status': 'error',
+                'message': 'application_id is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Fetch application
+        application = Application.objects.using('online_edu').filter(
+            application_id=application_id
+        ).first()
+
+        if not application:
+            return Response({
+                'status': 'error',
+                'message': 'Application not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Update eligibility status
+        if eligibility_status:
+            application.eligibility_status = eligibility_status
+            application.eligibility_verified = (eligibility_status == 'Eligible')
+            if eligibility_reason:
+                application.verification_remarks = eligibility_reason
+
+        # Update admission status
+        if admission_status:
+            application.admission_confirmed = (admission_status == 'Confirmed')
+            if admission_reason:
+                application.rejection_reason = admission_reason
+
+        # Update enrollment number (only if confirmed and eligible)
+        if enrollment_no and application.eligibility_verified and application.admission_confirmed:
+            application.enrollment_no = enrollment_no
+
+        # Update document validation
+        if document_validation:
+            application.document_validation = document_validation
+
+        # Set verification date and user
+        application.verified_date = datetime.now()
+        application.verified_by = 'LSC Admin'  # You can pass actual admin user
+
+        application.save(using='online_edu')
+
+        logger.info(f"Verification saved for application: {application_id}")
+
+        return Response({
+            'status': 'success',
+            'message': 'Verification details saved successfully'
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        logger.error(f"Error saving verification: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return Response({
+            'status': 'error',
+            'message': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def send_invalid_document_email(request):
+    """
+    Send email notification to student when documents are marked invalid
+    Creates a resubmission link for student to upload correct documents
+    """
+    try:
+        application_id = request.data.get('application_id')
+        logger.info(f"Send Invalid Document Email API called with: application_id={application_id}, invalid_documents={request.data.get('invalid_documents')}")
+        invalid_documents = request.data.get('invalid_documents', [])
+        verified_by = request.data.get('verified_by', 'LSC Admin')
+
+        if not application_id:
+            return Response({
+                'status': 'error',
+                'message': 'application_id is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if not invalid_documents:
+            return Response({
+                'status': 'error',
+                'message': 'No invalid documents specified'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Send email notification
+        result = send_invalid_document_notification(
+            application_id=application_id,
+            invalid_documents=invalid_documents,
+            verified_by=verified_by
+        )
+
+        if result['status'] == 'success':
+            logger.info(f"Invalid document email sent for application: {application_id}")
+            return Response(result, status=status.HTTP_200_OK)
+        else:
+            logger.error(f"Failed to send email: {result['message']}")
+            return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    except Exception as e:
+        logger.error(f"Error sending invalid document email: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return Response({
+            'status': 'error',
+            'message': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def verify_resubmission_link(request, token):
+    """
+    Verify if resubmission token is valid and return application details
+    """
+    try:
+        data, error = verify_resubmission_token(token)
+        
+        if error:
+            return Response({
+                'status': 'error',
+                'message': error
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get application details using raw query
+        with connections['online_edu'].cursor() as cursor:
+            cursor.execute("""
+                SELECT application_id, name_as_aadhaar, email, course, programme_applied
+                FROM api_application
+                WHERE application_id = %s
+            """, [data['application_id']])
+            
+            result = cursor.fetchone()
+            
+            if not result:
+                return Response({
+                    'status': 'error',
+                    'message': 'Application not found'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            app_id, student_name, email, course, programme = result
+
+        return Response({
+            'status': 'success',
+            'data': {
+                'application_id': app_id,
+                'name': student_name,
+                'email': email,
+                'phone': '',  # Phone not in api_application table
+                'programme_name': f"{programme} - {course}" if programme and course else (programme or course or 'N/A'),
+                'invalid_documents': data['invalid_documents'],
+                'expires_at': data['expires_at']
+            }
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        logger.error(f"Error verifying resubmission link: {str(e)}")
+        return Response({
+            'status': 'error',
+            'message': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def submit_resubmitted_documents(request, token):
+    """
+    Handle resubmitted documents from student
+    """
+    try:
+        # Verify token first
+        data, error = verify_resubmission_token(token)
+        
+        if error:
+            return Response({
+                'status': 'error',
+                'message': error
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        application_id = data['application_id']
+        
+        # Check if application exists
+        with connections['online_edu'].cursor() as cursor:
+            cursor.execute("""
+                SELECT application_id, document_validation
+                FROM api_application
+                WHERE application_id = %s
+            """, [application_id])
+            
+            result = cursor.fetchone()
+            
+            if not result:
+                return Response({
+                    'status': 'error',
+                    'message': 'Application not found'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            app_id, doc_validation_json = result
+
+        # Get uploaded files from request
+        uploaded_files = {}
+        for doc_type in data['invalid_documents']:
+            file_key = f'{doc_type}_resubmit'
+            if file_key in request.FILES:
+                uploaded_files[doc_type] = request.FILES[file_key]
+
+        if not uploaded_files:
+            return Response({
+                'status': 'error',
+                'message': 'No files uploaded'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Save resubmitted documents
+        from django.core.files.storage import default_storage
+        import os
+        
+        resubmitted_docs = {}
+        for doc_type, file_obj in uploaded_files.items():
+            # Create resubmit directory if not exists
+            upload_dir = f'resubmitted_documents/{application_id}'
+            os.makedirs(os.path.join(settings.MEDIA_ROOT, upload_dir), exist_ok=True)
+            
+            # Save file with timestamp
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f'{doc_type}_{timestamp}_{file_obj.name}'
+            file_path = os.path.join(upload_dir, filename)
+            
+            # Save file
+            saved_path = default_storage.save(file_path, file_obj)
+            resubmitted_docs[doc_type] = {
+                'filename': filename,
+                'path': saved_path,
+                'uploaded_at': datetime.now().isoformat(),
+                'status': 'pending_review'
+            }
+
+        # Update application with resubmitted documents info
+        import json
+        current_validation = json.loads(doc_validation_json) if doc_validation_json else {}
+        if 'resubmitted' not in current_validation:
+            current_validation['resubmitted'] = {}
+        
+        current_validation['resubmitted'].update(resubmitted_docs)
+        
+        # Update database with raw SQL
+        with connections['online_edu'].cursor() as cursor:
+            cursor.execute("""
+                UPDATE api_application
+                SET document_validation = %s
+                WHERE application_id = %s
+            """, [json.dumps(current_validation), application_id])
+            connections['online_edu'].commit()
+
+        # Mark token as completed
+        mark_resubmission_complete(token)
+
+        logger.info(f"Documents resubmitted for application: {application_id}")
+
+        return Response({
+            'status': 'success',
+            'message': 'Documents resubmitted successfully. Your application will be reviewed within 2-3 business days.',
+            'resubmitted_documents': list(uploaded_files.keys())
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        logger.error(f"Error submitting resubmitted documents: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return Response({
+            'status': 'error',
+            'message': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_pending_revalidations(request):
+    """
+    Get list of students who have resubmitted documents and are pending re-validation
+    """
+    try:
+        from django.db import connections
+        
+        with connections['online_edu'].cursor() as cursor:
+            cursor.execute("""
+                SELECT 
+                    a.application_id,
+                    a.name,
+                    a.email,
+                    a.phone,
+                    a.programme_name,
+                    a.lsc_code,
+                    a.document_validation,
+                    a.verified_date
+                FROM api_application a
+                WHERE JSON_CONTAINS_PATH(a.document_validation, 'one', '$.resubmitted')
+                AND NOT JSON_CONTAINS_PATH(a.document_validation, 'one', '$.resubmitted_verified')
+                ORDER BY a.verified_date DESC
+            """)
+            
+            rows = cursor.fetchall()
+            
+            revalidation_list = []
+            for row in rows:
+                import json
+                doc_validation = json.loads(row[6]) if row[6] else {}
+                resubmitted = doc_validation.get('resubmitted', {})
+                
+                revalidation_list.append({
+                    'application_id': row[0],
+                    'name': row[1],
+                    'email': row[2],
+                    'phone': row[3],
+                    'programme_name': row[4],
+                    'lsc_code': row[5],
+                    'resubmitted_documents': list(resubmitted.keys()),
+                    'resubmitted_date': resubmitted.get(list(resubmitted.keys())[0], {}).get('uploaded_at') if resubmitted else None
+                })
+
+        return Response({
+            'status': 'success',
+            'count': len(revalidation_list),
+            'revalidations': revalidation_list
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        logger.error(f"Error fetching pending revalidations: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return Response({
+            'status': 'error',
+            'message': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

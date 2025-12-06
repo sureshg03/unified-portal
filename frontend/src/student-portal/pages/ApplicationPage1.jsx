@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_BASE_URL } from '../../config/api';
 import { ChevronRightIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import Select from 'react-select';
 import StepProgressBar from '../components/StepProgressBar';
@@ -28,6 +29,7 @@ const ApplicationPage1 = () => {
   const modeOfStudyOptions = [
     { value: '', label: 'Select Mode of Study' },
     { value: 'ODL', label: 'Open and Distance Learning - (ODL)' },
+    { value: 'OL', label: 'Online Learning Programme - (OL)' },
   ];
 
   // Programme options (Undergraduate, Postgraduate)
@@ -58,7 +60,7 @@ const ApplicationPage1 = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await axios.get('http://localhost:8000/api/courses/');
+        const res = await axios.get(`${API_BASE_URL}/api/courses/`);
         if (res.data.status === 'success') {
           console.log('Fetched courses:', res.data.data); // Debug log
           setCourses(res.data.data);
@@ -88,7 +90,7 @@ const ApplicationPage1 = () => {
         return;
       }
       try {
-        const res = await axios.get('http://localhost:8000/api/user-profile/', {
+        const res = await axios.get(`${API_BASE_URL}/api/user-profile/`, {
           headers: { Authorization: `Token ${token}` },
         });
         if (res.data.status === 'success') {
@@ -109,7 +111,7 @@ const ApplicationPage1 = () => {
       if (!token) return;
       setLoading(true);
       try {
-        const res = await axios.get('http://localhost:8000/api/get-autofill-application/', {
+        const res = await axios.get(`${API_BASE_URL}/api/get-autofill-application/`, {
           headers: { Authorization: `Token ${token}` },
         });
         if (res.data.status === 'success' && res.data.data) {
@@ -132,7 +134,7 @@ const ApplicationPage1 = () => {
 
     const fetchAcademicYear = async () => {
       try {
-        const res = await axios.get('http://localhost:8000/api/academic-year/');
+        const res = await axios.get(`${API_BASE_URL}/api/academic-year/`);
         setFormData((prev) => ({
           ...prev,
           academic_year: res.data.academic_year || defaultAcademicYear,
@@ -171,7 +173,7 @@ const ApplicationPage1 = () => {
     setLoading(true);
     try {
       const res = await axios.post(
-        'http://localhost:8000/api/application/page1/',
+        `${API_BASE_URL}/api/application/page1/`,
         formData,
         { headers: { Authorization: `Token ${token}` } }
       );
@@ -203,8 +205,8 @@ const ApplicationPage1 = () => {
       boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
       border: '1px solid rgba(139, 92, 246, 0.2)',
       fontFamily: 'Roboto, sans-serif',
-      fontWeight: 400,
-      fontSize: '0.9375rem',
+      fontWeight: 500,
+      fontSize: '1.125rem',
       color: '#1f2937',
       transition: 'all 0.3s ease',
       '&:hover': {
@@ -222,8 +224,8 @@ const ApplicationPage1 = () => {
     option: (provided, state) => ({
       ...provided,
       fontFamily: 'Roboto, sans-serif',
-      fontWeight: 400,
-      fontSize: '0.9375rem',
+      fontWeight: 500,
+      fontSize: '1.125rem',
       color: state.isSelected ? '#ffffff' : '#1f2937',
       backgroundColor: state.isSelected ? '#8b5cf6' : state.isFocused ? 'rgba(139, 92, 246, 0.1)' : 'transparent',
       '&:hover': {
@@ -252,7 +254,7 @@ const ApplicationPage1 = () => {
           transition={{ duration: 0.8 }}
           className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-purple-200/40"
         >
-          <h3 className="text-xl sm:text-2xl mb-5 font-semibold font-poppins bg-clip-text text-transparent bg-gradient-to-r from-indigo-700 to-purple-900 mb-6 sm:mb-4 tracking-tight text-center">
+          <h3 className="text-3xl sm:text-3xl mb-5 font-bold font-poppins bg-clip-text text-transparent bg-gradient-to-r from-indigo-700 to-purple-900 mb-6 sm:mb-4 tracking-tight text-center">
             Basic Information
           </h3>
           {loading && (
@@ -264,9 +266,9 @@ const ApplicationPage1 = () => {
               ></motion.div>
             </div>
           )}
-          <div className="space-y-6">
+          <div className="space-y-10">
             <div>
-              <label className="block text-sm font-medium text-violet-900 mb-2 font-roboto tracking-wide">
+              <label className="block text-lg font-semibold text-violet-900 mb-3 font-roboto tracking-wide">
                 Mode of Study <span className="text-red-500">*</span>
               </label>
               <Select
@@ -281,7 +283,7 @@ const ApplicationPage1 = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-violet-900 mb-2 font-roboto tracking-wide">
+              <label className="block text-lg font-semibold text-violet-900 mb-3 font-roboto tracking-wide">
                 Programme Applied <span className="text-red-500">*</span>
               </label>
               <Select
@@ -296,7 +298,7 @@ const ApplicationPage1 = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-violet-900 mb-2 font-roboto tracking-wide">
+              <label className="block text-lg font-semibold text-violet-900 mb-3 font-roboto tracking-wide">
                 Course <span className="text-red-500">*</span>
               </label>
               <Select
@@ -311,7 +313,7 @@ const ApplicationPage1 = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-violet-900 mb-2 font-roboto tracking-wide">
+              <label className="block text-lg font-semibold text-violet-900 mb-3 font-roboto tracking-wide">
                 Medium <span className="text-red-500">*</span>
               </label>
               <Select
@@ -326,7 +328,7 @@ const ApplicationPage1 = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-violet-900 mb-2 font-roboto tracking-wide">
+              <label className="block text-lg font-semibold text-violet-900 mb-3 font-roboto tracking-wide">
                 Academic Year
               </label>
               <input
@@ -334,7 +336,7 @@ const ApplicationPage1 = () => {
                 name="academic_year"
                 value={formData.academic_year}
                 readOnly
-                className="w-full p-3 bg-gray-100/70 backdrop-blur-sm rounded-xl border border-gray-300/70 shadow-sm cursor-not-allowed font-roboto font-medium text-sm text-gray-900"
+                className="w-full p-4 bg-gray-100/70 backdrop-blur-sm rounded-xl border border-gray-300/70 shadow-sm cursor-not-allowed font-roboto font-medium text-lg text-gray-900"
               />
             </div>
             <div className="flex justify-between">
@@ -343,7 +345,7 @@ const ApplicationPage1 = () => {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate('/student/dashboard')}
                 disabled={loading}
-                className="px-5 py-2.5 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition duration-300 font-roboto font-medium text-sm shadow-lg"
+                className="px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition duration-300 font-roboto font-bold text-lg shadow-lg"
               >
                 Back to Dashboard
               </motion.button>
@@ -352,7 +354,7 @@ const ApplicationPage1 = () => {
                 whileTap={{ scale: 0.95 }}
                 onClick={handleSubmit}
                 disabled={loading}
-                className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 disabled:from-purple-300 disabled:to-indigo-300 transition duration-300 font-roboto font-medium text-sm flex items-center shadow-lg"
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 disabled:from-purple-300 disabled:to-indigo-300 transition duration-300 font-roboto font-bold text-lg flex items-center shadow-lg"
               >
                 <SparklesIcon className="h-5 w-5 mr-2" />
                 Next Step

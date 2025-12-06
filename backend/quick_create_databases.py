@@ -22,14 +22,14 @@ try:
     print("✓ Connected to MySQL successfully!\n")
     
     # Create databases
-    databases = ['lsc_portal_db', 'online_edu', 'lsc_admindb']
+    databases = ['cdoe_db']
     
     for db in databases:
         cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
         print(f"✓ Created database: {db}")
     
-    # Create lsc_admins table in online_edu
-    cursor.execute("USE online_edu")
+    # Create lsc_admins table in default database
+    cursor.execute("USE cdoe_db")
     
     create_table_sql = """
     CREATE TABLE IF NOT EXISTS `lsc_admins` (
@@ -54,7 +54,7 @@ try:
     """
     
     cursor.execute(create_table_sql)
-    print("✓ Created lsc_admins table in online_edu")
+    print("✓ Created lsc_admins table in cdoe_db")
     
     connection.commit()
     cursor.close()
@@ -65,11 +65,11 @@ try:
     print("="*60)
     print("\nDatabases created:")
     print("  1. lsc_portal_db")
-    print("  2. online_edu (with lsc_admins table)")
+    print("  1. cdoe_db (unified database with all tables)")
     print("  3. lsc_admindb")
     print("\nNow run migrations:")
     print("  python manage.py migrate --database=default")
-    print("  python manage.py migrate --database=online_edu")
+    print("  python manage.py migrate --database=default")
     print("  python manage.py migrate --database=lsc_admindb")
     print()
     

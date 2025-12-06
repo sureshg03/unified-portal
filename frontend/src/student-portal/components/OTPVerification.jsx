@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
+import { API_BASE_URL } from '../../config/api';
 
 const OTPVerification = () => {
   const [otp, setOtp] = useState('');
@@ -11,7 +12,7 @@ const OTPVerification = () => {
 
   const handleVerify = async () => {
     try {
-      const res = await axios.post('http://localhost:8000/api/verify-reset-otp/', { email, otp });
+      const res = await axios.post(`${API_BASE_URL}/api/verify-reset-otp/`, { email, otp });
       if (res.data.status === 'success') {
         toast.success('OTP verified');
         navigate('/student/reset-password', { state: { email } });
@@ -31,4 +32,6 @@ const OTPVerification = () => {
   );
 };
 export default OTPVerification;
+
+
 

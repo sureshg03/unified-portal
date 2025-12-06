@@ -2,17 +2,17 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { SparklesIcon, ArrowRightIcon, ClockIcon, CheckCircleIcon, XCircleIcon, CalendarIcon } from '@heroicons/react/24/outline';
 
-const WelcomeSection = ({ 
-  deadline, 
-  handleNewApplication, 
+const WelcomeSection = ({
+  deadline,
+  handleNewApplication,
   isApplicationOpen = true,
   applicationStatus = 'OPEN',
   openingDate = null,
   closingDate = null,
-  title = "Welcome to Online Education", 
-  description = "Apply for the 2025-2026 Academic Year" 
+  title = "Welcome to Online Education",
+  description = "Apply for the 2025-2026 Academic Year"
 }) => {
-  
+
   // Format date helper
   const formatDate = (dateString) => {
     if (!dateString) return 'Not specified';
@@ -21,8 +21,8 @@ const WelcomeSection = ({
   };
 
   // Determine card color based on status
-  const cardGradient = isApplicationOpen 
-    ? 'from-green-700 to-emerald-700' 
+  const cardGradient = isApplicationOpen
+    ? 'from-green-700 to-emerald-700'
     : 'from-red-700 to-rose-700';
 
   return (
@@ -38,8 +38,8 @@ const WelcomeSection = ({
         {/* Status Badge */}
         <div className="flex justify-center mb-4">
           <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${
-            isApplicationOpen 
-              ? 'bg-green-500/20 text-green-100 border-2 border-green-300' 
+            isApplicationOpen
+              ? 'bg-green-500/20 text-green-100 border-2 border-green-300'
               : 'bg-red-500/20 text-red-100 border-2 border-red-300'
           }`}>
             {isApplicationOpen ? (

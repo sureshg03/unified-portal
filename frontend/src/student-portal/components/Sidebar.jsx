@@ -20,7 +20,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
   const [hoveredItem, setHoveredItem] = useState(null);
 
   useEffect(() => {
-    console.log('Sidebar.jsx: isSidebarOpen prop:', isSidebarOpen); 
+    console.log('Sidebar.jsx prop:', isSidebarOpen); 
   }, [isSidebarOpen]);
 
   const sidebarVariants = {
@@ -131,7 +131,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
         { 
           name: 'newApplication', 
           label: 'Start Application', 
-          icon: DocumentTextIcon, 
+          icon: SparklesIcon, 
           gradient: 'from-violet-500 via-purple-500 to-fuchsia-500',
           iconBg: 'from-violet-400 to-violet-600',
           shadow: 'shadow-violet-500/50'
@@ -139,7 +139,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
         { 
           name: 'guidelines', 
           label: 'Guidelines', 
-          icon: AcademicCapIcon, 
+          icon: DocumentTextIcon, 
           gradient: 'from-purple-500 via-purple-500 to-blue-500',
           iconBg: 'from-purple-400 to-purple-600',
           shadow: 'shadow-purple-500/50'

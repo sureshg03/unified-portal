@@ -101,7 +101,7 @@ const SubmittedApplication = () => {
           ['Order ID', userData.transaction_id],
           ['Transaction Status', userData.payment_status === 'TXN_SUCCESS' ? 'Success' : 'Failed'],
           ['Payment Mode', userData.payment_mode],
-          ['Amount Paid', `₹${Number(userData.amount).toFixed(2)}`],
+          ['Amount Paid', `Γé╣${Number(userData.amount).toFixed(2)}`],
           ['Date', new Date(userData.date).toLocaleString()],
         ],
         styles: {
@@ -167,7 +167,7 @@ const SubmittedApplication = () => {
               Application Submitted!
             </h2>
             <p className="text-gray-600 font-roboto text-lg mb-6">
-              Your payment of <span className="font-semibold">₹{Number(userData.amount).toFixed(2)}</span> has been received. Check your email (
+              Your payment of <span className="font-semibold">Γé╣{Number(userData.amount).toFixed(2)}</span> has been received. Check your email (
               <span className="text-brand-blue">{userData.email || 'N/A'}</span>) for updates.
             </p>
           </div>
@@ -189,7 +189,7 @@ const SubmittedApplication = () => {
                 { label: 'Order ID', value: userData.transaction_id },
                 { label: 'Transaction Status', value: userData.payment_status === 'TXN_SUCCESS' ? 'Success' : 'Failed' },
                 { label: 'Payment Mode', value: userData.payment_mode },
-                { label: 'Amount Paid', value: `₹${Number(userData.amount).toFixed(2)}` },
+                { label: 'Amount Paid', value: `Γé╣${Number(userData.amount).toFixed(2)}` },
                 { label: 'Date', value: new Date(userData.date).toLocaleString() },
               ].map((item, index) => (
                 <motion.div

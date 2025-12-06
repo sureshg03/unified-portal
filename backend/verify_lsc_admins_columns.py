@@ -5,7 +5,7 @@ conn = pymysql.connect(
     host='localhost',
     user='root',
     password='',
-    database='online_edu'
+    database='default'
 )
 
 cursor = conn.cursor()

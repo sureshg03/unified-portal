@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, User, Lock, GraduationCap, Shield, Award, Sparkles, ArrowRight, Mail, Phone, Zap, Globe2, Users2, CheckCircle2, BookOpen, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { authAPI } from '@/lib/api';
 import { setAuthData } from '@/lib/auth';
 
 interface LoginPageProps {
-  onLogin: (lscNumber: string) => void;
+  onLogin?: (lscNumber: string) => void;
 }
 
 export const LoginPage = ({ onLogin }: LoginPageProps) => {
@@ -72,12 +72,9 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
       } else if (user.user_type === 'user') {
         navigate('/lsc/dashboard/user', { replace: true });
       } else {
-        // Fallback
-        navigate('/lsc/login', { replace: true });
+      // Fallback
+      navigate('/lsc/login', { replace: true });
       }
-
-      // Call the legacy onLogin if needed
-      onLogin(lscNumber);
     } catch (error: any) {
       console.error('Login error:', error);
       
@@ -209,10 +206,10 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
               
               <div className="mb-4 space-y-1.5">
                 <p className="text-yellow-300 text-sm font-bold tracking-wide" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  State University • NAAC 'A++' Grade
+                  State University ΓÇó NAAC 'A++' Grade
                 </p>
                 <p className="text-white/90 text-xs font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  NIRF Rank 94 • State Public University Rank 40
+                  NIRF Rank 94 ΓÇó State Public University Rank 40
                 </p>
                 <p className="text-white/80 text-xs font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>
                   SDG Institutions Rank Band: 11-50

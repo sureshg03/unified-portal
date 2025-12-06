@@ -41,6 +41,10 @@ urlpatterns = [
     path('student-details/', views.get_student_details, name='get_student_details'),
     path('application/confirm-preview/', views.confirm_preview, name='confirm_preview'),
     path('courses/', views.get_courses, name='get_courses'),  
+    path('courses/add/', views.add_course, name='add_course'),
+    path('courses/<int:course_id>/', views.update_course, name='update_course'),
+    path('courses/<int:course_id>/delete/', views.delete_course, name='delete_course'),
+    path('courses/delete_all/', views.delete_all_courses, name='delete_all_courses'),  
     path('payment-status/', views.get_payment_status, name='payment_status'),
     path('initiate-payment/', views.initiate_payment, name='initiate_payment'),
     path('verify-payment/', views.verify_payment, name='verify_payment'),
@@ -49,10 +53,22 @@ urlpatterns = [
     path('download-receipt/', views.download_receipt, name='download_receipt'),
     
     # LSC Admin - Student Admissions Management
+    path('lsc-centers/', admin_views.get_lsc_centers, name='lsc_centers'),
     path('lsc-admin/student-admissions/', admin_views.get_student_admissions, name='lsc_student_admissions'),
-    path('lsc-admin/student-details/<str:application_id>/', admin_views.get_student_details, name='lsc_student_details'),
+    # Use path converter so application_id can contain slashes (e.g. PU/ODL/LC2101/A25/0001)
+    path('lsc-admin/student-details/<path:application_id>/', admin_views.get_student_details, name='lsc_student_details'),
     path('lsc-admin/verify-eligibility/', admin_views.verify_eligibility, name='lsc_verify_eligibility'),
-    path('lsc-admin/generate-enrollment/', admin_views.generate_enrollment_id, name='lsc_generate_enrollment'),
     path('lsc-admin/send-semester-fee-notification/', admin_views.send_semester_fee_notification, name='lsc_semester_fee_notification'),
+    
+    # Document Validation & Verification Endpoints
+    path('lsc-admin/validate-document/', admin_views.validate_document, name='validate_document'),
+    path('lsc-admin/generate-enrollment/', admin_views.generate_enrollment_number, name='generate_enrollment_number'),
+    path('lsc-admin/save-verification/', admin_views.save_verification, name='save_verification'),
+    
+    # Invalid Document Notification & Resubmission
+    path('lsc-admin/send-invalid-document-email/', admin_views.send_invalid_document_email, name='send_invalid_document_email'),
+    path('lsc-admin/pending-revalidations/', admin_views.get_pending_revalidations, name='get_pending_revalidations'),
+    path('resubmit-documents/verify/<str:token>/', admin_views.verify_resubmission_link, name='verify_resubmission_link'),
+    path('resubmit-documents/submit/<str:token>/', admin_views.submit_resubmitted_documents, name='submit_resubmitted_documents'),
   
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

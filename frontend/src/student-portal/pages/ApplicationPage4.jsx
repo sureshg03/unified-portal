@@ -579,10 +579,10 @@ const ApplicationPage4 = () => {
         transition={{ duration: 0.2 }}
         className="w-full max-w-[360px] h-[450px] bg-white/95 backdrop-blur-xl rounded-2xl shadow-lg p-6 border-2 border-dashed border-purple-300"
       >
-        <h3 className="text-2xl font-bold font-poppins text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 mb-4">
+        <h3 className="text-2xl font-bold font-poppins text-center text-purple-800 mb-4">
           Guidelines:
         </h3>
-        <h3 className="text-xl font-semibold font-poppins text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 mb-4">
+        <h3 className="text-xl font-semibold font-poppins text-center text-purple-800 mb-4">
           {activeGuideline.replace('_', ' ').toUpperCase()}
         </h3>
         <div className="h-[380px] overflow-y-auto scrollbar-thin pr-3">
@@ -674,7 +674,7 @@ const ApplicationPage4 = () => {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                 <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
-                  <h4 className="font-semibold text-blue-700 mb-2">📸 Photo Requirements</h4>
+                  <h4 className="font-semibold text-blue-700 mb-2">📷 Photo Requirements</h4>
                   <ul className="space-y-1 text-gray-700">
                     <li>• JPG/JPEG format only</li>
                     <li>• Maximum 30 KB file size</li>

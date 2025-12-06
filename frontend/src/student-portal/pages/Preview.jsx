@@ -30,16 +30,16 @@ const getDirectUrl = (url, isImage = true) => {
     console.warn(`[getDirectUrl] Invalid URL: ${url}`);
     return isImage ? '/default-image.png' : '';
   }
-  
+
   console.log(`[getDirectUrl] Processing URL: ${url}, isImage: ${isImage}`);
-  
+
   // Check if it's a local file path (starts with /media/)
   if (url.startsWith('/media/')) {
     const fullUrl = `http://localhost:8000${url}`;
-    console.log(`[getDirectUrl] ✓ Local file URL: ${fullUrl}`);
+    console.log(`[getDirectUrl] Γ£ô Local file URL: ${fullUrl}`);
     return fullUrl;
   }
-  
+
   // Legacy: Handle Google Drive URLs (for backwards compatibility)
   if (url.includes('drive.google.com')) {
     const patterns = [
@@ -59,19 +59,19 @@ const getDirectUrl = (url, isImage = true) => {
       const proxyUrl = isImage
         ? `http://localhost:8000/api/proxy-image/${fileId}/`
         : `http://localhost:8000/api/proxy-file/${fileId}/`;
-      console.log(`[getDirectUrl] ✓ Constructed proxy URL: ${proxyUrl}`);
+      console.log(`[getDirectUrl] Γ£ô Constructed proxy URL: ${proxyUrl}`);
       return proxyUrl;
     }
-    console.error(`[getDirectUrl] ✗ Failed to extract file ID from URL: ${url}`);
+    console.error(`[getDirectUrl] Γ£ù Failed to extract file ID from URL: ${url}`);
   }
-  
+
   // If already a full URL, return as-is
   if (url.startsWith('http://') || url.startsWith('https://')) {
-    console.log(`[getDirectUrl] ✓ Already full URL: ${url}`);
+    console.log(`[getDirectUrl] Γ£ô Already full URL: ${url}`);
     return url;
   }
-  
-  console.warn(`[getDirectUrl] ⚠ Unrecognized URL format: ${url}`);
+
+  console.warn(`[getDirectUrl] ΓÜá Unrecognized URL format: ${url}`);
   return isImage ? '/default-image.png' : url;
 };
 
@@ -79,18 +79,18 @@ const getDirectUrl = (url, isImage = true) => {
 const fetchPdfFile = async (url, originalUrl) => {
   try {
     console.log(`Fetching PDF from: ${url}`);
-    
+
     // For local files, we can directly use the URL without creating a blob
     if (url.includes('localhost:8000/media/')) {
       console.log(`Using local file directly: ${url}`);
       return url; // Return the URL directly for local files
     }
-    
+
     const token = localStorage.getItem('token');
     if (!token) {
       throw new Error('Authentication token not found.');
     }
-    
+
     const response = await axios.get(url, {
       headers: { Authorization: `Token ${token}` },
       responseType: 'blob',
@@ -329,248 +329,161 @@ const Preview = () => {
     pageStyle: `
       @page {
         size: A4;
-        margin: 12mm;
+        margin: 15mm;
       }
       @media print {
-        * {
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-          color-adjust: exact !important;
-        }
         body {
-          font-family: 'Times New Roman', Times, serif;
-          color: #000000;
-          margin: 0;
-          padding: 0;
-          background: #FFFFFF;
-          line-height: 1.4;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+          background-color: #ffffff;
         }
-        .no-print {
+        .no-print-view {
           display: none !important;
         }
-        .print-border {
-          border: 2px solid #000000;
-          padding: 15px;
-          box-shadow: none;
-          background: #FFFFFF;
-          margin: 0;
-        }
-        .print-logo {
-          width: 70px;
-          height: 70px;
-          object-fit: contain;
-          border: 1px solid #000000;
-          padding: 2px;
-        }
-        .print-photo, .print-signature {
-          width: 85px;
-          height: 110px;
-          object-fit: cover;
-          border: 1px solid #000000;
-        }
-        .section-container {
-          border: 1px solid #000000;
-          padding: 10px;
-          margin-bottom: 10px;
-          page-break-inside: avoid;
-          background: #FFFFFF;
-        }
-        .section-title {
+        .print-view-only {
+          display: block !important;
           font-family: 'Times New Roman', Times, serif;
-          font-size: 13pt;
-          font-weight: bold;
-          margin: 0 0 8px 0;
-          padding: 6px 8px;
-          background: #e0e0e0;
           color: #000000;
-          text-align: left;
-          border-bottom: 2px solid #000000;
+          background: #ffffff;
+          width: 100%;
         }
-        .section-icon {
-          display: none !important;
+        
+        /* Reset any conflicting styles */
+        .card { 
+            box-shadow: none !important; 
+            border: none !important; 
+            padding: 0 !important;
         }
-        /* Professional Table Layout for Fields */
-        .grid {
-          display: table;
+
+        /* Print Table Styles */
+        .print-table {
           width: 100%;
           border-collapse: collapse;
+          margin-bottom: 2px;
+          font-size: 11pt;
+        }
+        .print-table td, .print-table th {
+          border: 1px solid #000000;
+          padding: 4px 6px;
+          vertical-align: middle;
+        }
+        .print-table th {
+          font-weight: bold;
+          text-align: center;
+        }
+        
+        /* Header specific */
+        .header-title {
+          color: #4B0082; /* Purple-ish */
+          font-size: 22pt;
+          font-weight: bold;
+          text-align: center;
           margin: 0;
-        }
-        .grid > div {
-          display: table-row;
-        }
-        .grid > div > div {
-          display: table-cell;
-          border: 1px solid #666666;
-          padding: 6px 8px;
-          vertical-align: middle;
-        }
-        .field-label {
-          font-family: 'Times New Roman', Times, serif;
-          font-size: 11pt;
-          font-weight: bold;
-          width: 35%;
-          display: table-cell;
-          border: 1px solid #666666;
-          padding: 6px 8px;
-          background: #FFFFFF;
-          color: #000000;
-          vertical-align: middle;
-        }
-        .field-value {
-          font-family: 'Times New Roman', Times, serif;
-          font-size: 11pt;
-          font-weight: normal;
-          width: 65%;
-          display: table-cell;
-          border: 1px solid #666666;
-          padding: 6px 8px;
-          color: #000000;
-          vertical-align: middle;
-        }
-        /* Create proper table rows */
-        .grid.grid-cols-1 > div,
-        .grid.grid-cols-2 > div {
-          display: table-row;
-        }
-        .grid.grid-cols-2 > div > div {
-          width: 50%;
-        }
-        /* Qualification sections */
-        .border-b {
-          border-bottom: 1px solid #666666 !important;
-          margin-bottom: 8px;
-          padding-bottom: 8px;
-        }
-        .marksheet-img {
-          max-width: 100px;
-          height: auto;
-          margin: 5px 0;
-          border: 1px solid #000000;
-        }
-        .main-title {
-          font-family: 'Times New Roman', Times, serif;
-          font-size: 20pt;
-          font-weight: bold;
-          color: #000000;
-          text-align: center;
-          margin: 0 0 5px 0;
-        }
-        .sub-title {
-          font-family: 'Times New Roman', Times, serif;
-          font-size: 14pt;
-          font-weight: bold;
-          text-align: center;
-          margin: 5px 0;
-          color: #000000;
-        }
-        .application-title {
-          font-family: 'Times New Roman', Times, serif;
-          font-size: 16pt;
-          font-weight: bold;
-          text-align: center;
-          margin: 12px 0;
-          padding-bottom: 8px;
-          border-bottom: 2px solid #000000;
-          color: #000000;
-        }
-        .header-section {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 15px;
-          border: 1px solid #000000;
-          padding: 10px;
-          background: #FFFFFF;
-        }
-        .header-text {
-          text-align: left;
-          flex: 1;
-        }
-        .header-text h1 {
-          margin: 0 0 5px 0;
           line-height: 1.2;
         }
-        .header-text p {
-          margin: 3px 0;
-          font-size: 10pt;
-          line-height: 1.3;
+        .header-sub {
+            font-size: 10pt;
+            text-align: center;
+            font-weight: bold;
+            margin: 2px 0;
         }
-        /* Image styling */
-        img {
-          max-width: 100%;
-          height: auto;
+        .cdoe-title {
+            color: #8B008B;
+            font-size: 14pt;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 5px;
         }
-        /* Remove card effects */
-        .card {
-          box-shadow: none !important;
-          border: none !important;
-          background: none !important;
-          border-radius: 0 !important;
+        .odl-text {
+            color: #FF8C00;
+            font-weight: bold;
+            text-align: center;
+            font-size: 11pt;
+            margin-bottom: 5px;
         }
-        /* Document links */
-        .document-link {
-          display: none !important;
+        .form-title {
+            font-size: 12pt;
+            font-weight: bold;
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 2px;
+            margin-bottom: 10px;
+            text-decoration: underline;
         }
-        .document-attached::after {
-          content: '✓ Attached';
-          font-family: 'Times New Roman', Times, serif;
-          font-size: 11pt;
+        
+        /* Section headers */
+        .section-header-box {
+          border: 1px solid #000;
+          border-bottom: none;
+          padding: 5px;
           font-weight: bold;
-          color: #000000;
-        }
-        /* Semester marks table styling */
-        .mt-8 h4 {
-          font-family: 'Times New Roman', Times, serif;
           font-size: 12pt;
-          font-weight: bold;
-          background: #e0e0e0;
-          color: #000000;
-          padding: 6px 8px;
-          margin: 12px 0 8px 0;
-          text-align: left;
-          border-bottom: 2px solid #000000;
+          background-color: #f0f0f0;
         }
-        /* Remove all gradient backgrounds */
-        .bg-gradient-to-br {
-          background: #FFFFFF !important;
+        
+        /* Photo cell */
+        .photo-cell {
+            text-align: center;
+            vertical-align: middle;
         }
-        /* Page breaks */
-        .section-container {
-          page-break-inside: avoid;
+        .student-photo {
+            width: 100px;
+            height: 120px;
+            object-fit: cover;
+            border: 1px solid #000;
+            margin: 0 auto;
         }
-        h3, h4 {
-          page-break-after: avoid;
+        
+        /* Data layout */
+        .label-col {
+            font-weight: bold;
+            width: 30%;
         }
-        /* Professional spacing */
-        p {
-          margin: 5px 0;
+        .separator-col {
+            width: 2%;
+            text-align: center;
         }
-        /* Education qualification professional table */
-        .education-title + div {
-          display: block !important;
+        .value-col {
+            width: 68%;
         }
-        .education-title ~ p {
-          font-size: 11pt;
-          text-align: center;
-          padding: 20px;
+        
+        .sno-col {
+            width: 5%;
+            text-align: center;
         }
-        /* Make address same as communication display inline */
-        .col-span-2 {
-          display: table-row;
+        .field-label-col {
+            width: 35%;
+            font-weight: bold;
         }
-        .col-span-2 > span {
-          display: table-cell;
-          border: 1px solid #666666;
-          padding: 6px 8px;
+        .field-value-col {
+            
         }
-        .col-span-2 > .field-label {
-          width: 35%;
-          background: #FFFFFF;
-          font-weight: bold;
+        
+         /* Payment status styling */
+        .status-success {
+            color: green;
+            font-weight: bold;
         }
-        .col-span-2 > .field-value {
-          width: 65%;
+        
+        .signature-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 40px;
+        }
+        .signature-box {
+            text-align: center;
+            width: 200px;
+        }
+        .signature-img {
+            max-height: 50px;
+            display: block;
+            margin: 0 auto;
+        }
+        .signature-line {
+            border-top: 1px solid #000;
+            margin-top: 5px;
+            padding-top: 5px;
+            font-weight: bold;
         }
       }
     `,
@@ -653,13 +566,13 @@ const Preview = () => {
   };
 
   const handleProceedToPayment = () => {
-  if (Object.values(declarations).every((val) => val)) {
-    navigate('/student/application/payment');
-    toast.success('Proceeding to payment...');
-  } else {
-    toast.error('Please agree to all declarations');
-  }
-};
+    if (Object.values(declarations).every((val) => val)) {
+      navigate('/student/application/payment');
+      toast.success('Proceeding to payment...');
+    } else {
+      toast.error('Please agree to all declarations');
+    }
+  };
 
   const { student, application, student_details } = previewData || {};
 
@@ -1080,595 +993,949 @@ const Preview = () => {
         ref={printRef}
         className="w-full max-w-6xl card rounded-2xl p-8 sm:p-10 print-border"
       >
-        <div className="header-section flex justify-between items-center mb-12 flex-col sm:flex-row gap-4">
-          {imageLoading.logo && (
-            <div className="w-20 h-20 rounded-xl bg-gray-100 animate-pulse flex items-center justify-center no-print">
-              <span className="text-gray-400 text-sm">Loading...</span>
+        <div className="no-print-view">
+          <div className="header-section flex justify-between items-center mb-12 flex-col sm:flex-row gap-4">
+            {imageLoading.logo && (
+              <div className="w-20 h-20 rounded-xl bg-gray-100 animate-pulse flex items-center justify-center no-print">
+                <span className="text-gray-400 text-sm">Loading...</span>
+              </div>
+            )}
+            <img
+              src="/Logo.png"
+              alt="Periyar University Logo"
+              className={`w-20 h-20 sm:w-24 sm:h-24 print-logo object-cover ${imageLoading.logo ? 'hidden' : ''}`}
+              onLoad={() => handleImageLoad('logo')}
+              onError={(e) => handleImageError(e, 'logo', '/default-image.png')}
+            />
+            <div className="flex-1 header-text">
+              <h1 className="text-2xl sm:text-3xl font-bold main-title">Periyar University</h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1 leading-relaxed">Salem-636 011, Tamil Nadu, India</p>
+              <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">State University - NAAC 'A++' Grade - NIRF Rank 94</p>
+              <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">State Public University Rank 40 - SDG Institutions Rank Band: 11-50</p>
+              <h2 className="text-lg sm:text-xl font-bold text-purple-700 mt-2">CENTRE FOR DISTANCE AND ONLINE EDUCATION (CDOE)</h2>
+              <p className="text-sm sm:text-base text-gray-600">Open and Distance Learning</p>
             </div>
-          )}
-          <img
-            src="/Logo.png"
-            alt="Periyar University Logo"
-            className={`w-20 h-20 sm:w-24 sm:h-24 print-logo object-cover ${imageLoading.logo ? 'hidden' : ''}`}
-            onLoad={() => handleImageLoad('logo')}
-            onError={(e) => handleImageError(e, 'logo', '/default-image.png')}
-          />
-          <div className="flex-1 header-text">
-            <h1 className="text-2xl sm:text-3xl font-bold main-title">Periyar University</h1>
-            <p className="text-sm sm:text-base text-gray-600 mt-1 leading-relaxed">Salem-636 011, Tamil Nadu, India</p>
-            <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">State University - NAAC 'A++' Grade - NIRF Rank 94</p>
-            <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">State Public University Rank 40 - SDG Institutions Rank Band: 11-50</p>
-            <h2 className="text-lg sm:text-xl font-bold text-purple-700 mt-2">CENTRE FOR DISTANCE AND ONLINE EDUCATION (CDOE)</h2>
-            <p className="text-sm sm:text-base text-gray-600">Open and Distance Learning</p>
+            {student_details?.photo_url && (
+              <div className="relative">
+                {imageLoading.photo && (
+                  <div className="w-24 h-32 rounded-xl bg-gray-100 animate-pulse flex items-center justify-center no-print">
+                    <span className="text-gray-400 text-sm">Loading...</span>
+                  </div>
+                )}
+                <img
+                  src={student_details.photo_url}
+                  alt="Student Photo"
+                  className={`w-24 h-32 sm:w-28 sm:h-36 print-photo object-cover ${imageLoading.photo ? 'hidden' : ''}`}
+                  onLoad={() => handleImageLoad('photo')}
+                  onError={(e) => handleImageError(e, 'photo', '/default-image.png')}
+                />
+              </div>
+            )}
           </div>
-          {student_details?.photo_url && (
-            <div className="relative">
-              {imageLoading.photo && (
-                <div className="w-24 h-32 rounded-xl bg-gray-100 animate-pulse flex items-center justify-center no-print">
-                  <span className="text-gray-400 text-sm">Loading...</span>
+          <h3 className="application-title mb-8 text-center font-bold text-2xl">Open and Distance Learning Programme (ODL) Admission for the Academic Year {application?.academic_year || '2025-2026'}</h3>
+
+          {/* Application Info Table */}
+          <div className="mb-6 border border-gray-300">
+            <table className="w-full">
+              <tbody>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300 w-1/2">Application No :</td>
+                  <td className="py-2 px-4 text-sm">{application?.id || 'N/A'}</td>
+                </tr>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">Enrollment No :</td>
+                  <td className="py-2 px-4 text-sm">{application?.enrollment_no || student?.enrollment_no || 'N/A'}</td>
+                </tr>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">Applied Date :</td>
+                  <td className="py-2 px-4 text-sm">{application?.created_at ? new Date(application.created_at).toLocaleDateString() : 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">LSC :</td>
+                  <td className="py-2 px-4 text-sm">CDOE - Centre for Distance and Online Education (LCZ101)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Program Details Table */}
+          <div className="mb-6 border border-gray-300">
+            <table className="w-full">
+              <tbody>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300 w-48">1.</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">Programme Applied</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{application?.programme_applied || 'N/A'}</td>
+                </tr>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300"></td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">Course</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{application?.course || 'N/A'}</td>
+                </tr>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">2.</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">Medium</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{application?.medium || 'N/A'}</td>
+                </tr>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">3.</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">Name of the Applicant</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm font-medium">{student?.name || 'N/A'}</td>
+                </tr>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">4.</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">Date of Birth</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{application?.dob || 'N/A'}</td>
+                </tr>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300" rowSpan="2">5.</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">(a) Name of the Father & Mother</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{application?.father_name || 'N/A'} - {application?.mother_name || 'N/A'}</td>
+                </tr>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">(b) Name of the Guardian</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{application?.guardian_name || 'N/A'}</td>
+                </tr>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">6.</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">Father's & Mother's Occupation</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{application?.father_occupation || 'N/A'} - {application?.mother_occupation || 'N/A'}</td>
+                </tr>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">7.</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">Gender</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{application?.gender || 'N/A'}</td>
+                </tr>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">8.</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">Mother Tongue</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{application?.mother_tongue || 'N/A'}</td>
+                </tr>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">9.</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">Nationality</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{application?.nationality || 'N/A'}</td>
+                </tr>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">10.</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">Religion</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{application?.religion || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">11.</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">Community</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{application?.community || 'N/A'} <button className="text-blue-600 text-xs underline ml-2 no-print" onClick={() => application?.community_certificate_url && window.open(application.community_certificate_url, '_blank')}>View</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Address Section */}
+          <div className="mb-6">
+            <table className="w-full border border-gray-300">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-300">
+                  <th className="py-2 px-4 text-sm font-bold text-left border-r border-gray-300">12. Communication Address</th>
+                  <th className="py-2 px-4 text-sm font-bold text-left">Permanent Address</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="py-3 px-4 text-sm align-top border-r border-gray-300">{application?.communication_address || 'N/A'}</td>
+                  <td className="py-3 px-4 text-sm align-top">{application?.permanent_address || 'N/A'}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Contact Details */}
+          <div className="mb-6 border border-gray-300">
+            <table className="w-full">
+              <tbody>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300 w-48">13.</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">Mobile No. / Telephone No.</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{student?.phone || 'N/A'}</td>
+                </tr>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">14.</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">E-mail ID</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{student?.email || 'N/A'}</td>
+                </tr>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300" rowSpan="3">15.</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">(a) Aadhaar Card No. & Aadhaar Name</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{application?.aadhaar_no || 'N/A'} <button className="text-blue-600 text-xs underline ml-2 no-print" onClick={() => application?.aadhaar_card_url && window.open(application.aadhaar_card_url, '_blank')}>View</button> {application?.name_as_aadhaar || ''}</td>
+                </tr>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">(b) ABC ID</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{application?.abc_id || 'N/A'}</td>
+                </tr>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">(c) DEB ID</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{application?.deb_id || 'N/A'}</td>
+                </tr>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">16.</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">Differently Abled</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{application?.differently_abled || 'No'}</td>
+                </tr>
+                <tr className="border-b border-gray-300">
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">17.</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">Blood Group</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{application?.blood_group || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">18.</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">Access to Internet</td>
+                  <td className="py-2 px-4 font-semibold text-sm bg-gray-50 border-r border-gray-300">:</td>
+                  <td className="py-2 px-4 text-sm">{application?.access_internet || 'N/A'}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Educational Qualifications Table */}
+          <div className="mb-6">
+            <h3 className="text-lg font-bold mb-3 bg-gray-50 py-2 px-4 border border-gray-300">19. Education Qualification</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full border border-gray-300">
+                <thead>
+                  <tr className="bg-gray-100 border-b border-gray-300">
+                    <th className="py-2 px-3 text-xs font-bold border-r border-gray-300">Course</th>
+                    <th className="py-2 px-3 text-xs font-bold border-r border-gray-300">Institution</th>
+                    <th className="py-2 px-3 text-xs font-bold border-r border-gray-300">Board</th>
+                    <th className="py-2 px-3 text-xs font-bold border-r border-gray-300">Subject Studied</th>
+                    <th className="py-2 px-3 text-xs font-bold border-r border-gray-300">Register No</th>
+                    <th className="py-2 px-3 text-xs font-bold border-r border-gray-300">Percentage</th>
+                    <th className="py-2 px-3 text-xs font-bold border-r border-gray-300">Month of Passing</th>
+                    <th className="py-2 px-3 text-xs font-bold border-r border-gray-300">Year of Passing</th>
+                    <th className="py-2 px-3 text-xs font-bold border-r border-gray-300">Mode of Study</th>
+                    <th className="py-2 px-3 text-xs font-bold">Document</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {student_details?.qualifications?.length > 0 ? (
+                    student_details.qualifications.map((qual, index) => (
+                      <tr key={index} className="border-b border-gray-300">
+                        <td className="py-2 px-3 text-xs border-r border-gray-300">{qual.course || 'N/A'}</td>
+                        <td className="py-2 px-3 text-xs border-r border-gray-300">{qual.institute_name || 'N/A'}</td>
+                        <td className="py-2 px-3 text-xs border-r border-gray-300">{qual.board || 'N/A'}</td>
+                        <td className="py-2 px-3 text-xs border-r border-gray-300">{qual.subject_studied || 'N/A'}</td>
+                        <td className="py-2 px-3 text-xs border-r border-gray-300">{qual.reg_no || 'N/A'}</td>
+                        <td className="py-2 px-3 text-xs border-r border-gray-300">{qual.percentage || 'N/A'}</td>
+                        <td className="py-2 px-3 text-xs border-r border-gray-300">{qual.month_year?.split('-')[0] || qual.month_year?.split('/')[0] || 'N/A'}</td>
+                        <td className="py-2 px-3 text-xs border-r border-gray-300">{qual.month_year?.split('-')[1] || qual.month_year?.split('/')[1] || qual.year_of_passing || 'N/A'}</td>
+                        <td className="py-2 px-3 text-xs border-r border-gray-300">{qual.mode_of_study || 'Regular'}</td>
+                        <td className="py-2 px-3 text-xs text-center">
+                          <button className="text-blue-600 text-xs underline no-print" onClick={() => qual.marksheet_url && window.open(qual.marksheet_url, '_blank')}>View</button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="10" className="py-3 px-3 text-xs text-center text-gray-500">No qualifications provided</td>
+                    </tr>
+                  )}
+            {student_details?.semester_marks?.length > 0 && (
+              <div className="mt-8">
+                <h4 className="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-3 mb-6">Semester Marks</h4>
+                {student_details.semester_marks.map((semester, index) => (
+                  <div key={index} className="mt-6 border-t border-gray-200 pt-6">
+                    <p className="font-semibold text-xl text-gray-800 leading-7">Semester: {semester.semester || 'N/A'}</p>
+                    {semester.subjects?.map((subject, subIndex) => (
+                      <div key={subIndex} className="grid grid-cols-1 sm:grid-cols-2 gap-8 ml-4 mt-4">
+                        <div>
+                          <span className="field-label">Subject:</span>
+                          <span className="field-value">{subject.subject_name || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="field-label">Category:</span>
+                          <span className="field-value">{subject.category || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="field-label">Max Marks:</span>
+                          <span className="field-value">{subject.max_marks || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="field-label">Obtained Marks:</span>
+                          <span className="field-value">{subject.obtained_marks || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="field-label">Month/Year:</span>
+                          <span className="field-value">{subject.month_year || 'N/A'}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mt-6">
+              <div>
+                <span className="field-label">Total Max Marks:</span>
+                <span className="field-value">{student_details?.total_max_marks || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="field-label">Total Obtained Marks:</span>
+                <span className="field-value">{student_details?.total_obtained_marks || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="field-label">Percentage:</span>
+                <span className="field-value">{student_details?.percentage || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="field-label">CGPA:</span>
+                <span className="field-value">{student_details?.cgpa || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="field-label">Overall Grade:</span>
+                <span className="field-value">{student_details?.overall_grade || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="field-label">Class Obtained:</span>
+                <span className="field-value">{student_details?.class_obtained || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="field-label">Current Designation:</span>
+                <span className="field-value">{student_details?.current_designation || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="field-label">Current Institute:</span>
+                <span className="field-value">{student_details?.current_institute || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="field-label">Years of Experience:</span>
+                <span className="field-value">{student_details?.years_experience || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="field-label">Annual Income:</span>
+                <span className="field-value">{student_details?.annual_income || 'N/A'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-12 card section-container bg-gradient-to-br from-pink-50/70 to-pink-100/70 p-8 sm:p-10">
+            <div className="flex items-center space-x-4 mb-6">
+              <DocumentTextIcon className="h-7 w-7 text-pink-600 section-icon no-print" />
+              <h3 className="section-title documents-title">Uploaded Documents</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+              {student_details?.sslc_marksheet_proxy_url && (
+                <div>
+                  <span className="field-label">SSLC Marksheet:</span>
+                  <div className="field-value">
+                    <button
+                      onClick={() => openModal(student_details.sslc_marksheet_proxy_url, 'pdf', 'SSLC Marksheet', student_details.sslc_marksheet_url)}
+                      className="text-blue-600 underline text-lg hover:text-blue-800 transition-colors duration-300 document-link"
+                    >
+                      View SSLC Marksheet
+                    </button>
+                    <span className="document-attached"></span>
+                  </div>
                 </div>
               )}
-              <img
-                src={student_details.photo_url}
-                alt="Student Photo"
-                className={`w-24 h-32 sm:w-28 sm:h-36 print-photo object-cover ${imageLoading.photo ? 'hidden' : ''}`}
-                onLoad={() => handleImageLoad('photo')}
-                onError={(e) => handleImageError(e, 'photo', '/default-image.png')}
-              />
+              {student_details?.hsc_marksheet_proxy_url && (
+                <div>
+                  <span className="field-label">HSC Marksheet:</span>
+                  <div className="field-value">
+                    <button
+                      onClick={() => openModal(student_details.hsc_marksheet_proxy_url, 'pdf', 'HSC Marksheet', student_details.hsc_marksheet_url)}
+                      className="text-blue-600 underline text-lg hover:text-blue-800 transition-colors duration-300 document-link"
+                    >
+                      View HSC Marksheet
+                    </button>
+                    <span className="document-attached"></span>
+                  </div>
+                </div>
+              )}
+              {student_details?.ug_marksheet_proxy_url && (
+                <div>
+                  <span className="field-label">UG Marksheet:</span>
+                  <div className="field-value">
+                    <button
+                      onClick={() => openModal(student_details.ug_marksheet_proxy_url, 'pdf', 'UG Marksheet', student_details.ug_marksheet_url)}
+                      className="text-blue-600 underline text-lg hover:text-blue-800 transition-colors duration-300 document-link"
+                    >
+                      View UG Marksheet
+                    </button>
+                    <span className="document-attached"></span>
+                  </div>
+                </div>
+              )}
+              {student_details?.semester_marksheet_proxy_url && (
+                <div>
+                  <span className="field-label">Semester Marksheet:</span>
+                  <div className="field-value">
+                    <button
+                      onClick={() => openModal(student_details.semester_marksheet_proxy_url, 'pdf', 'Semester Marksheet', student_details.semester_marksheet_url)}
+                      className="text-blue-600 underline text-lg hover:text-blue-800 transition-colors duration-300 document-link"
+                    >
+                      View Semester Marksheet
+                    </button>
+                    <span className="document-attached"></span>
+                  </div>
+                </div>
+              )}
+              {student_details?.community_certificate_proxy_url && (
+                <div>
+                  <span className="field-label">Community Certificate:</span>
+                  <div className="field-value">
+                    <button
+                      onClick={() => openModal(student_details.community_certificate_proxy_url, 'pdf', 'Community Certificate', student_details.community_certificate_url)}
+                      className="text-blue-600 underline text-lg hover:text-blue-800 transition-colors duration-300 document-link"
+                    >
+                      View Community Certificate
+                    </button>
+                    <span className="document-attached"></span>
+                  </div>
+                </div>
+              )}
+              {student_details?.aadhaar_proxy_url && (
+                <div>
+                  <span className="field-label">Aadhaar Card:</span>
+                  <div className="field-value">
+                    <button
+                      onClick={() => openModal(student_details.aadhaar_proxy_url, 'pdf', 'Aadhaar Card', student_details.aadhaar_url)}
+                      className="text-blue-600 underline text-lg hover:text-blue-800 transition-colors duration-300 document-link"
+                    >
+                      View Aadhaar Card
+                    </button>
+                    <span className="document-attached"></span>
+                  </div>
+                </div>
+              )}
+              {student_details?.transfer_certificate_proxy_url && (
+                <div>
+                  <span className="field-label">Transfer Certificate:</span>
+                  <div className="field-value">
+                    <button
+                      onClick={() => openModal(student_details.transfer_certificate_proxy_url, 'pdf', 'Transfer Certificate', student_details.transfer_certificate_url)}
+                      className="text-blue-600 underline text-lg hover:text-blue-800 transition-colors duration-300 document-link"
+                    >
+                      View Transfer Certificate
+                    </button>
+                    <span className="document-attached"></span>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        <h3 className="application-title mb-8">Open and Distance Learning Programme (ODL) Admission for Academic Year {application?.academic_year || '2025-2026'}</h3>
+          </div>
 
-        <div className="mb-12 card section-container bg-gradient-to-br from-blue-50/70 to-blue-100/70 p-8 sm:p-10">
-          <div className="flex items-center space-x-4 mb-8">
-            <UserIcon className="h-7 w-7 text-blue-600 section-icon no-print" />
-            <h3 className="section-title personal-title">Personal Details</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <div>
-              <span className="field-label">Name:</span>
-              <span className="field-value">{student?.name || 'N/A'}</span>
+          <div className="mb-12 card section-container bg-gradient-to-br from-teal-50/70 to-teal-100/70 p-8 sm:p-10">
+            <div className="flex items-center space-x-4 mb-6">
+              <HomeIcon className="h-7 w-7 text-teal-600 section-icon no-print" />
+              <h3 className="section-title address-title">Address Details</h3>
             </div>
-            <div>
-              <span className="field-label">Email:</span>
-              <span className="field-value">{student?.email || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Phone:</span>
-              <span className="field-value">{student?.phone || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Name as per Aadhaar:</span>
-              <span className="field-value">{application?.name_as_aadhaar || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Aadhaar Number:</span>
-              <span className="field-value">{application?.aadhaar_no || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Date of Birth:</span>
-              <span className="field-value">{application?.dob || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Gender:</span>
-              <span className="field-value">{application?.gender || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Father's Name:</span>
-              <span className="field-value">{application?.father_name || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Father's Occupation:</span>
-              <span className="field-value">{application?.father_occupation || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Mother's Name:</span>
-              <span className="field-value">{application?.mother_name || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Mother's Occupation:</span>
-              <span className="field-value">{application?.mother_occupation || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Guardian:</span>
-              <span className="field-value">{application?.guardian_name || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Guardian's Occupation:</span>
-              <span className="field-value">{application?.guardian_occupation || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Nationality:</span>
-              <span className="field-value">{application?.nationality || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Religion:</span>
-              <span className="field-value">{application?.religion || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Community:</span>
-              <span className="field-value">{application?.community || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Mother Tongue:</span>
-              <span className="field-value">{application?.mother_tongue || 'N/A'}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-12 card section-container bg-gradient-to-br from-green-50/70 to-green-100/70 p-8 sm:p-10">
-          <div className="flex items-center space-x-4 mb-6">
-            <AcademicCapIcon className="h-7 w-7 text-green-600 section-icon no-print" />
-            <h3 className="section-title application-title-sec">Application Details</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <div>
-              <span className="field-label">Mode of Study:</span>
-              <span className="field-value">{application?.mode_of_study || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Program Applied:</span>
-              <span className="field-value">{application?.programme_applied || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Course:</span>
-              <span className="field-value">{application?.course || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Medium:</span>
-              <span className="field-value">{application?.medium || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Academic Year:</span>
-              <span className="field-value">{application?.academic_year || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">DEB ID:</span>
-              <span className="field-value">{application?.deb_id || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">ABC ID:</span>
-              <span className="field-value">{application?.abc_id || 'N/A'}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-12 card section-container bg-gradient-to-br from-purple-50/70 to-purple-100/70 p-8 sm:p-10">
-          <div className="flex items-center space-x-4 mb-6">
-            <AcademicCapIcon className="h-7 w-7 text-purple-600 section-icon no-print" />
-            <h3 className="section-title education-title">Educational Qualifications</h3>
-          </div>
-          {student_details?.qualifications?.length > 0 ? (
-            student_details.qualifications.map((qual, index) => (
-              <div key={index} className="grid grid-cols-1 sm:grid-cols-2 gap-8 border-b border-gray-200 pb-6 mb-6">
-                <div>
-                  <span className="field-label">Course:</span>
-                  <span className="field-value">{qual.course || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="field-label">Institute:</span>
-                  <span className="field-value">{qual.institute_name || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="field-label">Board:</span>
-                  <span className="field-value">{qual.board || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="field-label">Subjects Studied:</span>
-                  <span className="field-value">{qual.subject_studied || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="field-label">Register Number:</span>
-                  <span className="field-value">{qual.reg_no || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="field-label">Percentage:</span>
-                  <span className="field-value">{qual.percentage || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="field-label">Month/Year:</span>
-                  <span className="field-value">{qual.month_year || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="field-label">Mode of Study:</span>
-                  <span className="field-value">{qual.mode_of_study || 'N/A'}</span>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-600 text-lg leading-7">No qualifications provided.</p>
-          )}
-          {student_details?.semester_marks?.length > 0 && (
-            <div className="mt-8">
-              <h4 className="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-3 mb-6">Semester Marks</h4>
-              {student_details.semester_marks.map((semester, index) => (
-                <div key={index} className="mt-6 border-t border-gray-200 pt-6">
-                  <p className="font-semibold text-xl text-gray-800 leading-7">Semester: {semester.semester || 'N/A'}</p>
-                  {semester.subjects?.map((subject, subIndex) => (
-                    <div key={subIndex} className="grid grid-cols-1 sm:grid-cols-2 gap-8 ml-4 mt-4">
-                      <div>
-                        <span className="field-label">Subject:</span>
-                        <span className="field-value">{subject.subject_name || 'N/A'}</span>
-                      </div>
-                      <div>
-                        <span className="field-label">Category:</span>
-                        <span className="field-value">{subject.category || 'N/A'}</span>
-                      </div>
-                      <div>
-                        <span className="field-label">Max Marks:</span>
-                        <span className="field-value">{subject.max_marks || 'N/A'}</span>
-                      </div>
-                      <div>
-                        <span className="field-label">Obtained Marks:</span>
-                        <span className="field-value">{subject.obtained_marks || 'N/A'}</span>
-                      </div>
-                      <div>
-                        <span className="field-label">Month/Year:</span>
-                        <span className="field-value">{subject.month_year || 'N/A'}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mt-6">
-            <div>
-              <span className="field-label">Total Max Marks:</span>
-              <span className="field-value">{student_details?.total_max_marks || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Total Obtained Marks:</span>
-              <span className="field-value">{student_details?.total_obtained_marks || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Percentage:</span>
-              <span className="field-value">{student_details?.percentage || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">CGPA:</span>
-              <span className="field-value">{student_details?.cgpa || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Overall Grade:</span>
-              <span className="field-value">{student_details?.overall_grade || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Class Obtained:</span>
-              <span className="field-value">{student_details?.class_obtained || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Current Designation:</span>
-              <span className="field-value">{student_details?.current_designation || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Current Institute:</span>
-              <span className="field-value">{student_details?.current_institute || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Years of Experience:</span>
-              <span className="field-value">{student_details?.years_experience || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Annual Income:</span>
-              <span className="field-value">{student_details?.annual_income || 'N/A'}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-12 card section-container bg-gradient-to-br from-pink-50/70 to-pink-100/70 p-8 sm:p-10">
-          <div className="flex items-center space-x-4 mb-6">
-            <DocumentTextIcon className="h-7 w-7 text-pink-600 section-icon no-print" />
-            <h3 className="section-title documents-title">Uploaded Documents</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            {student_details?.photo_url && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
               <div>
-                <span className="field-label">Photo:</span>
-                <div className="field-value">
-                  <button
-                    onClick={() => openModal(student_details.photo_url, 'image', 'Photo', student_details.photo_url)}
-                    className="text-blue-600 underline text-lg hover:text-blue-800 transition-colors duration-300 document-link"
-                  >
-                    View Photo
-                  </button>
-                  <span className="document-attached"></span>
-                  {imageLoading.photo && (
-                    <div className="w-32 h-32 bg-gray-100 animate-pulse mt-4 rounded-xl flex items-center justify-center no-print">
-                      <span className="text-gray-400 text-sm">Loading...</span>
-                    </div>
-                  )}
-                  <img
-                    src={student_details.photo_url}
-                    alt="Photo"
-                    className={`marksheet-img mt-4 border border-gray-200 max-w-32 print-photo ${imageLoading.photo ? 'hidden' : ''}`}
-                    onLoad={() => handleImageLoad('photo')}
-                    onError={(e) => handleImageError(e, 'photo', '/default-image.png')}
+                <span className="field-label">Communication Town:</span>
+                <span className="field-value">{application?.comm_town || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="field-label">Communication District:</span>
+                <span className="field-value">{application?.comm_district || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="field-label">Communication State:</span>
+                <span className="field-value">{application?.comm_state || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="field-label">Communication Country:</span>
+                <span className="field-value">{application?.comm_country || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="field-label">Communication Pincode:</span>
+                <span className="field-value">{application?.comm_pincode || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="field-label">Communication Area:</span>
+                <span className="field-value">{application?.comm_area || 'N/A'}</span>
+              </div>
+              {application?.same_as_comm ? (
+                <div className="col-span-2">
+                  <span className="field-label">Permanent Address:</span>
+                  <span className="field-value">Same as Communication Address</span>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <span className="field-label">Permanent Town:</span>
+                    <span className="field-value">{application?.perm_town || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="field-label">Permanent District:</span>
+                    <span className="field-value">{application?.perm_district || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="field-label">Permanent State:</span>
+                    <span className="field-value">{application?.perm_state || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="field-label">Permanent Country:</span>
+                    <span className="field-value">{application?.perm_country || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="field-label">Permanent Pincode:</span>
+                    <span className="field-value">{application?.perm_pincode || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="field-label">Permanent Area:</span>
+                    <span className="field-value">{application?.perm_area || 'N/A'}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="mb-12 card section-container bg-gradient-to-br from-yellow-50/70 to-yellow-100/70 p-8 sm:p-10">
+            <div className="flex items-center space-x-4 mb-6">
+              <InformationCircleIcon className="h-7 w-7 text-yellow-600 section-icon no-print" />
+              <h3 className="section-title additional-title">Additional Information</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+              <div>
+                <span className="field-label">Differently Abled:</span>
+                <span className="field-value">{application?.differently_abled || 'N/A'}</span>
+              </div>
+              {application?.differently_abled === 'Yes' && (
+                <div>
+                  <span className="field-label">Disability Type:</span>
+                  <span className="field-value">{application?.disability_type || 'N/A'}</span>
+                </div>
+              )}
+              <div>
+                <span className="field-label">Blood Group:</span>
+                <span className="field-value">{application?.blood_group || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="field-label">Access to Internet:</span>
+                <span className="field-value">{application?.access_internet || 'N/A'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-12 card section-container bg-gradient-to-br from-indigo-50/70 to-indigo-100/70 p-8 sm:p-10 no-print">
+            <div className="flex items-center space-x-4 mb-6">
+              <h3 className="section-title declaration-title">Declaration</h3>
+            </div>
+            <div className="p-3">
+              <p className="text-base text-gray-600 leading-5 mb-6">
+                By submitting this application, you confirm that all provided information is accurate and complete. Any false or misleading information may result in the rejection of your application or cancellation of admission. Please review all details carefully before proceeding.
+              </p>
+              <div className="space-y-4">
+                <div className="flex items-start space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={declarations.infoCorrect}
+                    className="custom-checkbox"
+                    id="infoCorrect"
+                    onChange={() => handleDeclarationChange('infoCorrect')}
                   />
+                  <label htmlFor="infoCorrect" className="text-sm text-gray-600 leading-7">
+                    I confirm that all information provided in this application is true and correct to the best of my knowledge.
+                  </label>
                 </div>
               </div>
-            )}
-            {student_details?.signature_url && (
-              <div>
-                <span className="field-label">Signature:</span>
-                <div className="field-value">
-                  <button
-                    onClick={() => openModal(student_details.signature_url, 'image', 'Signature', student_details.signature_url)}
-                    className="text-blue-600 underline text-lg hover:text-blue-800 transition-colors duration-300 document-link"
-                  >
-                    View Signature
-                  </button>
-                  <span className="document-attached"></span>
-                  {imageLoading.signature && (
-                    <div className="w-32 h-16 bg-gray-100 animate-pulse mt-4 rounded-xl flex items-center justify-center no-print">
-                      <span className="text-gray-400 text-sm">Loading...</span>
-                    </div>
-                  )}
-                  <img
-                    src={student_details.signature_url}
-                    alt="Signature"
-                    className={`marksheet-img mt-4 border border-gray-200 max-w-32 print-signature ${imageLoading.signature ? 'hidden' : ''}`}
-                    onLoad={() => handleImageLoad('signature')}
-                    onError={(e) => handleImageError(e, 'signature', '/default-image.png')}
-                  />
+              {student_details?.signature_url && (
+                <div className="flex justify-end mt-8">
+                  <div className="text-center">
+                    {imageLoading.signature && (
+                      <div className="w-32 h-16 bg-gray-100 animate-pulse rounded-xl flex items-center justify-center">
+                        <span className="text-gray-400 text-sm">Loading...</span>
+                      </div>
+                    )}
+                    <img
+                      src={student_details.signature_url}
+                      alt="Signature"
+                      className={`border border-gray-300 rounded-lg max-w-32 max-h-16 print-signature ${imageLoading.signature ? 'hidden' : ''}`}
+                      onLoad={() => handleImageLoad('signature')}
+                      onError={(e) => handleImageError(e, 'signature', '/default-image.png')}
+                    />
+                    <p className="text-xs text-gray-500 mt-2">Applicant's Signature</p>
+                  </div>
                 </div>
-              </div>
-            )}
-            {student_details?.sslc_marksheet_proxy_url && (
-              <div>
-                <span className="field-label">SSLC Marksheet:</span>
-                <div className="field-value">
-                  <button
-                    onClick={() => openModal(student_details.sslc_marksheet_proxy_url, 'pdf', 'SSLC Marksheet', student_details.sslc_marksheet_url)}
-                    className="text-blue-600 underline text-lg hover:text-blue-800 transition-colors duration-300 document-link"
-                  >
-                    View SSLC Marksheet
-                  </button>
-                  <span className="document-attached"></span>
-                </div>
-              </div>
-            )}
-            {student_details?.hsc_marksheet_proxy_url && (
-              <div>
-                <span className="field-label">HSC Marksheet:</span>
-                <div className="field-value">
-                  <button
-                    onClick={() => openModal(student_details.hsc_marksheet_proxy_url, 'pdf', 'HSC Marksheet', student_details.hsc_marksheet_url)}
-                    className="text-blue-600 underline text-lg hover:text-blue-800 transition-colors duration-300 document-link"
-                  >
-                    View HSC Marksheet
-                  </button>
-                  <span className="document-attached"></span>
-                </div>
-              </div>
-            )}
-            {student_details?.ug_marksheet_proxy_url && (
-              <div>
-                <span className="field-label">UG Marksheet:</span>
-                <div className="field-value">
-                  <button
-                    onClick={() => openModal(student_details.ug_marksheet_proxy_url, 'pdf', 'UG Marksheet', student_details.ug_marksheet_url)}
-                    className="text-blue-600 underline text-lg hover:text-blue-800 transition-colors duration-300 document-link"
-                  >
-                    View UG Marksheet
-                  </button>
-                  <span className="document-attached"></span>
-                </div>
-              </div>
-            )}
-            {student_details?.semester_marksheet_proxy_url && (
-              <div>
-                <span className="field-label">Semester Marksheet:</span>
-                <div className="field-value">
-                  <button
-                    onClick={() => openModal(student_details.semester_marksheet_proxy_url, 'pdf', 'Semester Marksheet', student_details.semester_marksheet_url)}
-                    className="text-blue-600 underline text-lg hover:text-blue-800 transition-colors duration-300 document-link"
-                  >
-                    View Semester Marksheet
-                  </button>
-                  <span className="document-attached"></span>
-                </div>
-              </div>
-            )}
-            {student_details?.community_certificate_proxy_url && (
-              <div>
-                <span className="field-label">Community Certificate:</span>
-                <div className="field-value">
-                  <button
-                    onClick={() => openModal(student_details.community_certificate_proxy_url, 'pdf', 'Community Certificate', student_details.community_certificate_url)}
-                    className="text-blue-600 underline text-lg hover:text-blue-800 transition-colors duration-300 document-link"
-                  >
-                    View Community Certificate
-                  </button>
-                  <span className="document-attached"></span>
-                </div>
-              </div>
-            )}
-            {student_details?.aadhaar_proxy_url && (
-              <div>
-                <span className="field-label">Aadhaar Card:</span>
-                <div className="field-value">
-                  <button
-                    onClick={() => openModal(student_details.aadhaar_proxy_url, 'pdf', 'Aadhaar Card', student_details.aadhaar_url)}
-                    className="text-blue-600 underline text-lg hover:text-blue-800 transition-colors duration-300 document-link"
-                  >
-                    View Aadhaar Card
-                  </button>
-                  <span className="document-attached"></span>
-                </div>
-              </div>
-            )}
-            {student_details?.transfer_certificate_proxy_url && (
-              <div>
-                <span className="field-label">Transfer Certificate:</span>
-                <div className="field-value">
-                  <button
-                    onClick={() => openModal(student_details.transfer_certificate_proxy_url, 'pdf', 'Transfer Certificate', student_details.transfer_certificate_url)}
-                    className="text-blue-600 underline text-lg hover:text-blue-800 transition-colors duration-300 document-link"
-                  >
-                    View Transfer Certificate
-                  </button>
-                  <span className="document-attached"></span>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
 
-        <div className="mb-12 card section-container bg-gradient-to-br from-teal-50/70 to-teal-100/70 p-8 sm:p-10">
-          <div className="flex items-center space-x-4 mb-6">
-            <HomeIcon className="h-7 w-7 text-teal-600 section-icon no-print" />
-            <h3 className="section-title address-title">Address Details</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <div>
-              <span className="field-label">Communication Town:</span>
-              <span className="field-value">{application?.comm_town || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Communication District:</span>
-              <span className="field-value">{application?.comm_district || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Communication State:</span>
-              <span className="field-value">{application?.comm_state || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Communication Country:</span>
-              <span className="field-value">{application?.comm_country || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Communication Pincode:</span>
-              <span className="field-value">{application?.comm_pincode || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Communication Area:</span>
-              <span className="field-value">{application?.comm_area || 'N/A'}</span>
-            </div>
-            {application?.same_as_comm ? (
-              <div className="col-span-2">
-                <span className="field-label">Permanent Address:</span>
-                <span className="field-value">Same as Communication Address</span>
-              </div>
-            ) : (
-              <>
-                <div>
-                  <span className="field-label">Permanent Town:</span>
-                  <span className="field-value">{application?.perm_town || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="field-label">Permanent District:</span>
-                  <span className="field-value">{application?.perm_district || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="field-label">Permanent State:</span>
-                  <span className="field-value">{application?.perm_state || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="field-label">Permanent Country:</span>
-                  <span className="field-value">{application?.perm_country || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="field-label">Permanent Pincode:</span>
-                  <span className="field-value">{application?.perm_pincode || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="field-label">Permanent Area:</span>
-                  <span className="field-value">{application?.perm_area || 'N/A'}</span>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="mb-12 card section-container bg-gradient-to-br from-yellow-50/70 to-yellow-100/70 p-8 sm:p-10">
-          <div className="flex items-center space-x-4 mb-6">
-            <InformationCircleIcon className="h-7 w-7 text-yellow-600 section-icon no-print" />
-            <h3 className="section-title additional-title">Additional Information</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <div>
-              <span className="field-label">Differently Abled:</span>
-              <span className="field-value">{application?.differently_abled || 'N/A'}</span>
-            </div>
-            {application?.differently_abled === 'Yes' && (
-              <div>
-                <span className="field-label">Disability Type:</span>
-                <span className="field-value">{application?.disability_type || 'N/A'}</span>
-              </div>
-            )}
-            <div>
-              <span className="field-label">Blood Group:</span>
-              <span className="field-value">{application?.blood_group || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="field-label">Access to Internet:</span>
-              <span className="field-value">{application?.access_internet || 'N/A'}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-12 card section-container bg-gradient-to-br from-indigo-50/70 to-indigo-100/70 p-8 sm:p-10 no-print">
-          <div className="flex items-center space-x-4 mb-6">
-            <h3 className="section-title declaration-title">Declaration</h3>
-          </div>
-          <div className="p-3">
-            <p className="text-base text-gray-600 leading-5 mb-6">
-              By submitting this application, you confirm that all provided information is accurate and complete. Any false or misleading information may result in the rejection of your application or cancellation of admission. Please review all details carefully before proceeding.
-            </p>
-            <div className="space-y-4">
-              <div className="flex items-start space-x-3">
-                <input
-                  type="checkbox"
-                  checked={declarations.infoCorrect}
-                  className="custom-checkbox"
-                  id="infoCorrect"
-                  onChange={() => handleDeclarationChange('infoCorrect')}
-                />
-                <label htmlFor="infoCorrect" className="text-sm text-gray-600 leading-7">
-                  I confirm that all information provided in this application is true and correct to the best of my knowledge.
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-12 flex flex-wrap justify-between gap-6 no-print">
-          <button
-            onClick={() => navigate('/student/application/page4')}
-            className="btn-back flex items-center space-x-2"
-            title="Go back to previous page"
-          >
-            <ArrowLeftIcon className="h-6 w-6" />
-            <span>Back</span>
-          </button>
-          <div className="flex flex-wrap gap-6">
+          <div className="mt-12 flex flex-wrap justify-between gap-6 no-print">
             <button
-              onClick={() => navigate('/student/application/page1')}
-              className="btn-edit flex items-center space-x-2"
-              title="Edit application details"
+              onClick={() => navigate('/student/application/page4')}
+              className="btn-back flex items-center space-x-2"
+              title="Go back to previous page"
             >
-              <PencilIcon className="h-6 w-6" />
-              <span>Edit</span>
+              <ArrowLeftIcon className="h-6 w-6" />
+              <span>Back</span>
             </button>
-            <button
-              onClick={handlePrintClick}
-              className="btn-print flex items-center space-x-2"
-              title="Print application form"
-            >
-              <PrinterIcon className="h-6 w-6" />
-              <span>Print</span>
-            </button>
-            <button
-              onClick={handleProceedToPayment}
-              disabled={!allDeclarationsChecked}
-              className={`flex items-center space-x-2 transition-all duration-300 ${allDeclarationsChecked ? 'btn-proceed' : 'btn-disabled'}`}
-              title={allDeclarationsChecked ? 'Proceed to payment' : 'Please check all declarations'}
-            >
-              <CreditCardIcon className="h-6 w-6" />
-              <span>Proceed to Payment</span>
-            </button>
+            <div className="flex flex-wrap gap-6">
+              <button
+                onClick={() => navigate('/student/application/page1')}
+                className="btn-edit flex items-center space-x-2"
+                title="Edit application details"
+              >
+                <PencilIcon className="h-6 w-6" />
+                <span>Edit</span>
+              </button>
+              <button
+                onClick={handlePrintClick}
+                className="btn-print flex items-center space-x-2"
+                title="Print application form"
+              >
+                <PrinterIcon className="h-6 w-6" />
+                <span>Print</span>
+              </button>
+              <button
+                onClick={handleProceedToPayment}
+                disabled={!allDeclarationsChecked}
+                className={`flex items-center space-x-2 transition-all duration-300 ${allDeclarationsChecked ? 'btn-proceed' : 'btn-disabled'}`}
+                title={allDeclarationsChecked ? 'Proceed to payment' : 'Please check all declarations'}
+              >
+                <CreditCardIcon className="h-6 w-6" />
+                <span>Proceed to Payment</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Professional Print Layout */}
+        <div className="print-view-only hidden">
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10pt', marginBottom: '10px' }}>
+              <span>{new Date().toLocaleDateString()}, {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span>Application Form - {applicationId}</span>
+              <span style={{ fontWeight: 'bold' }}>PUCDOE</span>
+            </div>
+
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <img src="/Logo.png" alt="Periyar University" style={{ width: '80px', height: 'auto', marginBottom: '10px' }} />
+              <h1 className="header-title">Periyar University</h1>
+              <p className="header-sub">State University - NAAC 'A++' Grade - NIRF Rank 94</p>
+              <p className="header-sub">State Public University Rank 40 - SDG Institutions Rank Band: 11-50</p>
+              <p className="header-sub">Salem-636011, Tamilnadu, India.</p>
+
+              <h2 className="cdoe-title">CENTRE FOR DISTANCE AND ONLINE EDUCATION (CDOE)</h2>
+              <div className="odl-text">Open and Distance Learning</div>
+              <div style={{ borderBottom: '2px solid black', margin: '5px auto', width: '100%' }}></div>
+              <h3 className="form-title">Open and Distance Learning Programme (ODL) Admission for the Academic Year {application?.academic_year || '2025-2026'}</h3>
+            </div>
+
+            <table className="print-table">
+              <tbody>
+                <tr>
+                  <td className="field-label-col">Application No :</td>
+                  <td className="field-value-col">{applicationId}</td>
+                  <td rowSpan="4" className="photo-cell" style={{ width: '150px' }}>
+                    {student_details?.photo_url ? (
+                      <img src={student_details.photo_url} alt="Student" className="student-photo" />
+                    ) : (
+                      <div className="student-photo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Photo</div>
+                    )}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="field-label-col">Enrollment No :</td>
+                  <td className="field-value-col">N/A</td>
+                </tr>
+                <tr>
+                  <td className="field-label-col">Applied Date :</td>
+                  <td className="field-value-col">{new Date().toLocaleDateString()}</td>
+                </tr>
+                <tr>
+                  <td className="field-label-col">LSC :</td>
+                  <td className="field-value-col">CDOE-CENTRE FOR DISTANCE AND ONLINE EDUCATION</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <table className="print-table">
+              <colgroup>
+                <col className="sno-col" />
+                <col className="field-label-col" />
+                <col className="separator-col" />
+                <col className="field-value-col" />
+              </colgroup>
+              <tbody>
+                <tr>
+                  <td>1.</td>
+                  <td>Programme Applied</td>
+                  <td>:</td>
+                  <td>{application?.programme_applied}</td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td>Course</td>
+                  <td>:</td>
+                  <td>{application?.course}</td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td>Medium</td>
+                  <td>:</td>
+                  <td>{application?.medium}</td>
+                </tr>
+                <tr>
+                  <td>2.</td>
+                  <td>Name of the Applicant</td>
+                  <td>:</td>
+                  <td>{student?.name}</td>
+                </tr>
+                <tr>
+                  <td>3.</td>
+                  <td>Date of Birth</td>
+                  <td>:</td>
+                  <td>{application?.dob}</td>
+                </tr>
+                <tr>
+                  <td>4.</td>
+                  <td>(a) Name of the Father & Mother</td>
+                  <td>:</td>
+                  <td>{application?.father_name} & {application?.mother_name}</td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td>(b) Name of the Guardian</td>
+                  <td>:</td>
+                  <td>{application?.guardian_name}</td>
+                </tr>
+                <tr>
+                  <td>5.</td>
+                  <td>Father's & Mother's Occupation</td>
+                  <td>:</td>
+                  <td>{application?.father_occupation} &  {application?.mother_occupation}</td>
+                </tr>
+                <tr>
+                  <td>6.</td>
+                  <td>Gender</td>
+                  <td>:</td>
+                  <td>{application?.gender}</td>
+                </tr>
+                <tr>
+                  <td>7.</td>
+                  <td>Mother Tongue</td>
+                  <td>:</td>
+                  <td>{application?.mother_tongue}</td>
+                </tr>
+                <tr>
+                  <td>8.</td>
+                  <td>Nationality</td>
+                  <td>:</td>
+                  <td>{application?.nationality}</td>
+                </tr>
+                <tr>
+                  <td>9.</td>
+                  <td>Religion</td>
+                  <td>:</td>
+                  <td>{application?.religion}</td>
+                </tr>
+                <tr>
+                  <td>10.</td>
+                  <td>Community</td>
+                  <td>:</td>
+                  <td>{application?.community}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div className="section-header-box" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>11. Communication Address</span>
+              <span>Permanent Address</span>
+            </div>
+
+            <table className="print-table" style={{ marginTop: 0 }}>
+              <tbody>
+                <tr>
+                  <td style={{ width: '50%', height: '80px', verticalAlign: 'top' }}>
+                    {application?.comm_town}, {application?.comm_district}, <br />
+                    {application?.comm_state}, {application?.comm_country} - {application?.comm_pincode}<br />
+                    Area: {application?.comm_area}
+                  </td>
+                  <td style={{ width: '50%', height: '80px', verticalAlign: 'top' }}>
+                    {application?.perm_town}, {application?.perm_district}, <br />
+                    {application?.perm_state}, {application?.perm_country} - {application?.perm_pincode}<br />
+                    Area: {application?.perm_area}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <table className="print-table">
+              <colgroup>
+                <col className="sno-col" />
+                <col className="field-label-col" />
+                <col className="separator-col" />
+                <col className="field-value-col" />
+              </colgroup>
+              <tbody>
+                <tr>
+                  <td>12.</td>
+                  <td>Mobile No. / Telephone No.</td>
+                  <td>:</td>
+                  <td>{student?.phone}</td>
+                </tr>
+                <tr>
+                  <td>13.</td>
+                  <td>E-mail ID</td>
+                  <td>:</td>
+                  <td>{student?.email}</td>
+                </tr>
+                <tr>
+                  <td>14.</td>
+                  <td>(a)AADHAAR No</td>
+                  <td>:</td>
+                  <td>{application?.aadhaar_no}</td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td>(b)ABC ID</td>
+                  <td>:</td>
+                  <td>{application?.abc_id}</td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td>(c)DEB ID</td>
+                  <td>:</td>
+                  <td>{application?.deb_id}</td>
+                </tr>
+                <tr>
+                  <td>15.</td>
+                  <td>Differently Abled</td>
+                  <td>:</td>
+                  <td>{application?.differently_abled}</td>
+                </tr>
+                <tr>
+                  <td>16.</td>
+                  <td>Blood Group</td>
+                  <td>:</td>
+                  <td>{application?.blood_group}</td>
+                </tr>
+                <tr>
+                  <td>17.</td>
+                  <td>Access to Internet</td>
+                  <td>:</td>
+                  <td>{application?.access_internet}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div className="section-header-box">
+              18. Education Qualification
+            </div>
+            <table className="print-table" style={{ marginTop: 0 }}>
+              <thead>
+                <tr>
+                  <th>Course</th>
+                  <th>Institution</th>
+                  <th>Board</th>
+                  <th>Subject Studied</th>
+                  <th>Register No</th>
+                  <th>Percent age</th>
+                  <th>Month of Passing</th>
+                  <th>Year of Passing</th>
+                  <th>Mode of Study</th>
+                  <th>Document</th>
+                </tr>
+              </thead>
+              <tbody>
+                {student_details?.qualifications?.length > 0 ? (
+                  student_details.qualifications.map((q, i) => (
+                    <tr key={i}>
+                      <td>{q.course}</td>
+                      <td>{q.institute_name}</td>
+                      <td>{q.board}</td>
+                      <td>{q.subject_studied}</td>
+                      <td>{q.reg_no}</td>
+                      <td>{q.percentage}</td>
+                      <td>{q.month_year?.split('/')[0]}</td>
+                      <td>{q.month_year?.split('/')[1]}</td>
+                      <td>{q.mode_of_study}</td>
+                      <td>-</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr><td colSpan="10" style={{ textAlign: 'center' }}>No qualifications found</td></tr>
+                )}
+              </tbody>
+            </table>
+
+            <div className="section-header-box">
+              19. Working Experience
+            </div>
+            <table className="print-table" style={{ marginTop: 0 }}>
+              <thead>
+                <tr>
+                  <th>Current Designation</th>
+                  <th>Current Working Institution</th>
+                  <th>Working Experience in Years</th>
+                  <th>Annual Income in Rs</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style={{ minHeight: '30px' }}>{student_details?.current_designation}</td>
+                  <td>{student_details?.current_institute}</td>
+                  <td>{student_details?.years_experience}</td>
+                  <td>{student_details?.annual_income}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div style={{ fontWeight: 'bold', textDecoration: 'underline', fontSize: '14pt', textAlign: 'center', margin: '20px 0 10px 0' }}>
+              Payment Status
+            </div>
+            <table className="print-table">
+              <tbody>
+                <tr>
+                  <td style={{ fontWeight: 'bold' }}>Order ID</td>
+                  <td>PUCDOE{Date.now()}</td>
+                  <td style={{ fontWeight: 'bold' }}>Amount</td>
+                  <td>Γé╣ 236.00</td>
+                  <td style={{ fontWeight: 'bold' }}>Status</td>
+                  <td className="status-success">TXN_SUCCESS</td>
+                </tr>
+                <tr>
+                  <td style={{ fontWeight: 'bold' }}>Bank Name</td>
+                  <td></td>
+                  <td style={{ fontWeight: 'bold' }}>Payment Mode</td>
+                  <td>UPI</td>
+                  <td style={{ fontWeight: 'bold' }}>Transaction Date & Time</td>
+                  <td>
+                    {new Date().toLocaleDateString()}, {new Date().toLocaleTimeString()}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div className="signature-section">
+              <div className="signature-box">
+                {student_details?.signature_url && (
+                  <img src={student_details.signature_url} alt="Signature" className="signature-img" />
+                )}
+                <div className="signature-line">
+                  Student Signature
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1677,7 +1944,7 @@ const Preview = () => {
         <div className="modal-overlay no-print">
           <div className={`modal-content ${modalType === 'image' && (modalContent.title === 'Photo' || modalContent.title === 'Signature') ? 'modal-large' : ''}`}>
             <button className="modal-close" onClick={closeModal}>
-              ✕
+              Γ£ò
             </button>
             <h3 className="modal-title">{modalContent.title}</h3>
             <div className="modal-body">

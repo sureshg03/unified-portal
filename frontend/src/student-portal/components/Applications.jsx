@@ -312,3 +312,6 @@ const Applications = ({ handleOpenApplication }) => {
 };
 
 export default Applications;
+
+
+

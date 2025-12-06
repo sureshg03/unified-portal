@@ -67,8 +67,8 @@ const ApplicationDownloadDashboard = () => {
 
       if (response.data.status === 'success') {
         toast.dismiss(loadingToast);
-        toast.success('Print preview opened!');
-        generateProfessionalApplicationPDF(response.data.data, 'preview');
+        toast.success('Opening print preview...');
+        generateProfessionalApplicationPDF(response.data.data, 'print');
       }
     } catch (error) {
       toast.dismiss();
@@ -85,7 +85,7 @@ const ApplicationDownloadDashboard = () => {
         return;
       }
 
-      const loadingToast = toast.loading('Generating PDF...');
+      const loadingToast = toast.loading('Downloading application form...');
 
       const response = await axios.get(
         'http://localhost:8000/api/download-application/',
@@ -318,7 +318,7 @@ const ApplicationDownloadDashboard = () => {
                   animate={{ x: [0, 5, 0] }}
                   transition={{ repeat: Infinity, duration: 1.5 }}
                 >
-                  →
+                  ΓåÆ
                 </motion.div>
               </div>
             ) : (
@@ -357,7 +357,7 @@ const ApplicationDownloadDashboard = () => {
                   animate={{ x: [0, 5, 0] }}
                   transition={{ repeat: Infinity, duration: 1.5 }}
                 >
-                  →
+                  ΓåÆ
                 </motion.div>
               </div>
             ) : (
@@ -396,7 +396,7 @@ const ApplicationDownloadDashboard = () => {
                   animate={{ x: [0, 5, 0] }}
                   transition={{ repeat: Infinity, duration: 1.5 }}
                 >
-                  →
+                  ΓåÆ
                 </motion.div>
               </div>
             ) : (

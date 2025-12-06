@@ -182,10 +182,10 @@ const ApplicationClosed = () => {
 
                 <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                   <p className="text-sm text-blue-900 font-medium">
-                    📅 Academic Year: <span className="font-bold">{applicationInfo.admission_year}</span>
+                    ≡ƒôà Academic Year: <span className="font-bold">{applicationInfo.admission_year}</span>
                   </p>
                   <p className="text-sm text-blue-900 font-medium mt-1">
-                    📝 Application Code: <span className="font-mono font-bold">{applicationInfo.admission_code}</span>
+                    ≡ƒô¥ Application Code: <span className="font-mono font-bold">{applicationInfo.admission_code}</span>
                   </p>
                 </div>
               </div>

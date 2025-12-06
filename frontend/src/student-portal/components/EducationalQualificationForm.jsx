@@ -127,3 +127,6 @@ const EducationalQualificationForm = ({ index, qualification, onChange, onRemove
 };
 
 export default EducationalQualificationForm;
+
+
+

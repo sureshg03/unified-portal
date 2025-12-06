@@ -721,7 +721,7 @@ const SignupForm = () => {
                   className="absolute inset-0 bg-purple-400/30"
                   initial={{ x: '-100%' }}
                   whileHover={{ x: '100%' }}
-                  transition={{ duration: 0.6, ease: 'linear' }}
+                  transition={{ duration: 0.6, ease: 'easeOut' }}
                 />
               </motion.button>
               <motion.button
@@ -734,7 +734,7 @@ const SignupForm = () => {
                   className="absolute inset-0 bg-purple-400/30"
                   initial={{ x: '-100%' }}
                   whileHover={{ x: '100%' }}
-                  transition={{ duration: 0.6, ease: 'linear' }}
+                  transition={{ duration: 0.6, ease: 'easeOut' }}
                 />
               </motion.button>
             </motion.div>
@@ -805,7 +805,7 @@ const SignupForm = () => {
                 </div>
                 <div className="mt-2 pt-2 border-t border-purple-200">
                   <p className="text-xs text-center text-gray-600 font-nunito">
-                    🎓 Your application will be processed through <span className="font-bold text-purple-700">{lscInfo.name}</span>
+                    ≡ƒÄô Your application will be processed through <span className="font-bold text-purple-700">{lscInfo.name}</span>
                   </p>
                 </div>
               </motion.div>

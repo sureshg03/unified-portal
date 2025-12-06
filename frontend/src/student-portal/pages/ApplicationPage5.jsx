@@ -42,7 +42,7 @@ const PaymentModal = ({ status, amount, onClose }) => {
         <div className="flex flex-col items-center space-y-4">
           {icons[status]}
           <h3 className="text-2xl font-bold text-gray-800">{messages[status]}</h3>
-          <p className="text-lg font-semibold text-gray-600">Amount: ₹{amount.toFixed(2)}</p>
+          <p className="text-lg font-semibold text-gray-600">Amount: Γé╣{amount.toFixed(2)}</p>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -65,7 +65,7 @@ const PaymentPage = () => {
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [paymentDetails, setPaymentDetails] = useState({
-    amount: 23400, // ₹234 in paise
+    amount: 23400, // Γé╣234 in paise
     currency: 'INR',
     order_id: null,
     application_id: applicationId || null,
@@ -531,7 +531,7 @@ const PaymentPage = () => {
             Complete Your Application Payment
           </h2>
           <p className="text-gray-600 text-lg text-center mb-8 font-medium">
-            Securely pay the application fee of <span className="font-bold text-indigo-700">₹234.00</span> to finalize your submission.
+            Securely pay the application fee of <span className="font-bold text-indigo-700">Γé╣234.00</span> to finalize your submission.
           </p>
 
           <motion.div
@@ -567,7 +567,7 @@ const PaymentPage = () => {
                       animate={{ scale: [1, 1.05, 1] }}
                       transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
                     >
-                      ₹234.00
+                      Γé╣234.00
                     </motion.span>
                     <p className="text-sm text-white/90 mt-1 font-semibold">Application Fee</p>
                   </div>
@@ -938,7 +938,7 @@ const PaymentPage = () => {
                 </tr>
                 <tr>
                   <th>Amount Paid</th>
-                  <td><strong>₹{(paymentDetails.amount / 100).toFixed(2)}</strong></td>
+                  <td><strong>Γé╣{(paymentDetails.amount / 100).toFixed(2)}</strong></td>
                 </tr>
                 <tr>
                   <th>Payment Status</th>
@@ -954,8 +954,8 @@ const PaymentPage = () => {
 
           <div className="notice-box page-break-avoid">
             <strong>Declaration:</strong>
-            <p>• I confirm that all information provided in this application is true and correct to the best of my knowledge.</p>
-            <p>• Any false or misleading information may result in the rejection of my application or cancellation of admission.</p>
+            <p>ΓÇó I confirm that all information provided in this application is true and correct to the best of my knowledge.</p>
+            <p>ΓÇó Any false or misleading information may result in the rejection of my application or cancellation of admission.</p>
           </div>
 
           <div className="receipt-footer page-break-avoid">

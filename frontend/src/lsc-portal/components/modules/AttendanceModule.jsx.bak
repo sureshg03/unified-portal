@@ -1,0 +1,266 @@
+import { useState } from 'react';
+import { Search, Calendar, Users, Download, Eye, Edit } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+
+export const AttendanceModule = () => {
+  const [selectedMode, setSelectedMode] = useState('');
+  const [selectedProgram, setSelectedProgram] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const mockAttendanceData = [
+    {
+      id: 1,
+      applicationNo: 'APP2024001',
+      name: 'Rajesh Kumar',
+      program: 'MBA',
+      community: 'OBC',
+      payment: 'Paid',
+      attendance: '85%',
+      status: 'Active'
+    },
+    {
+      id: 2,
+      applicationNo: 'APP2024002',
+      name: 'Priya Sharma',
+      program: 'MCA',
+      community: 'General',
+      payment: 'Paid',
+      attendance: '92%',
+      status: 'Active'
+    },
+    {
+      id: 3,
+      applicationNo: 'APP2024003',
+      name: 'Amit Singh',
+      program: 'M.Com',
+      community: 'SC',
+      payment: 'Pending',
+      attendance: '78%',
+      status: 'Inactive'
+    }
+  ];
+
+  const getAttendanceColor = (attendance) => {
+    const percent = parseInt(attendance);
+    if (percent >= 90) return 'text-primary';
+    if (percent >= 75) return 'text-education-orange';
+    return 'text-destructive';
+  };
+
+  const getStatusColor = (status) => {
+    return status === 'Active' 
+      ? 'bg-primary text-primary-foreground' 
+      : 'bg-muted text-muted-foreground';
+  };
+
+  return (
+    <>
+      <>
+        <>
+          <>
+            Attendance Management
+          <>
+          <>Monitor and manage student attendance records<>
+        <>
+        <>
+          <>
+            <>
+            <>Mark Attendance<>
+            <>Mark<>
+          <>
+          <>
+            <>
+            <>Export Report<>
+            <>Export<>
+          <>
+        <>
+      <>
+
+      {/* Stats Cards */}
+      <>
+        <>
+          <>
+            <>
+              <>
+              Total Students
+            <>
+          <>
+          <>
+            <>156<>
+            <>Enrolled students<>
+          <>
+        <>
+
+        <>
+          <>
+            <>Present Today<>
+          <>
+          <>
+            <>142<>
+            <>91% attendance<>
+          <>
+        <>
+
+        <>
+          <>
+            <>Absent Today<>
+          <>
+          <>
+            <>14<>
+            <>9% absent<>
+          <>
+        <>
+
+        <>
+          <>
+            <>Avg Attendance<>
+          <>
+          <>
+            <>87%<>
+            <>This month<>
+          <>
+        <>
+      <>
+
+      {/* Filter Card */}
+      <>
+        <>
+          <>
+            <>
+            Filter & Search
+          <>
+        <>
+        <>
+          <>
+            <>
+              <>Mode of Study<>
+              <>
+                <>
+                  <>
+                <>
+                <>
+                  <>Open Distance Learning<>
+                  <>Regular<>
+                  <>Online<>
+                <>
+              <>
+            <>
+
+            <>
+              <>Programme Applied<>
+              <>
+                <>
+                  <>
+                <>
+                <>
+                  <>MBA<>
+                  <>MCA<>
+                  <>M.Com<>
+                  <>MA<>
+                <>
+              <>
+            <>
+
+            <>
+              <>Search<>
+              <>
+                <>
+                <> setSearchTerm(e.target.value)}
+                  className="pl-10 bg-input border-border h-10 sm-11 text-sm"
+                />
+              <>
+            <>
+          <>
+
+          <>
+            <>
+              <>
+              Search
+            <>
+          <>
+        <>
+      <>
+
+      {/* Attendance Table */}
+      <>
+        <>
+          <>Student Attendance Records<>
+        <>
+        <>
+          <>
+            <>
+              <>
+                <>
+                  <>S.No<>
+                  <>Application No<>
+                  <>Name<>
+                  <>Programme<>
+                  <>Community<>
+                  <>Payment<>
+                  <>Attendance<>
+                  <>Status<>
+                  <>Actions<>
+                <>
+              <>
+              <>
+                {mockAttendanceData.map((student, index) => (
+                  <>
+                    <>{index + 1}<>
+                    <>{student.applicationNo}<>
+                    <>{student.name}<>
+                    <>{student.program}<>
+                    <>{student.community}<>
+                    <>
+                      <>
+                        {student.payment}
+                      <>
+                    <>
+                    <>
+                      {student.attendance}
+                    <>
+                    <>
+                      <>
+                        {student.status}
+                      <>
+                    <>
+                    <>
+                      <>
+                        <>
+                          <>
+                        <>
+                        <>
+                          <>
+                        <>
+                      <>
+                    <>
+                  <>
+                ))}
+              <>
+            <>
+          <>
+
+          <>
+            <>
+              Showing 1 to 3 of 3 entries
+            <>
+            <>
+              <>
+                Previous
+              <>
+              <>
+                Next
+              <>
+            <>
+          <>
+        <>
+      <>
+    <>
+  );
+};
+
+

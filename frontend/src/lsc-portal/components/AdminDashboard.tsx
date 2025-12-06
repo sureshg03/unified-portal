@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Routes, Route, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Settings, 
-  Users, 
-  UserPlus, 
-  FileText, 
-  BookOpen, 
-  Lock, 
+import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  Settings,
+  Users,
+  UserPlus,
+  FileText,
+  BookOpen,
+  Lock,
   LogOut,
   Menu,
   GraduationCap,
@@ -17,21 +17,24 @@ import {
   UserCog,
   User,
   Calendar,
-  Building2
+  Building2,
+  Plus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { clearAuthData, getUserInfo, getLSCCode, getLSCName } from '@/lib/auth';
-import { ChangePassword } from './modules/ChangePassword';
-import { SettingsModule } from './modules/SettingsModule';
-import { StudentAdmissionDetails } from './modules/StudentAdmissionDetails';
+import { AdmissionManagement } from './modules/AdmissionManagement';
+import { StudentList } from '../../components/modules/StudentList';
+import StudentDetail from '../../components/modules/StudentDetail';
 import { CounsellorInformation } from './modules/CounsellorInformation';
 import { AttendanceModule } from './modules/AttendanceModule';
 import { AssignmentMarks } from './modules/AssignmentMarks';
 import { ReportsModule } from './modules/ReportsModule';
-import { AdmissionManagement } from './modules/AdmissionManagement';
+import { ChangePassword } from './modules/ChangePassword';
+import { SettingsModule } from './modules/SettingsModule';
+import { AddCourses } from './modules/AddCourses';
 import { LSCManagement } from './modules/LSCManagement';
 import { NewStudentApplication } from '@/components/modules/NewStudentApplication';
 import {
@@ -45,7 +48,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type ActivePage = 'dashboard' | 'settings' | 'users' | 'lsc-management' | 'reports' | 'system' | 'password' | 'admissions' | 'applications' | 'materials' | 'counselor' | 'attendance' | 'assignments' | 'admission-management';
+type ActivePage = 'dashboard' | 'settings' | 'users' | 'lsc-management' | 'reports' | 'system' | 'password' | 'admissions' | 'applications' | 'materials' | 'counselor' | 'attendance' | 'assignments' | 'admission-management' | 'add-courses';
 
 export const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -63,15 +66,24 @@ export const AdminDashboard = () => {
   }, []);
 
   // Get active page from URL
-  const getActivePage = (): ActivePage => {
+  const getActivePage = () => {
     const pathParts = location.pathname.split('/').filter(Boolean);
-    const lastPart = pathParts[pathParts.length - 1];
     
     // If on /dashboard/admin, return 'dashboard'
-    if (lastPart === 'admin' || pathParts.length === 2) {
+    if (pathParts.length === 2 && pathParts[1] === 'dashboard') {
       return 'dashboard';
     }
-    
+
+    // Handle admissions sub-routes
+    if (pathParts.includes('admissions')) {
+      const admissionsIndex = pathParts.indexOf('admissions');
+      if (pathParts[admissionsIndex + 1] === 'verify') {
+        return 'admissions-verify';
+      }
+      return 'admissions';
+    }
+
+    const lastPart = pathParts[pathParts.length - 1];
     return lastPart as ActivePage;
   };
 
@@ -99,11 +111,12 @@ export const AdminDashboard = () => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, color: 'text-indigo-600', path: '/lsc/dashboard/admin' },
     { id: 'admission-management', label: 'Admission Management', icon: GraduationCap, color: 'text-purple-600', path: '/lsc/dashboard/admin/admission-management' },
+    { id: 'add-courses', label: 'Add Courses', icon: Plus, color: 'text-green-600', path: '/lsc/dashboard/admin/add-courses' },
+    { id: 'admissions', label: 'Student Admission Details', icon: Users, color: 'text-blue-600', path: '/lsc/dashboard/admin/admissions' },
     { id: 'applications', label: 'New Student Application', icon: UserPlus, color: 'text-orange-600', path: '/lsc/dashboard/admin/applications' },
     { id: 'lsc-management', label: 'LSC Management', icon: Building2, color: 'text-cyan-600', path: '/lsc/dashboard/admin/lsc-management' },
     { id: 'settings', label: 'Settings', icon: Settings, color: 'text-gray-600', path: '/lsc/dashboard/admin/settings' },
     { id: 'users', label: 'User Management', icon: Users, color: 'text-purple-600', path: '/lsc/dashboard/admin/users' },
-    { id: 'admissions', label: 'Student Admission Details', icon: Users, color: 'text-blue-600', path: '/lsc/dashboard/admin/admissions' },
     { id: 'reports', label: 'Reports & Analytics', icon: FileText, color: 'text-teal-600', path: '/lsc/dashboard/admin/reports' },
     { id: 'materials', label: 'Materials', icon: BookOpen, color: 'text-green-600', path: '/lsc/dashboard/admin/materials' },
     { id: 'counselor', label: 'Counselor Information', icon: User, color: 'text-pink-600', path: '/lsc/dashboard/admin/counselor' },
@@ -236,6 +249,94 @@ export const AdminDashboard = () => {
     </div>
   );
 
+  // Render content based on active page
+  const renderContent = () => {
+    switch (activePage) {
+      case 'dashboard':
+        return <DashboardHome />;
+      case 'admission-management':
+        return <AdmissionManagement />;
+      case 'add-courses':
+        return <AddCourses />;
+      case 'settings':
+        return <SettingsModule />;
+      case 'users':
+        return (
+          <div className="flex items-center justify-center h-96">
+            <Card className="border-0 shadow-lg max-w-md text-center">
+              <CardHeader>
+                <CardTitle className="text-xl">Coming Soon</CardTitle>
+                <CardDescription>User Management section is under development</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  This admin feature will be available in the next update.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      case 'admissions':
+        return <StudentList />;
+      case 'admissions-verify':
+        return <StudentDetail />;
+      case 'applications':
+        return (
+          <div className="w-full p-8 bg-white">
+            <h1 className="text-3xl font-bold text-red-600 mb-4">TEST - Applications Route Works!</h1>
+            <p className="text-gray-700 mb-4">If you see this, the route is working correctly.</p>
+            <NewStudentApplication />
+          </div>
+        );
+      case 'reports':
+        return <ReportsModule />;
+      case 'materials':
+        return (
+          <div className="flex items-center justify-center h-96">
+            <Card className="border-0 shadow-lg max-w-md text-center">
+              <CardHeader>
+                <CardTitle className="text-xl">Coming Soon</CardTitle>
+                <CardDescription>Materials section is under development</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  This admin feature will be available in the next update.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      case 'counselor':
+        return <CounsellorInformation />;
+      case 'attendance':
+        return <AttendanceModule />;
+      case 'assignments':
+        return <AssignmentMarks />;
+      case 'lsc-management':
+        return <LSCManagement />;
+      case 'system':
+        return (
+          <div className="flex items-center justify-center h-96">
+            <Card className="border-0 shadow-lg max-w-md text-center">
+              <CardHeader>
+                <CardTitle className="text-xl">Coming Soon</CardTitle>
+                <CardDescription>System Settings section is under development</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  This admin feature will be available in the next update.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      case 'password':
+        return <ChangePassword />;
+      default:
+        return <DashboardHome />;
+    }
+  };
+
   return (
     <div className="flex h-screen w-full bg-slate-50 overflow-hidden">
       {/* Animated Background Elements */}
@@ -246,7 +347,7 @@ export const AdminDashboard = () => {
       </div>
 
       {/* Sidebar */}
-      <aside 
+      <aside
         className={`${
           sidebarOpen ? 'w-72' : 'w-20'
         } transition-all duration-500 ease-in-out bg-white/80 backdrop-blur-2xl border-r border-purple-100/50 shadow-2xl flex flex-col relative z-10`}
@@ -277,14 +378,14 @@ export const AdminDashboard = () => {
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activePage === item.id;
-            
+
             return (
               <button
                 key={item.id}
                 onClick={() => navigate(item.path)}
                 className={`relative w-full flex items-center gap-3 p-3.5 rounded-xl text-left transition-all duration-300 group ${
-                  isActive 
-                    ? 'bg-purple-600 text-white shadow-2xl shadow-purple-500/50 scale-[1.02]' 
+                  isActive
+                    ? 'bg-purple-600 text-white shadow-2xl shadow-purple-500/50 scale-[1.02]'
                     : 'text-gray-700 hover:bg-purple-50 hover:scale-[1.02] hover:shadow-lg'
                 }`}
                 title={!sidebarOpen ? item.label : undefined}
@@ -343,7 +444,7 @@ export const AdminDashboard = () => {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               {/* Quick Actions */}
               <div className="hidden md:flex items-center gap-2">
@@ -352,7 +453,7 @@ export const AdminDashboard = () => {
                   Activity
                 </Button>
               </div>
-              
+
               {/* Admin Badge with Animation */}
               <div className="relative group">
                 <div className="absolute inset-0 bg-purple-600 rounded-xl blur opacity-50 group-hover:opacity-75 transition-opacity"></div>
@@ -369,70 +470,7 @@ export const AdminDashboard = () => {
         <main className="flex-1 overflow-y-auto p-6 custom-scrollbar">
           <div className="max-w-7xl mx-auto">
             <div className="animate-fadeIn">
-              <Routes>
-                <Route index element={<DashboardHome />} />
-                <Route path="admission-management" element={<AdmissionManagement />} />
-                <Route path="settings" element={<SettingsModule />} />
-                <Route path="users" element={
-                  <div className="flex items-center justify-center h-96">
-                    <Card className="border-0 shadow-lg max-w-md text-center">
-                      <CardHeader>
-                        <CardTitle className="text-xl">Coming Soon</CardTitle>
-                        <CardDescription>User Management section is under development</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground">
-                          This admin feature will be available in the next update.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                } />
-                <Route path="admissions" element={<StudentAdmissionDetails />} />
-                <Route path="applications" element={
-                  <div className="w-full p-8 bg-white">
-                    <h1 className="text-3xl font-bold text-red-600 mb-4">TEST - Applications Route Works!</h1>
-                    <p className="text-gray-700 mb-4">If you see this, the route is working correctly.</p>
-                    <NewStudentApplication />
-                  </div>
-                } />
-                <Route path="reports" element={<ReportsModule />} />
-                <Route path="materials" element={
-                  <div className="flex items-center justify-center h-96">
-                    <Card className="border-0 shadow-lg max-w-md text-center">
-                      <CardHeader>
-                        <CardTitle className="text-xl">Coming Soon</CardTitle>
-                        <CardDescription>Materials section is under development</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground">
-                          This admin feature will be available in the next update.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                } />
-                <Route path="counselor" element={<CounsellorInformation />} />
-                <Route path="attendance" element={<AttendanceModule />} />
-                <Route path="assignments" element={<AssignmentMarks />} />
-                <Route path="lsc-management" element={<LSCManagement />} />
-                <Route path="system" element={
-                  <div className="flex items-center justify-center h-96">
-                    <Card className="border-0 shadow-lg max-w-md text-center">
-                      <CardHeader>
-                        <CardTitle className="text-xl">Coming Soon</CardTitle>
-                        <CardDescription>System Settings section is under development</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground">
-                          This admin feature will be available in the next update.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                } />
-                <Route path="password" element={<ChangePassword />} />
-              </Routes>
+              {renderContent()}
             </div>
           </div>
         </main>
@@ -458,3 +496,4 @@ export const AdminDashboard = () => {
     </div>
   );
 };
+

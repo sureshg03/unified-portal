@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -85,19 +85,19 @@ export const NewStudentApplication = () => {
         setLoading(true);
       }
       setError(null);
-      
+
       console.log('Fetching application settings...');
-      
+
       // Fetch active application settings
       const response = await api.get('/application-settings/');
-      
+
       console.log('Application settings response:', response.data);
-      
+
       if (response.data && response.data.length > 0) {
         // Get the first active setting or the most recent one
         const activeSetting = response.data.find((s: ApplicationSettings) => s.is_active && (s.is_open || s.status === 'OPEN')) || response.data[0];
         console.log('Selected setting:', activeSetting);
-        
+
         // Detect status change and show notification
         const currentStatus = activeSetting.is_open || activeSetting.status === 'OPEN' ? 'OPEN' : 'CLOSED';
         if (isBackgroundRefresh && previousStatus !== null && previousStatus !== currentStatus) {
@@ -118,7 +118,7 @@ export const NewStudentApplication = () => {
             });
           }
         }
-        
+
         setPreviousStatus(currentStatus);
         setSettings(activeSetting);
         setLastRefresh(new Date());
@@ -149,7 +149,7 @@ export const NewStudentApplication = () => {
     const userInfoStr = localStorage.getItem('user_info');
     let lscCode = '';
     let lscName = '';
-    
+
     if (userInfoStr) {
       try {
         const userInfo = JSON.parse(userInfoStr);
@@ -159,7 +159,7 @@ export const NewStudentApplication = () => {
         console.error('Error parsing user info:', e);
       }
     }
-    
+
     return { lscCode, lscName };
   };
 
@@ -167,24 +167,24 @@ export const NewStudentApplication = () => {
   const generateReferralURL = () => {
     const { lscCode, lscName } = getLSCInfo();
     if (!lscCode) return `${window.location.origin}/student/signup`;
-    
+
     // Create URL with query parameters
     const params = new URLSearchParams();
     params.set('ref', lscCode);
     if (lscName) params.set('center', lscName);
-    
+
     return `${window.location.origin}/student/signup?${params.toString()}`;
   };
 
   const handleNavigateToStudentSignup = () => {
     const { lscCode, lscName } = getLSCInfo();
-    
+
     console.log('LSC Info:', { lscCode, lscName });
-    
+
     // Store in sessionStorage so signup page can access it
     sessionStorage.setItem('referral_lsc_code', lscCode);
     sessionStorage.setItem('referral_lsc_name', lscName);
-    
+
     // Open student signup with referral URL
     const referralURL = generateReferralURL();
     console.log('Opening referral URL:', referralURL);
@@ -266,7 +266,7 @@ export const NewStudentApplication = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Badge 
+              <Badge
                 variant="outline"
                 className={`${isOpen ? 'border-green-500 bg-green-50 text-green-700' : 'border-red-500 bg-red-50 text-red-700'} text-lg px-4 py-2 font-semibold shadow-md`}
               >
@@ -292,7 +292,7 @@ export const NewStudentApplication = () => {
         {/* Status Card */}
         <Card className={`border shadow-lg overflow-hidden ${isOpen ? 'bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-green-200' : 'bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100 border-gray-300'}`}>
           <div className={`h-2 ${isOpen ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500' : 'bg-gradient-to-r from-gray-400 via-slate-400 to-gray-500'}`} />
-          
+
           <CardHeader className="pb-4">
             <div className="flex items-start justify-between">
               <div>
@@ -301,7 +301,7 @@ export const NewStudentApplication = () => {
                   {settings.admission_year} Academic Year
                 </CardTitle>
                 <CardDescription className="text-base mt-2">
-                  Application Code: <span className="font-semibold">{settings.admission_code}</span> • Type: <span className="font-semibold">{settings.admission_type}</span>
+                  Application Code: <span className="font-semibold">{settings.admission_code}</span> — Type: <span className="font-semibold">{settings.admission_type}</span>
                 </CardDescription>
               </div>
             </div>
@@ -358,20 +358,20 @@ export const NewStudentApplication = () => {
                         <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
                           Click the button below to open the student signup portal. Guide prospective students through the application process and help them secure their admission for the {settings.admission_year} academic year.
                         </p>
-                        
-                        <Button 
+
+                        <Button
                           onClick={handleNavigateToStudentSignup}
                           size="lg"
                           className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 text-lg px-8 py-6 rounded-xl"
                         >
                           <ExternalLink className="w-5 h-5 mr-3" />
                           Open Student Signup Portal
-                         
+
                         </Button>
 
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-4 flex items-center gap-2">
                           <AlertCircle className="w-4 h-4" />
-                          Opens in a new tab • Students can create account and apply instantly
+                          Opens in a new tab — Students can create account and apply instantly
                         </p>
                       </div>
                     </div>
@@ -395,28 +395,28 @@ export const NewStudentApplication = () => {
                   <CardContent className="space-y-4">
                     <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 rounded-lg p-3 border-2 border-purple-300 dark:border-purple-700">
                       <p className="text-xs font-semibold text-purple-900 dark:text-purple-100 mb-2">
-                        ✨ Unique URL for Your Center
+                        ⭐ Unique URL for Your Center
                       </p>
                       <p className="text-xs text-purple-700 dark:text-purple-300">
                         Students who register through this link will be automatically linked to your LSC center.
                       </p>
                     </div>
-                    
+
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border-2 border-indigo-300 shadow-inner">
                       <code className="text-indigo-600 dark:text-indigo-400 font-mono text-sm break-all">
                         {generateReferralURL()}
                       </code>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-2">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => {
                           const url = generateReferralURL();
                           navigator.clipboard.writeText(url);
                           toast({
-                            title: "✅ Link Copied!",
+                            title: "📋 Link Copied!",
                             description: "Your unique referral link copied to clipboard",
                           });
                         }}
@@ -424,8 +424,8 @@ export const NewStudentApplication = () => {
                       >
                         📋 Copy Link
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => {
                           const url = generateReferralURL();
@@ -433,13 +433,13 @@ export const NewStudentApplication = () => {
                           const message = `🎓 Apply for admission at ${lscName}!\n\nRegister here: ${url}`;
                           navigator.clipboard.writeText(message);
                           toast({
-                            title: "✅ Message Copied!",
+                            title: "📋 Message Copied!",
                             description: "Share this message on WhatsApp, SMS, or social media",
                           });
                         }}
                         className="border-green-300 hover:bg-green-100"
                       >
-                        💬 Copy Message
+                        📱 Copy Message
                       </Button>
                     </div>
                   </CardContent>
@@ -465,7 +465,7 @@ export const NewStudentApplication = () => {
                       Application Period Ended
                     </h3>
                     <p className="text-gray-600 dark:text-gray-300 max-w-md mx-auto leading-relaxed">
-                      The admission application window for {settings.admission_year} ({settings.admission_code}) is currently closed. 
+                      The admission application window for {settings.admission_year} ({settings.admission_code}) is currently closed.
                       Please check back when applications reopen.
                     </p>
                   </CardContent>

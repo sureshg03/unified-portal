@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-zq1qj^vfyywm&wa+c-4zks4_7pe(6-4%u49+410@^&xgyj!_j2
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['testserver', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['testserver', 'localhost', '127.0.0.1', '192.168.210.240']
 
 
 # Application definition
@@ -83,46 +83,11 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# SQLite (commented out)
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
-# MySQL Database Configuration - Triple Database Setup
+# SINGLE CONSOLIDATED DATABASE - All tables in one database
 DATABASES = {
-    # Default database for Django admin, sessions, and LSC users
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'lsc_portal_db',  # LSC Portal database for LSC users
-        'USER': 'root',
-        'PASSWORD': '',  # Your MySQL password (empty = no password)
-        'HOST': 'localhost',
-        'PORT': '3306',
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-            'collation': 'utf8mb4_unicode_ci',
-        },
-    },
-    # Secondary database for admin authentication
-    'online_edu': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'online_edu',  # Online education database for admins
-        'USER': 'root',
-        'PASSWORD': '',  # Your MySQL password (empty = no password)
-        'HOST': 'localhost',
-        'PORT': '3306',
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-            'collation': 'utf8mb4_unicode_ci',
-        },
-    },
-    # Admin database for portal app (ApplicationSettings, etc)
-    'lsc_admindb': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'lsc_admindb',  # Admin database for portal models
+        'NAME': 'cdoe_db',  # Single consolidated database
         'USER': 'root',
         'PASSWORD': '',  # Your MySQL password (empty = no password)
         'HOST': 'localhost',
@@ -134,8 +99,8 @@ DATABASES = {
     }
 }
 
-# Database Router - Routes LSCAdmin to online_edu and LSCUser to default
-DATABASE_ROUTERS = ['backend.db_router.LSCDatabaseRouter']
+# Remove database router since we now use a single database
+# DATABASE_ROUTERS = ['backend.db_router.LSCDatabaseRouter']
 
 # Temporarily using SQLite to dump data
 # DATABASES = {
@@ -187,17 +152,17 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Custom authentication backends - Dual Database Authentication
-# Checks both online_edu.lsc_admins AND lsc_portal_db.lsc_auth_lscuser
+# Custom authentication backends - Unified Database Authentication
+# Checks both lsc_admins AND lsc_auth_lscuser in the unified database
 AUTHENTICATION_BACKENDS = [
-    'lsc_auth.auth_backend.DualDatabaseAuthBackend',  # Master: Checks both databases
+    'lsc_auth.auth_backend.UnifiedAuthBackend',  # Master: Checks unified database
     'django.contrib.auth.backends.ModelBackend',  # Fallback: Default Django auth
 ]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'lsc_auth.authentication.LSCJWTAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
+        'api.authentication.CustomTokenAuthentication',  # Custom auth to handle duplicates
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ],
@@ -245,6 +210,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8080",
     "http://localhost:8082",  # Current Vite port
     "http://127.0.0.1:8082",
+    "http://192.168.210.240:8080",
     # Add production URL when deployed
 ]
 
@@ -273,6 +239,9 @@ CORS_ALLOW_HEADERS = [
 import os
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Frontend URL for document resubmission links
+FRONTEND_URL = 'http://localhost:8080'
 
 # Email Configuration (Student Admission Portal)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
