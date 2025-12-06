@@ -40,17 +40,25 @@ const Preview = () => {
       if (!token) throw new Error('Authentication token not found. Please log in again.');
 
       const headers = { Authorization: `Token ${token}` };
-      const [previewResponse, autofillResponse, page3Response] = await Promise.all([
+      const [previewResponse, autofillResponse, page3Response, page1Response] = await Promise.all([
         axios.get('http://localhost:8000/api/application/preview/', { headers }),
         axios.get('http://localhost:8000/api/get-autofill-application/', { headers }),
         axios.get('http://localhost:8000/api/application/page3/', { headers }),
+        axios.get('http://localhost:8000/api/application/page1/', { headers }).catch(() => ({ data: {} })),
       ]);
+
+      // Debug logging
+      console.log('Preview Response:', previewResponse.data);
+      console.log('Autofill Response:', autofillResponse.data);
+      console.log('Page3 Response:', page3Response.data);
+      console.log('Page1 Response:', page1Response.data);
 
       const combinedData = {
         student: previewResponse.data.data?.student || autofillResponse.data.data || {},
         application: {
           ...previewResponse.data.data?.application,
           ...autofillResponse.data.data,
+          ...page1Response.data?.data,
         },
         student_details: {
           ...page3Response.data.data,
@@ -58,6 +66,25 @@ const Preview = () => {
           signature_url: getDirectUrl(page3Response.data.data?.signature_url, true),
         },
       };
+
+      console.log('Combined Application Data:', combinedData.application);
+      console.log('All Application Keys:', Object.keys(combinedData.application));
+      console.log('Student Data:', combinedData.student);
+      console.log('All Student Keys:', Object.keys(combinedData.student));
+      
+      // Check all possible course/medium field names
+      const possibleCourseFields = ['course', 'course_name', 'selected_course', 'programme', 'programme_name'];
+      const possibleMediumFields = ['medium', 'medium_of_instruction', 'study_medium'];
+      
+      console.log('=== COURSE FIELD SEARCH ===');
+      possibleCourseFields.forEach(field => {
+        console.log(`${field}:`, combinedData.application?.[field] || combinedData.student?.[field]);
+      });
+      
+      console.log('=== MEDIUM FIELD SEARCH ===');
+      possibleMediumFields.forEach(field => {
+        console.log(`${field}:`, combinedData.application?.[field] || combinedData.student?.[field]);
+      });
 
       if (combinedData.application.id) {
         setApplicationId(combinedData.application.id);
@@ -676,13 +703,13 @@ const Preview = () => {
               <td className="sno-col"></td>
               <td className="label-col">Course</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.course || application?.course_name || application?.selected_course || 'N/A'}</td>
+              <td className="value-col">{application?.course || application?.course_name || application?.selected_course || application?.programme || application?.programme_name || student?.course || student?.course_name || localStorage.getItem('selected_course') || 'N/A'}</td>
             </tr>
             <tr>
               <td className="sno-col"></td>
               <td className="label-col">Medium</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.medium || application?.medium_of_instruction || 'N/A'}</td>
+              <td className="value-col">{application?.medium || application?.medium_of_instruction || application?.study_medium || student?.medium || student?.medium_of_instruction || localStorage.getItem('selected_medium') || 'N/A'}</td>
             </tr>
             <tr>
               <td className="sno-col">2.</td>

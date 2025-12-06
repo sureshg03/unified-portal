@@ -35,7 +35,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
 
     @page {
       size: A4;
-      margin: 10mm 15mm;
+      margin: 8mm 12mm;
       /* Remove default headers and footers in print */
       @top-left { content: none; }
       @top-center { content: none; }
@@ -49,11 +49,11 @@ export const generateApplicationFormPDF = async (applicationData) => {
 
     body {
       font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-      font-size: 10pt;
-      line-height: 1.3;
+      font-size: 8.5pt;
+      line-height: 1.2;
       color: #000;
       background: #fff;
-      padding: 5mm;
+      padding: 3mm;
     }
 
     .container {
@@ -66,17 +66,17 @@ export const generateApplicationFormPDF = async (applicationData) => {
     /* Header Section - Left Aligned Professional Style */
     .header {
       border-bottom: 2px solid #8B008B;
-      padding-bottom: 12px;
-      margin-bottom: 15px;
+      padding-bottom: 6px;
+      margin-bottom: 8px;
     }
 
     .header-flex {
       display: flex;
       align-items: center;
-      gap: 15px;
+      gap: 10px;
       justify-content: flex-start;
-      padding-left: 30px;
-      min-height: 120px;
+      padding-left: 15px;
+      min-height: 75px;
     }
 
     .logo-section {
@@ -84,8 +84,8 @@ export const generateApplicationFormPDF = async (applicationData) => {
     }
 
     .university-logo {
-      width: 100px;
-      height: 100px;
+      width: 65px;
+      height: 65px;
       object-fit: contain;
       display: block;
     }
@@ -97,7 +97,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
 
     .university-name {
       font-size: 24pt;
-      font-weight: 800;
+      font-weight: 600;
       color: #8B008B;
       margin: 0 0 3px 0;
       line-height: 1.1;
@@ -107,14 +107,14 @@ export const generateApplicationFormPDF = async (applicationData) => {
       font-size: 8.5pt;
       color: #333;
       margin: 1px 0;
-      font-weight: 600;
+      font-weight: 500;
       line-height: 1.3;
     }
 
     .university-address {
       font-size: 8.5pt;
       color: #333;
-      font-weight: 600;
+      font-weight: 700;
       margin: 1px 0 8px 0;
       line-height: 1.3;
     }
@@ -122,7 +122,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
     .cdoe-title {
       color: #FF8C00;
       font-size: 14pt;
-      font-weight: 800;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin: 4px 0 2px 0;
@@ -138,13 +138,13 @@ export const generateApplicationFormPDF = async (applicationData) => {
     }
 
     .main-title {
-      font-size: 10pt;
+      font-size: 9pt;
       font-weight: 700;
       text-decoration: underline;
-      margin: 10px 0 12px 0;
+      margin: 5px 0 6px 0;
       color: #000;
       text-align: center;
-      line-height: 1.5;
+      line-height: 1.2;
       page-break-after: avoid;
     }
 
@@ -153,35 +153,35 @@ export const generateApplicationFormPDF = async (applicationData) => {
       width: 100%;
       border: 1px solid #000000;
       border-collapse: collapse;
-      margin-bottom: 15px;
+      margin-bottom: 8px;
       background: #ffffff;
       page-break-inside: avoid;
     }
 
     .info-cell {
-      padding: 12px 15px;
-      font-size: 10pt;
+      padding: 6px 10px;
+      font-size: 8.5pt;
       vertical-align: middle;
     }
 
     .info-label {
       font-weight: 700;
       color: #000000;
-      font-size: 10pt;
+      font-size: 8pt;
       display: inline-block;
-      min-width: 130px;
+      min-width: 100px;
     }
 
     .info-value {
       color: #000000;
       font-weight: 600;
-      font-size: 10pt;
-      margin-left: 10px;
+      font-size: 8pt;
+      margin-left: 8px;
     }
 
     .photo-cell {
-      width: 130px;
-      padding: 10px;
+      width: 100px;
+      padding: 6px;
       background: #ffffff;
     }
 
@@ -189,14 +189,14 @@ export const generateApplicationFormPDF = async (applicationData) => {
     .content-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 12px;
-      font-size: 9pt;
+      margin-bottom: 6px;
+      font-size: 8pt;
       border: 1px solid #000000;
     }
 
     .content-table td {
       border: 1px solid #000000;
-      padding: 6px 8px;
+      padding: 3px 5px;
       vertical-align: middle;
     }
 
@@ -205,24 +205,24 @@ export const generateApplicationFormPDF = async (applicationData) => {
     }
 
     .row-number {
-      width: 30px;
+      width: 25px;
       text-align: center;
       font-weight: 600;
       background: #e9ecef;
       color: #000000;
-      font-size: 9pt;
+      font-size: 7.5pt;
     }
 
     .field-label {
-      width: 200px;
+      width: 160px;
       font-weight: 500;
       color: #000000;
       background: #f8f9fa;
-      font-size: 9pt;
+      font-size: 7.5pt;
     }
 
     .field-separator {
-      width: 15px;
+      width: 10px;
       text-align: center;
       font-weight: 600;
       color: #000000;
@@ -232,7 +232,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
       color: #000000;
       font-weight: 600;
       background: #ffffff;
-      font-size: 9pt;
+      font-size: 7.5pt;
     }
 
     .view-link {
@@ -240,7 +240,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
       text-decoration: underline;
       cursor: pointer;
       font-weight: 600;
-      font-size: 9pt;
+      font-size: 7pt;
     }
 
     /* Section Headers */
@@ -248,13 +248,13 @@ export const generateApplicationFormPDF = async (applicationData) => {
       background: #e9ecef;
       color: #000000;
       border: 1px solid #000000;
-      padding: 10px 15px;
+      padding: 4px 8px;
       font-weight: 700;
-      margin-top: 15px;
-      margin-bottom: 10px;
-      font-size: 11pt;
+      margin-top: 6px;
+      margin-bottom: 4px;
+      font-size: 8.5pt;
       border-radius: 0px;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
       page-break-after: avoid;
       page-break-inside: avoid;
     }
@@ -281,15 +281,15 @@ export const generateApplicationFormPDF = async (applicationData) => {
     .education-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 15px;
-      font-size: 8pt;
+      margin-bottom: 6px;
+      font-size: 6.5pt;
       table-layout: fixed;
     }
 
     .education-table th,
     .education-table td {
       border: 1px solid #000000;
-      padding: 4px 3px;
+      padding: 2px 2px;
       text-align: center;
       vertical-align: middle;
       word-wrap: break-word;
@@ -300,15 +300,15 @@ export const generateApplicationFormPDF = async (applicationData) => {
       background: #e9ecef;
       color: #000000;
       font-weight: 700;
-      font-size: 8pt;
-      padding: 8px 4px;
+      font-size: 6.5pt;
+      padding: 3px 2px;
       border: 1px solid #000000;
     }
 
     .education-table td {
       color: #000000;
       font-weight: 500;
-      font-size: 8pt;
+      font-size: 6.5pt;
       background: #ffffff;
     }
 
@@ -348,9 +348,9 @@ export const generateApplicationFormPDF = async (applicationData) => {
 
     /* Payment Status Section */
     .payment-section {
-      border: 2px solid #000000;
-      padding: 12px;
-      margin: 15px 0;
+      border: 1px solid #000000;
+      padding: 6px;
+      margin: 6px 0;
       background: #ffffff;
       border-radius: 0px;
       page-break-inside: avoid;
@@ -358,30 +358,30 @@ export const generateApplicationFormPDF = async (applicationData) => {
 
     .payment-title {
       text-align: center;
-      font-size: 12pt;
+      font-size: 9pt;
       font-weight: 700;
-      margin-bottom: 12px;
+      margin-bottom: 5px;
       text-decoration: underline;
       color: #000000;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
     }
 
     .payment-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 10px;
+      margin-bottom: 4px;
       page-break-inside: avoid;
     }
 
     .payment-table td {
       border: 1px solid #000000;
-      padding: 8px;
-      font-size: 9pt;
+      padding: 3px 5px;
+      font-size: 7pt;
     }
 
     .payment-label {
       font-weight: 600;
-      width: 160px;
+      width: 120px;
       background: #e9ecef;
       color: #000000;
     }
@@ -398,44 +398,86 @@ export const generateApplicationFormPDF = async (applicationData) => {
       background: #d4edda;
     }
 
-    /* Signature Section */
-    .signature-section {
-      margin-top: 25px;
-      text-align: right;
-      padding-right: 50px;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
+    /* Declaration Section */
+    .declaration-section {
+      margin-top: 8px;
+      padding: 8px 12px;
+      border: 1px solid #000;
+      background: #ffffff;
       page-break-inside: avoid;
     }
 
+    .declaration-title {
+      font-size: 9pt;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 5px;
+      color: #000;
+      text-decoration: underline;
+    }
+
+    .declaration-text {
+      font-size: 7.5pt;
+      line-height: 1.3;
+      text-align: justify;
+      margin-bottom: 4px;
+      color: #000;
+    }
+
+    .declaration-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: 10px;
+      padding-top: 5px;
+    }
+
+    .place-date {
+      text-align: left;
+    }
+
+    .place-date p {
+      font-size: 7.5pt;
+      font-weight: 600;
+      color: #000;
+      margin-bottom: 5px;
+    }
+
+    /* Signature Section */
+    .signature-section {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
     .signature-image-container {
-      width: 200px;
-      height: 60px;
-      margin-bottom: 8px;
+      width: 150px;
+      height: 40px;
+      margin-bottom: 4px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-bottom: 2px solid #000;
+      border-bottom: 1px solid #000;
     }
 
     .signature-image-container img {
-      max-width: 180px;
-      max-height: 50px;
+      max-width: 140px;
+      max-height: 35px;
       object-fit: contain;
     }
 
     .signature-line {
-      border-top: 2px solid #000;
-      width: 200px;
-      margin: 40px 0 8px 0;
+      border-top: 1px solid #000;
+      width: 150px;
+      margin: 20px 0 4px 0;
     }
 
     .signature-label {
       font-weight: 600;
-      font-size: 9pt;
+      font-size: 7.5pt;
       text-align: center;
-      width: 200px;
+      width: 150px;
       color: #000000;
     }
 
@@ -1006,16 +1048,38 @@ export const generateApplicationFormPDF = async (applicationData) => {
       ` : ''}
     </div>
 
-    <!-- Signature Section -->
-    <div class="signature-section">
-      ${signatureUrl ? `
-        <div class="signature-image-container">
-          <img src="http://127.0.0.1:8000${signatureUrl}" 
-               alt="Applicant Signature"
-               onerror="this.onerror=null; this.style.display='none';">
+    <!-- Declaration Section -->
+    <div class="declaration-section">
+      <div class="declaration-title">DECLARATION</div>
+      
+      <p class="declaration-text">
+        I hereby declare that all the information provided in this application form is true and correct to the best of my knowledge and belief.
+        I understand that any false or misleading information may result in the rejection of my application or cancellation of my admission.
+        I have carefully reviewed all the details mentioned above and confirm their accuracy.
+      </p>
+      
+      <p class="declaration-text">
+        I agree to abide by all the rules and regulations of the Centre for Distance and Online Education (CDOE), Periyar University,
+        and understand that the university reserves the right to verify any information provided in this application.
+      </p>
+
+      <div class="declaration-footer">
+        <div class="place-date">
+          <p>Place: _________________</p>
+          <p>Date: _________________</p>
         </div>
-      ` : '<div class="signature-line"></div>'}
-      <div class="signature-label">Signature of the Applicant</div>
+
+        <div class="signature-section">
+          ${signatureUrl ? `
+            <div class="signature-image-container">
+              <img src="http://127.0.0.1:8000${signatureUrl}" 
+                   alt="Applicant Signature"
+                   onerror="this.onerror=null; this.style.display='none';">
+            </div>
+          ` : '<div class="signature-line"></div>'}
+          <div class="signature-label">Applicant's Signature</div>
+        </div>
+      </div>
     </div>
 
     <!-- Footer -->
