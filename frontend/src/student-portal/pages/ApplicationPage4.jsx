@@ -85,10 +85,17 @@ const ApplicationPage4 = () => {
     aadhar_card: null,
     transfer_certificate: null,
   });
-  const [uploadStatus, setUploadStatus] = useState({});
+  const [uploadStatus, setUploadStatus] = useState({
+    photo: false,
+    signature: false,
+    community_certificate: false,
+    aadhar_card: false,
+    transfer_certificate: false
+  });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingEmail, setIsLoadingEmail] = useState(true);
+  const [isLoadingDocs, setIsLoadingDocs] = useState(true);
   const [userEmail, setUserEmail] = useState('');
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [dragActive, setDragActive] = useState({
@@ -136,7 +143,7 @@ const ApplicationPage4 = () => {
 
   useEffect(() => {
     let mounted = true;
-    const fetchUserEmail = async () => {
+    const fetchUserDataAndDocuments = async () => {
       if (!token) {
         if (mounted) {
           setError('No authentication token found. Please log in again.');
@@ -148,15 +155,74 @@ const ApplicationPage4 = () => {
 
       setIsLoadingEmail(true);
       try {
-        const response = await axios.get(`${BASE_URL}/api/current-user-email/`, {
+        // Fetch user email
+        const emailResponse = await axios.get(`${BASE_URL}/api/current-user-email/`, {
           headers: { Authorization: `Token ${token}` },
         });
-        if (mounted && response.data?.status === 'success') {
-          setUserEmail(response.data.data?.email || '');
-          localStorage.setItem('userEmail', response.data.data?.email || '');
+        if (mounted && emailResponse.data?.status === 'success') {
+          setUserEmail(emailResponse.data.data?.email || '');
+          localStorage.setItem('userEmail', emailResponse.data.data?.email || '');
         } else {
-          throw new Error(response.data?.message || 'Failed to fetch user email');
+          throw new Error(emailResponse.data?.message || 'Failed to fetch user email');
         }
+
+        // Fetch existing documents from page3 API
+        setIsLoadingDocs(true);
+        console.log('🚀 Starting document fetch...');
+        try {
+          const docsResponse = await axios.get(`${BASE_URL}/api/application/page3/`, {
+            headers: { Authorization: `Token ${token}` },
+          });
+          
+          console.log('📨 API Response received:', docsResponse.data);
+          console.log('Status:', docsResponse.data?.status);
+          console.log('Has data?:', !!docsResponse.data?.data);
+          
+          if (docsResponse.data?.status === 'success' && docsResponse.data.data) {
+            const data = docsResponse.data.data;
+            
+            // Build URLs with BASE_URL prefix if needed
+            const buildUrl = (url) => {
+              if (!url) return null;
+              return url.startsWith('http') ? url : `${BASE_URL}${url}`;
+            };
+            
+            const loadedPreviews = {
+              photo: buildUrl(data.photo_url),
+              signature: buildUrl(data.signature_url),
+              community_certificate: buildUrl(data.community_certificate_url),
+              aadhar_card: buildUrl(data.aadhaar_url),
+              transfer_certificate: buildUrl(data.transfer_certificate_url)
+            };
+            
+            const loadedStatus = {
+              photo: data.photo_url ? 'success' : false,
+              signature: data.signature_url ? 'success' : false,
+              community_certificate: data.community_certificate_url ? 'success' : false,
+              aadhar_card: data.aadhaar_url ? 'success' : false,
+              transfer_certificate: data.transfer_certificate_url ? 'success' : false
+            };
+            
+            console.log('📄 Loaded documents:', loadedPreviews);
+            console.log('🔄 About to set previews state...');
+            
+            setPreviews(loadedPreviews);
+            setUploadStatus(loadedStatus);
+            
+            console.log('✅ State setters called');
+          } else {
+            console.log('❌ Response status not success or no data');
+            console.log('Response:', docsResponse.data);
+          }
+        } catch (docErr) {
+          console.error('❌ ERROR fetching documents:', docErr);
+          console.error('Error message:', docErr.message);
+          console.error('Error response:', docErr.response?.data);
+        } finally {
+          console.log('⏹️ Finishing document fetch, setting isLoadingDocs to false');
+          setIsLoadingDocs(false);
+        }
+
       } catch (err) {
         if (mounted) {
           const message = err.response?.data?.message || 'Error connecting to server.';
@@ -172,9 +238,26 @@ const ApplicationPage4 = () => {
       }
     };
 
-    fetchUserEmail();
+    fetchUserDataAndDocuments();
     return () => { mounted = false; };
   }, [navigate, token]);
+
+  // Monitor previews state changes
+  useEffect(() => {
+    console.log('👀 PREVIEWS STATE UPDATED:', {
+      photo: previews.photo ? '✅ HAS URL' : '❌ NULL',
+      signature: previews.signature ? '✅ HAS URL' : '❌ NULL',
+      community: previews.community_certificate ? '✅ HAS URL' : '❌ NULL',
+      aadhaar: previews.aadhar_card ? '✅ HAS URL' : '❌ NULL',
+      tc: previews.transfer_certificate ? '✅ HAS URL' : '❌ NULL',
+    });
+    console.log('Full previews object:', previews);
+  }, [previews]);
+
+  // Monitor upload status changes
+  useEffect(() => {
+    console.log('📊 UPLOAD STATUS UPDATED:', uploadStatus);
+  }, [uploadStatus]);
 
   const validateImageDimensions = useCallback((file, type, callback) => {
     // Dimension validation removed - no longer required
@@ -295,7 +378,8 @@ const ApplicationPage4 = () => {
       return;
     }
 
-    const missingFields = Object.keys(files).filter((key) => !files[key]);
+    // Check for missing documents - either new file or existing preview
+    const missingFields = Object.keys(files).filter((key) => !files[key] && !previews[key]);
     if (missingFields.length > 0) {
       setFieldErrors((prev) => {
         const newErrors = { ...prev };
@@ -305,6 +389,14 @@ const ApplicationPage4 = () => {
         return newErrors;
       });
       toast.error('Please upload all required documents.');
+      return;
+    }
+
+    // If all documents are already uploaded (have previews but no new files), proceed to next page
+    const hasNewFiles = Object.values(files).some(file => file !== null);
+    if (!hasNewFiles && Object.values(previews).every(preview => preview !== null)) {
+      toast.success('All documents are already uploaded!');
+      setTimeout(() => navigate('/student/application/page5'), 500);
       return;
     }
 
@@ -394,10 +486,20 @@ const ApplicationPage4 = () => {
   }), []);
 
   const allFieldsFilled = useMemo(() => {
-    return Object.values(files).every((file) => file !== null);
-  }, [files]);
+    return Object.keys(files).every((key) => files[key] !== null || previews[key] !== null);
+  }, [files, previews]);
 
   const renderUploadCard = useCallback((type, label, accept, isImageType, dimensions) => {
+    // Debug: Log render state
+    if (!isImageType) {
+      console.log(`Rendering ${type}:`, {
+        hasPreview: !!previews[type],
+        previewValue: previews[type],
+        isImageType,
+        willShowUploaded: !!(previews[type] && !isImageType)
+      });
+    }
+    
     const { gradient, border, borderHover } = {
       photo: {
         gradient: 'from-indigo-600 to-purple-700',
@@ -487,15 +589,54 @@ const ApplicationPage4 = () => {
                 aria-label={`Upload ${label}`}
               />
             </div>
+          ) : previews[type] && !isImageType ? (
+            // For PDF/non-image types that are already uploaded
+            <div className="relative w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-green-50 to-emerald-50">
+                <FaCheckCircle className="text-green-500 text-5xl mb-3" />
+                <p className="text-gray-800 font-inter text-sm font-bold text-center mb-1">{label}</p>
+                <p className="text-green-600 text-xs font-semibold mb-3">✓ Already Uploaded</p>
+              <div className="flex gap-2">
+                <motion.button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); window.open(previews[type], '_blank'); }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-inter shadow-md"
+                  title="Preview File"
+                >
+                  <FaEye className="h-3 w-3 mr-1" />
+                  Preview
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={(e) => handleRemoveFile(type, e)}
+                  className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-inter shadow-md"
+                  title="Remove & Re-upload"
+                >
+                  <FaTrash className="h-3 w-3 inline mr-1" />
+                  Remove
+                </motion.button>
+              </div>
+              <input
+                type="file"
+                accept={accept}
+                ref={(el) => (fileInputRefs.current[type] = el)}
+                onChange={(e) => handleFileChange(e, type)}
+                className="hidden"
+                disabled={isSubmitting || isLoadingEmail || uploading[type]}
+                aria-label={`Upload ${label}`}
+              />
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full p-4">
-              {isImageType ? (
-                type === 'photo' ? <FaImage className="text-blue-600 text-4xl mb-2" /> :
-                <FaSignature className="text-blue-600 text-4xl mb-2" />
-              ) : (
-                <FaUpload className="text-blue-600 text-4xl mb-2" />
-              )}
-              <p className="text-gray-800 font-inter text-sm font-semibold text-center">{label}</p>
+                {isImageType ? (
+                  type === 'photo' ? <FaImage className="text-blue-600 text-4xl mb-2" /> :
+                  <FaSignature className="text-blue-600 text-4xl mb-2" />
+                ) : (
+                  <FaUpload className="text-blue-600 text-4xl mb-2" />
+                )}
+                <p className="text-gray-800 font-inter text-sm font-semibold text-center">{label}</p>
               <p className="text-gray-500 text-xs mt-2 text-center">
                 {accept.includes('pdf') ? 'JPG, JPEG, PDF (max 300KB)' : 
                  type === 'photo' ? 'JPG, JPEG (max 30KB)' :
@@ -526,41 +667,6 @@ const ApplicationPage4 = () => {
           >
             This field is required
           </motion.p>
-        )}
-        {!isImageType && files[type] && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-3 flex items-center justify-between px-3"
-          >
-            <p className="text-sm text-gray-600 font-inter truncate max-w-[180px]">
-              {files[type]?.name || 'No file name'}
-            </p>
-            <div className="flex items-center gap-2">
-              {previews[type] && (
-                <motion.button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); window.open(previews[type], '_blank'); }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center px-3 py-1 bg-purple-600 text-white rounded-lg text-sm font-inter"
-                  title="Preview File"
-                >
-                  <FaEye className="h-4 w-4 mr-1" />
-                  Preview
-                </motion.button>
-              )}
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={(e) => handleRemoveFile(type, e)}
-                className="p-2.5 bg-red-500 text-white rounded-full"
-                title="Remove File"
-              >
-                <FaTrash className="h-4 w-4" />
-              </motion.button>
-            </div>
-          </motion.div>
         )}
       </motion.div>
     );
@@ -661,6 +767,13 @@ const ApplicationPage4 = () => {
             <p className="text-gray-600 font-inter text-center mb-8 text-lg">
               Upload your documents with the specified formats for a smooth application process. All fields are required.
             </p>
+
+            {isLoadingDocs && (
+              <div className="flex justify-center items-center py-8">
+                <div className="rounded-full h-12 w-12 border-t-4 border-b-4 border-purple-600 animate-spin"></div>
+                <p className="ml-4 text-gray-600">Loading existing documents...</p>
+              </div>
+            )}
 
             {/* Upload Guidelines Section */}
             <motion.div

@@ -487,12 +487,18 @@ def save_application_page1(request):
 
     academic_year = data.get('academic_year')
     course = data.get('course')
+    degree = data.get('degree')
+    branch_name = data.get('branch_name')
 
     if not academic_year:
         return Response({"status": "error", "message": "Academic year is required."}, status=400)
 
-    # Validate course against Courses table
-    if course and not Courses.objects.filter(degree=course).exists():
+    # Validate course against Courses table (check by degree and branch if provided)
+    if degree and branch_name:
+        if not Courses.objects.filter(degree=degree, branch_name=branch_name).exists():
+            return Response({"status": "error", "message": "Invalid degree and branch combination."}, status=400)
+    elif course and not Courses.objects.filter(degree=course).exists():
+        # Fallback to old course validation
         return Response({"status": "error", "message": "Invalid course selected."}, status=400)
 
     try:
@@ -787,12 +793,17 @@ def verify_dummy_payment(request):
         order_id = f"ORDER{now.strftime('%Y%m%d%H%M%S')}"
         
         # Get amount from course or default
-        amount = 236.00  # Default application fee
+        amount = 354.00  # Default application fee
         try:
             if application.course:
-                course = Courses.objects.filter(degree=application.course).first()
+                # First try to match by course_short_code (the actual course code)
+                course = Courses.objects.filter(course_short_code=application.course).first()
+                if not course:
+                    # Fallback: try matching by degree field
+                    course = Courses.objects.filter(degree=application.course).first()
                 if course:
                     amount = float(course.application_fee)
+                    logger.info(f"Fetched application fee ₹{amount} for course: {application.course}")
         except Exception as e:
             logger.warning(f"Could not fetch course fee: {str(e)}")
         
@@ -1018,6 +1029,26 @@ def get_application_payment_data(request):
             lsc_code = 'LC2101'
             lsc_name = 'Centre for Distance and Online Education (CDOE)'
         
+        # Fetch course fee from tbl_course
+        application_fee = 354.00  # Default fallback
+        course_info = None
+        
+        if application.course:
+            try:
+                from api.models import Courses
+                course = Courses.objects.filter(course_short_code=application.course).first()
+                if course:
+                    application_fee = float(course.application_fee)
+                    course_info = {
+                        'course_code': course.course_short_code,
+                        'course_name': course.course_full_name,
+                        'degree': course.degree,
+                        'branch': course.branch_name
+                    }
+                    logger.info(f"Course fee fetched: ₹{application_fee} for course {application.course}")
+            except Exception as e:
+                logger.warning(f"Could not fetch course fee: {str(e)}")
+        
         # Build response data
         response_data = {
             'student': {
@@ -1033,7 +1064,16 @@ def get_application_payment_data(request):
                 'mode_code': mode_code,
                 'academic_year': application.academic_year or admission_year,
                 'status': application.status,
-                'payment_status': application.payment_status
+                'payment_status': application.payment_status,
+                'course': application.course,
+                'degree': application.degree,
+                'branch_name': application.branch_name
+            },
+            'course': course_info,
+            'payment': {
+                'application_fee': application_fee,
+                'currency': 'INR',
+                'formatted_fee': f"{application_fee:.2f}"
             },
             'admission': {
                 'admission_code': admission_code,

@@ -75,6 +75,8 @@ const EducationalQualificationPage = () => {
     current_institute: '',
     years_experience: '',
     annual_income: '',
+    photo_url: '',
+    signature_url: '',
   });
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState({});
@@ -121,23 +123,29 @@ const EducationalQualificationPage = () => {
             {
               ...defaultQualifications[0],
               ...sslcQual,
-              sslc_marksheet_url: sslcQual.sslc_marksheet_url || '',
+              sslc_marksheet_url: data.sslc_marksheet_url || sslcQual.sslc_marksheet_url || '',
               percentage: sslcQual.percentage != null ? sslcQual.percentage.toString() : '',
             },
             {
               ...defaultQualifications[1],
               ...hscQual,
-              hsc_marksheet_url: hscQual.hsc_marksheet_url || '',
+              hsc_marksheet_url: data.hsc_marksheet_url || hscQual.hsc_marksheet_url || '',
               percentage: hscQual.percentage != null ? hscQual.percentage.toString() : '',
             },
             {
               ...defaultQualifications[2],
               ...otherQual,
-              ug_marksheet_url: otherQual.ug_marksheet_url || '',
+              ug_marksheet_url: data.ug_marksheet_url || otherQual.ug_marksheet_url || '',
               university: otherQual.university || otherQual.board || '',
               percentage: otherQual.percentage != null ? otherQual.percentage.toString() : '',
             },
           ];
+          
+          console.log('Marksheet URLs from API:', {
+            sslc: data.sslc_marksheet_url,
+            hsc: data.hsc_marksheet_url,
+            ug: data.ug_marksheet_url
+          });
 
           console.log('Mapped Qualifications:', mappedQualifications);
           try {
@@ -150,8 +158,10 @@ const EducationalQualificationPage = () => {
               current_institute: data.current_institute || '',
               years_experience: data.years_experience != null ? data.years_experience.toString() : '',
               annual_income: data.annual_income != null ? data.annual_income.toString() : '',
+              photo_url: data.photo_url || '',
+              signature_url: data.signature_url || '',
             }));
-            console.log('formData set successfully');
+            console.log('formData set successfully with photo_url:', data.photo_url, 'signature_url:', data.signature_url);
           } catch (setError) {
             console.error('Error setting formData:', setError);
             setFetchError('Failed to process fetched data');

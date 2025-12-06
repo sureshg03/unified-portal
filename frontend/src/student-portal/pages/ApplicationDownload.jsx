@@ -195,7 +195,9 @@ const ApplicationDownload = () => {
         body: [
           ['Mode of Study', applicationData.mode_of_study || 'N/A'],
           ['Programme Applied', applicationData.programme_applied || 'N/A'],
-          ['Course/Degree', applicationData.course || applicationData.course_name || applicationData.selected_course || 'N/A'],
+          ['Degree', applicationData.degree || applicationData.course?.split(' - ')[0] || localStorage.getItem('selected_degree') || 'N/A'],
+          ['Branch / Specialization', applicationData.branch_name || applicationData.course?.split(' - ')[1] || localStorage.getItem('selected_branch') || 'N/A'],
+          ['Medium', applicationData.medium || localStorage.getItem('selected_medium') || 'N/A'],
           ['Academic Year', applicationData.academic_year || 'N/A'],
         ],
         styles: {
@@ -445,7 +447,13 @@ const ApplicationDownload = () => {
                   <span className="font-semibold">Programme:</span> {applicationData?.programme_applied || 'N/A'}
                 </p>
                 <p className="text-sm text-gray-600">
-                  <span className="font-semibold">Course:</span> {applicationData?.course || applicationData?.course_name || applicationData?.selected_course || 'N/A'}
+                  <span className="font-semibold">Degree:</span> {applicationData?.degree || applicationData?.course?.split(' - ')[0] || localStorage.getItem('selected_degree') || 'N/A'}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-semibold">Branch:</span> {applicationData?.branch_name || applicationData?.course?.split(' - ')[1] || localStorage.getItem('selected_branch') || 'N/A'}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-semibold">Medium:</span> {applicationData?.medium || localStorage.getItem('selected_medium') || 'N/A'}
                 </p>
                 <p className="text-sm text-gray-600">
                   <span className="font-semibold">Year:</span> {applicationData?.academic_year || 'N/A'}

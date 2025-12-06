@@ -41,6 +41,8 @@ class Application(models.Model):
     # Page 1 fields
     mode_of_study = models.CharField(max_length=50, blank=True, null=True)
     programme_applied = models.CharField(max_length=50, blank=True, null=True)
+    degree = models.CharField(max_length=100, blank=True, null=True)
+    branch_name = models.CharField(max_length=100, blank=True, null=True)
     course = models.CharField(max_length=50, blank=True, null=True)
     medium = models.CharField(max_length=50, blank=True, null=True)
     academic_year = models.CharField(max_length=50, blank=True, null=True)

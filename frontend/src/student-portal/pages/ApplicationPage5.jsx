@@ -812,12 +812,16 @@ const PaymentPage = () => {
                   <td>{applicationData.application?.programme_applied || 'N/A'}</td>
                 </tr>
                 <tr>
-                  <th>Course</th>
-                  <td>{applicationData.application?.course || applicationData.application?.course_name || applicationData.application?.selected_course || 'N/A'}</td>
+                  <th>Degree</th>
+                  <td>{applicationData.application?.degree || applicationData.application?.course?.split(' - ')[0] || localStorage.getItem('selected_degree') || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <th>Branch / Specialization</th>
+                  <td>{applicationData.application?.branch_name || applicationData.application?.course?.split(' - ')[1] || localStorage.getItem('selected_branch') || 'N/A'}</td>
                 </tr>
                 <tr>
                   <th>Medium</th>
-                  <td>{applicationData.application?.medium || applicationData.application?.medium_of_instruction || 'N/A'}</td>
+                  <td>{applicationData.application?.medium || applicationData.application?.medium_of_instruction || localStorage.getItem('selected_medium') || 'N/A'}</td>
                 </tr>
                 <tr>
                   <th>Academic Year</th>

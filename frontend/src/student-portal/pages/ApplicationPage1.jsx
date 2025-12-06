@@ -17,6 +17,8 @@ const ApplicationPage1 = () => {
   const [formData, setFormData] = useState({
     mode_of_study: '',
     programme_applied: 'Postgraduate',
+    degree: '',
+    branch_name: '',
     course: '',
     medium: '',
     academic_year: defaultAcademicYear,
@@ -38,19 +40,34 @@ const ApplicationPage1 = () => {
     { value: 'Postgraduate', label: 'Postgraduate' },
   ];
 
-   // Course options (map all fetched degrees)
- const courseOptions = [
-    { value: '', label: 'Select Course' },
-    ...courses.map((course) => ({
-      value: course.degree.trim(),
-      label: course.degree.trim(),
+   // Degree options (unique degrees)
+  const degreeOptions = [
+    { value: '', label: 'Select Degree' },
+    ...Array.from(new Set(courses.map(c => c.degree.trim()))).map((degree) => ({
+      value: degree,
+      label: degree,
     })),
   ];
 
-  // Medium options
- const mediumOptions = [
+  // Branch options (filtered by selected degree)
+  const branchOptions = [
+    { value: '', label: 'Select Branch' },
+    ...courses
+      .filter((course) => course.degree.trim() === formData.degree)
+      .map((course) => ({
+        value: course.branch_name.trim(),
+        label: course.branch_name.trim(),
+        language: course.language,
+      })),
+  ];
+
+  // Medium options (based on selected branch's language)
+  const selectedCourse = courses.find(
+    (c) => c.degree.trim() === formData.degree && c.branch_name.trim() === formData.branch_name
+  );
+  const mediumOptions = [
     { value: '', label: 'Select Medium' },
-    ...(formData.course === 'M.A. Tamil'
+    ...(selectedCourse?.language === 'Tamil'
       ? [{ value: 'Tamil', label: 'Tamil' }]
       : [{ value: 'English', label: 'English' }]),
   ];
@@ -115,13 +132,26 @@ const ApplicationPage1 = () => {
           headers: { Authorization: `Token ${token}` },
         });
         if (res.data.status === 'success' && res.data.data) {
+          const data = res.data.data;
+          // Parse course if it contains both degree and branch
+          let degree = data.degree || '';
+          let branch_name = data.branch_name || '';
+          
+          if (data.course && data.course.includes(' - ')) {
+            const parts = data.course.split(' - ');
+            degree = degree || parts[0];
+            branch_name = branch_name || parts[1];
+          }
+          
           setFormData((prev) => ({
             ...prev,
-            mode_of_study: res.data.data.mode_of_study || prev.mode_of_study,
-            programme_applied: res.data.data.programme_applied || prev.programme_applied,
-            course: res.data.data.course || prev.course,
-            medium: res.data.data.medium || prev.medium,
-            academic_year: res.data.data.academic_year || prev.academic_year,
+            mode_of_study: data.mode_of_study || prev.mode_of_study,
+            programme_applied: data.programme_applied || prev.programme_applied,
+            degree: degree,
+            branch_name: branch_name,
+            course: data.course || prev.course,
+            medium: data.medium || prev.medium,
+            academic_year: data.academic_year || prev.academic_year,
           }));
         } 
       } catch (err) {
@@ -163,10 +193,23 @@ const ApplicationPage1 = () => {
 
    const handleSelectChange = (field) => (selectedOption) => {
     const newFormData = { ...formData, [field]: selectedOption ? selectedOption.value : '' };
-    if (field === 'programme_applied' || field === 'course') {
-      newFormData.course = field === 'programme_applied' ? '' : newFormData.course;
-      newFormData.medium = ''; // Reset medium when programme or course changes
+    
+    // Reset dependent fields
+    if (field === 'programme_applied') {
+      newFormData.degree = '';
+      newFormData.branch_name = '';
+      newFormData.course = '';
+      newFormData.medium = '';
+    } else if (field === 'degree') {
+      newFormData.branch_name = '';
+      newFormData.course = '';
+      newFormData.medium = '';
+    } else if (field === 'branch_name') {
+      newFormData.medium = '';
+      // Combine degree and branch to create course
+      newFormData.course = `${newFormData.degree} - ${selectedOption.value}`;
     }
+    
     setFormData(newFormData);
   };
 
@@ -185,6 +228,13 @@ const ApplicationPage1 = () => {
         { headers: { Authorization: `Token ${token}` } }
       );
       if (res.data.status === 'success') {
+        // Store course details in localStorage for Preview page
+        localStorage.setItem('selected_course', formData.course);
+        localStorage.setItem('selected_course_name', formData.course);
+        localStorage.setItem('selected_degree', formData.degree);
+        localStorage.setItem('selected_branch', formData.branch_name);
+        localStorage.setItem('selected_medium', formData.medium);
+        
         toast.success('Application saved successfully!');
         setTimeout(() => navigate('/student/application/page2'), 2000);
       } else {
@@ -306,15 +356,30 @@ const ApplicationPage1 = () => {
             </div>
             <div>
               <label className="block text-lg font-semibold text-violet-900 mb-3 font-roboto tracking-wide">
-                Course <span className="text-red-500">*</span>
+                Degree <span className="text-red-500">*</span>
               </label>
               <Select
-                name="course"
-                value={courseOptions.find((option) => option.value === formData.course)}
-                onChange={handleSelectChange('course')}
-                options={courseOptions}
+                name="degree"
+                value={degreeOptions.find((option) => option.value === formData.degree)}
+                onChange={handleSelectChange('degree')}
+                options={degreeOptions}
                 styles={customSelectStyles}
                 isDisabled={loading || !formData.programme_applied}
+                className="w-full font-roboto"
+                classNamePrefix="select"
+              />
+            </div>
+            <div>
+              <label className="block text-lg font-semibold text-violet-900 mb-3 font-roboto tracking-wide">
+                Branch / Specialization <span className="text-red-500">*</span>
+              </label>
+              <Select
+                name="branch_name"
+                value={branchOptions.find((option) => option.value === formData.branch_name)}
+                onChange={handleSelectChange('branch_name')}
+                options={branchOptions}
+                styles={customSelectStyles}
+                isDisabled={loading || !formData.degree}
                 className="w-full font-roboto"
                 classNamePrefix="select"
               />
@@ -329,7 +394,7 @@ const ApplicationPage1 = () => {
                 onChange={handleSelectChange('medium')}
                 options={mediumOptions}
                 styles={customSelectStyles}
-                isDisabled={loading || !formData.course}
+                isDisabled={loading || !formData.branch_name}
                 className="w-full font-roboto"
                 classNamePrefix="select"
               />

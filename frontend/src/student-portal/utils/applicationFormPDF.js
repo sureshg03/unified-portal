@@ -49,8 +49,8 @@ export const generateApplicationFormPDF = async (applicationData) => {
 
     body {
       font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-      font-size: 9pt;
-      line-height: 1.25;
+      font-size: 11pt;
+      line-height: 1.3;
       color: #000;
       background: #fff;
       padding: 3mm;
@@ -84,8 +84,8 @@ export const generateApplicationFormPDF = async (applicationData) => {
     }
 
     .university-logo {
-      width: 65px;
-      height: 65px;
+      width: 140px;
+      height: 140px;
       object-fit: contain;
       display: block;
     }
@@ -96,7 +96,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
     }
 
     .university-name {
-      font-size: 24pt;
+      font-size: 26pt;
       font-weight: 600;
       color: #8B008B;
       margin: 0 0 3px 0;
@@ -104,7 +104,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
     }
 
     .university-subtitle {
-      font-size: 8.5pt;
+      font-size: 9pt;
       color: #333;
       margin: 1px 0;
       font-weight: 500;
@@ -112,7 +112,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
     }
 
     .university-address {
-      font-size: 8.5pt;
+      font-size: 9pt;
       color: #333;
       font-weight: 700;
       margin: 1px 0 8px 0;
@@ -131,14 +131,14 @@ export const generateApplicationFormPDF = async (applicationData) => {
 
     .odl-subtitle {
       color: #FF8C00;
-      font-size: 11pt;
+      font-size: 11.5pt;
       font-weight: 700;
       margin: 0;
       line-height: 1.2;
     }
 
     .main-title {
-      font-size: 9.5pt;
+      font-size: 11.5pt;
       font-weight: 700;
       text-decoration: underline;
       margin: 5px 0 6px 0;
@@ -160,14 +160,14 @@ export const generateApplicationFormPDF = async (applicationData) => {
 
     .info-cell {
       padding: 6px 10px;
-      font-size: 9pt;
+      font-size: 11pt;
       vertical-align: middle;
     }
 
     .info-label {
       font-weight: 700;
       color: #000000;
-      font-size: 8.5pt;
+      font-size: 10.5pt;
       display: inline-block;
       min-width: 100px;
     }
@@ -175,7 +175,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
     .info-value {
       color: #000000;
       font-weight: 600;
-      font-size: 8.5pt;
+      font-size: 10.5pt;
       margin-left: 8px;
     }
 
@@ -190,7 +190,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 6px;
-      font-size: 8.5pt;
+      font-size: 10.5pt;
       border: 1px solid #000000;
     }
 
@@ -210,7 +210,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
       font-weight: 600;
       background: #e9ecef;
       color: #000000;
-      font-size: 8pt;
+      font-size: 10pt;
     }
 
     .field-label {
@@ -218,7 +218,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
       font-weight: 500;
       color: #000000;
       background: #f8f9fa;
-      font-size: 8pt;
+      font-size: 10pt;
     }
 
     .field-separator {
@@ -232,7 +232,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
       color: #000000;
       font-weight: 600;
       background: #ffffff;
-      font-size: 8pt;
+      font-size: 10pt;
     }
 
     .view-link {
@@ -240,7 +240,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
       text-decoration: underline;
       cursor: pointer;
       font-weight: 600;
-      font-size: 7.5pt;
+      font-size: 9.5pt;
     }
 
     /* Section Headers */
@@ -252,7 +252,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
       font-weight: 700;
       margin-top: 6px;
       margin-bottom: 4px;
-      font-size: 9pt;
+      font-size: 11pt;
       border-radius: 0px;
       letter-spacing: 0.3px;
       page-break-after: avoid;
@@ -282,7 +282,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 6px;
-      font-size: 7pt;
+      font-size: 9pt;
       table-layout: fixed;
     }
 
@@ -300,7 +300,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
       background: #e9ecef;
       color: #000000;
       font-weight: 700;
-      font-size: 7pt;
+      font-size: 9pt;
       padding: 3px 3px;
       border: 1px solid #000000;
     }
@@ -308,7 +308,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
     .education-table td {
       color: #000000;
       font-weight: 500;
-      font-size: 7pt;
+      font-size: 9pt;
       background: #ffffff;
     }
 
@@ -358,7 +358,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
 
     .payment-title {
       text-align: center;
-      font-size: 9.5pt;
+      font-size: 11.5pt;
       font-weight: 700;
       margin-bottom: 5px;
       text-decoration: underline;
@@ -376,7 +376,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
     .payment-table td {
       border: 1px solid #000000;
       padding: 4px 6px;
-      font-size: 7.5pt;
+      font-size: 9.5pt;
     }
 
     .payment-label {
@@ -408,7 +408,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
     }
 
     .declaration-title {
-      font-size: 9.5pt;
+      font-size: 11pt;
       font-weight: 700;
       text-align: center;
       margin-bottom: 5px;
@@ -417,8 +417,8 @@ export const generateApplicationFormPDF = async (applicationData) => {
     }
 
     .declaration-text {
-      font-size: 8pt;
-      line-height: 1.35;
+      font-size: 9.5pt;
+      line-height: 1.4;
       text-align: justify;
       margin-bottom: 4px;
       color: #000;
@@ -437,7 +437,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
     }
 
     .place-date p {
-      font-size: 8pt;
+      font-size: 9.5pt;
       font-weight: 600;
       color: #000;
       margin-bottom: 5px;
@@ -475,7 +475,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
 
     .signature-label {
       font-weight: 600;
-      font-size: 8pt;
+      font-size: 9.5pt;
       text-align: center;
       width: 150px;
       color: #000000;
@@ -641,7 +641,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
       <tr>
         <td class="info-cell" style="border-bottom: 1px solid #dee2e6;">
           <span class="info-label">Application No :</span> 
-          <span class="info-value">${applicationData.application_id || 'N/A'}</span>
+          <span class="info-value">${applicationData.application_id || '-'}</span>
         </td>
         <td class="photo-cell" rowspan="4" style="border-left: 1px solid #000000; vertical-align: middle; text-align: center;">
           ${photoUrl ? `
@@ -654,12 +654,6 @@ export const generateApplicationFormPDF = async (applicationData) => {
               Photo<br/>Not Uploaded
             </div>
           `}
-        </td>
-      </tr>
-      <tr>
-        <td class="info-cell" style="border-bottom: 1px solid #dee2e6;">
-          <span class="info-label">Enrollment No :</span> 
-          <span class="info-value">${applicationData.enrollment_no || 'N/A'}</span>
         </td>
       </tr>
       <tr>
@@ -686,57 +680,63 @@ export const generateApplicationFormPDF = async (applicationData) => {
       </tr>
       <tr>
         <td class="row-number"></td>
-        <td class="field-label">Course</td>
+        <td class="field-label">Degree</td>
         <td class="field-separator">:</td>
-        <td class="field-value">${applicationData.course || 'Social Welfare Administration'}</td>
+        <td class="field-value">${applicationData.degree || applicationData.course?.split(' - ')[0] || localStorage.getItem('selected_degree') || '-'}</td>
+      </tr>
+      <tr>
+        <td class="row-number"></td>
+        <td class="field-label">Branch / Specialization</td>
+        <td class="field-separator">:</td>
+        <td class="field-value">${applicationData.branch_name || applicationData.course?.split(' - ')[1] || localStorage.getItem('selected_branch') || '-'}</td>
       </tr>
       <tr>
         <td class="row-number"></td>
         <td class="field-label">Medium</td>
         <td class="field-separator">:</td>
-        <td class="field-value">${applicationData.medium || 'English'}</td>
+        <td class="field-value">${applicationData.medium || localStorage.getItem('selected_medium') || 'English'}</td>
       </tr>
       <tr>
         <td class="row-number">2.</td>
         <td class="field-label">Name of the Applicant</td>
         <td class="field-separator">:</td>
-        <td class="field-value">${applicationData.student_name || applicationData.name || 'N/A'}</td>
+        <td class="field-value">${applicationData.student_name || applicationData.name || '-'}</td>
       </tr>
       <tr>
         <td class="row-number">3.</td>
         <td class="field-label">Date of Birth</td>
         <td class="field-separator">:</td>
-        <td class="field-value">${applicationData.dob || 'N/A'}</td>
+        <td class="field-value">${applicationData.dob || '-'}</td>
       </tr>
       <tr>
         <td class="row-number">4.</td>
         <td class="field-label">(a) Name of the Father & Mother</td>
         <td class="field-separator">:</td>
-        <td class="field-value">${applicationData.father_name || 'N/A'} - ${applicationData.mother_name || 'N/A'}</td>
+        <td class="field-value">${applicationData.father_name || '-'} - ${applicationData.mother_name || '-'}</td>
       </tr>
       <tr>
         <td class="row-number"></td>
         <td class="field-label">(b) Name of the Guardian</td>
         <td class="field-separator">:</td>
-        <td class="field-value">${applicationData.guardian_name || ''}</td>
+        <td class="field-value">${applicationData.guardian_name || '-'}</td>
       </tr>
       <tr>
         <td class="row-number">5.</td>
         <td class="field-label">Father's & Mother's Occupation</td>
         <td class="field-separator">:</td>
-        <td class="field-value">${applicationData.parent_occupation || 'N/A'}</td>
+        <td class="field-value">${applicationData.parent_occupation || '-'}</td>
       </tr>
       <tr>
         <td class="row-number">6.</td>
         <td class="field-label">Gender</td>
         <td class="field-separator">:</td>
-        <td class="field-value">${applicationData.gender || 'N/A'}</td>
+        <td class="field-value">${applicationData.gender || '-'}</td>
       </tr>
       <tr>
         <td class="row-number">7.</td>
         <td class="field-label">Mother Tongue</td>
         <td class="field-separator">:</td>
-        <td class="field-value">${applicationData.mother_tongue || 'N/A'}</td>
+        <td class="field-value">${applicationData.mother_tongue || '-'}</td>
       </tr>
       <tr>
         <td class="row-number">8.</td>
@@ -748,13 +748,13 @@ export const generateApplicationFormPDF = async (applicationData) => {
         <td class="row-number">9.</td>
         <td class="field-label">Religion</td>
         <td class="field-separator">:</td>
-        <td class="field-value">${applicationData.religion || 'N/A'}</td>
+        <td class="field-value">${applicationData.religion || '-'}</td>
       </tr>
       <tr>
         <td class="row-number">10.</td>
         <td class="field-label">Community</td>
         <td class="field-separator">:</td>
-        <td class="field-value">${applicationData.community || 'N/A'} ${applicationData.community_certificate ? '<span class="view-link">View</span>' : ''}</td>
+        <td class="field-value">${applicationData.community || '-'} ${applicationData.community_certificate ? '<span class="view-link">View</span>' : ''}</td>
       </tr>
     </table>
 
@@ -770,14 +770,14 @@ export const generateApplicationFormPDF = async (applicationData) => {
       <tr>
         <td style="width: 50%; vertical-align: top;">
           <div class="field-value" style="line-height: 1.6;">
-            ${applicationData.communication_address || 'N/A'}<br>
+            ${applicationData.communication_address || '-'}<br>
             ${applicationData.communication_city || ''}, ${applicationData.communication_state || ''} - ${applicationData.communication_pincode || ''}<br>
             ${applicationData.communication_country || ''}
           </div>
         </td>
         <td style="width: 50%; vertical-align: top;">
           <div class="field-value" style="line-height: 1.6;">
-            ${applicationData.permanent_address || 'N/A'}<br>
+            ${applicationData.permanent_address || '-'}<br>
             ${applicationData.permanent_city || ''}, ${applicationData.permanent_state || ''} - ${applicationData.permanent_pincode || ''}<br>
             ${applicationData.permanent_country || ''}
           </div>
@@ -791,19 +791,19 @@ export const generateApplicationFormPDF = async (applicationData) => {
         <td class="row-number">12.</td>
         <td class="field-label">Mobile No. / Telephone No.</td>
         <td class="field-separator">:</td>
-        <td class="field-value">${applicationData.phone || applicationData.mobile || 'N/A'}</td>
+        <td class="field-value">${applicationData.phone || applicationData.mobile || '-'}</td>
       </tr>
       <tr>
         <td class="row-number">13.</td>
         <td class="field-label">E-mail ID</td>
         <td class="field-separator">:</td>
-        <td class="field-value">${applicationData.email || 'N/A'}</td>
+        <td class="field-value">${applicationData.email || '-'}</td>
       </tr>
       <tr>
         <td class="row-number">14.</td>
         <td class="field-label">(a)Aadhaar Card No. & Aadhaar Name</td>
         <td class="field-separator">:</td>
-        <td class="field-value">${applicationData.aadhaar_number || 'N/A'} ${applicationData.aadhaar_document ? '<span class="view-link">View</span>' : ''}</td>
+        <td class="field-value">${applicationData.aadhaar_number || '-'} ${applicationData.aadhaar_document ? '<span class="view-link">View</span>' : ''}</td>
         <td class="field-value">${applicationData.aadhaar_name || ''}</td>
       </tr>
       <tr>
@@ -828,7 +828,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
         <td class="row-number">16.</td>
         <td class="field-label">Blood Group</td>
         <td class="field-separator">:</td>
-        <td class="field-value">${applicationData.blood_group || 'N/A'}</td>
+        <td class="field-value">${applicationData.blood_group || '-'}</td>
       </tr>
       <tr>
         <td class="row-number">17.</td>
@@ -853,14 +853,13 @@ export const generateApplicationFormPDF = async (applicationData) => {
           <th>Month of Passing</th>
           <th>Year of Passing</th>
           <th>Mode of Study</th>
-          <th>Document</th>
         </tr>
       </thead>
       <tbody>
         ${applicationData.qualifications && applicationData.qualifications.length > 0 ? 
           applicationData.qualifications.map(qual => {
             // Get institution name - primary field is institute_name
-            const institution = qual.institute_name || qual.institution || qual.board_university || 'N/A';
+            const institution = qual.institute_name || qual.institution || qual.board_university || '-';
             
             // Get subjects - primary field is subject_studied (singular)
             let subjects = '';
@@ -892,7 +891,7 @@ export const generateApplicationFormPDF = async (applicationData) => {
             }
             
             // Get register number - primary field is reg_no
-            const registerNo = qual.reg_no || qual.register_no || qual.register_number || qual.registration_no || qual.registerno || qual.regno || 'N/A';
+            const registerNo = qual.reg_no || qual.register_no || qual.register_number || qual.registration_no || qual.registerno || qual.regno || '-';
             
             // Parse month_year if it contains both month and year (e.g., "03/2025")
             let monthOfPassing = '';
@@ -927,16 +926,15 @@ export const generateApplicationFormPDF = async (applicationData) => {
             
             return `
             <tr>
-              <td>${qual.course || qual.exam_passed || 'N/A'}</td>
+              <td>${qual.course || qual.exam_passed || '-'}</td>
               <td>${institution}</td>
-              <td>${qual.board || qual.university || 'N/A'}</td>
+              <td>${qual.board || qual.university || '-'}</td>
               <td>${subjects}</td>
               <td>${registerNo}</td>
               <td>${qual.percentage || 'N/A'}</td>
               <td>${monthOfPassing || 'N/A'}</td>
               <td>${yearOfPassing || 'N/A'}</td>
               <td>${qual.mode_of_study || 'Regular'}</td>
-              <td>${qual.document || qual.document_uploaded ? '<span class="view-link">✓</span>' : '-'}</td>
             </tr>
           `}).join('') 
           : `

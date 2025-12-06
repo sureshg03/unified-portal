@@ -86,7 +86,10 @@ const Preview = () => {
         console.log(`${field}:`, combinedData.application?.[field] || combinedData.student?.[field]);
       });
 
-      if (combinedData.application.id) {
+      if (combinedData.application.application_id) {
+        setApplicationId(combinedData.application.application_id);
+        localStorage.setItem('application_id', combinedData.application.application_id);
+      } else if (combinedData.application.id) {
         setApplicationId(combinedData.application.id);
         localStorage.setItem('application_id', combinedData.application.id);
       }
@@ -664,7 +667,7 @@ const Preview = () => {
           <tbody>
             <tr>
               <td className="app-info-label" style={{ width: '140px' }}>Application No :</td>
-              <td className="app-info-value" style={{ width: 'auto' }}>{applicationId || 'PU/ODL/LC2101/A25/0229'}</td>
+              <td className="app-info-value" style={{ width: 'auto' }}>{application?.application_id || applicationId || '-'}</td>
               <td rowSpan="4" style={{ width: '120px', textAlign: 'center', verticalAlign: 'middle', padding: '8px', border: '2px solid #2c2c2c' }}>
                 {student_details?.photo_url && (
                   <img
@@ -674,10 +677,6 @@ const Preview = () => {
                   />
                 )}
               </td>
-            </tr>
-            <tr>
-              <td className="app-info-label">Enrollment No :</td>
-              <td className="app-info-value">N/A</td>
             </tr>
             <tr>
               <td className="app-info-label">Applied Date :</td>
@@ -697,79 +696,85 @@ const Preview = () => {
               <td className="sno-col">1.</td>
               <td className="label-col">Programme Applied</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.programme_applied || application?.program_type || 'N/A'}</td>
+              <td className="value-col">{application?.programme_applied || application?.program_type || '-'}</td>
             </tr>
             <tr>
               <td className="sno-col"></td>
-              <td className="label-col">Course</td>
+              <td className="label-col">Degree</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.course || application?.course_name || application?.selected_course || application?.programme || application?.programme_name || student?.course || student?.course_name || localStorage.getItem('selected_course') || 'N/A'}</td>
+              <td className="value-col">{localStorage.getItem('selected_degree') || application?.degree || application?.course?.split(' - ')[0] || '-'}</td>
+            </tr>
+            <tr>
+              <td className="sno-col"></td>
+              <td className="label-col">Branch / Specialization</td>
+              <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
+              <td className="value-col">{localStorage.getItem('selected_branch') || application?.branch_name || application?.course?.split(' - ')[1] || '-'}</td>
             </tr>
             <tr>
               <td className="sno-col"></td>
               <td className="label-col">Medium</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.medium || application?.medium_of_instruction || application?.study_medium || student?.medium || student?.medium_of_instruction || localStorage.getItem('selected_medium') || 'N/A'}</td>
+              <td className="value-col">{localStorage.getItem('selected_medium') || application?.medium || application?.medium_of_instruction || application?.study_medium || student?.medium || student?.medium_of_instruction || '-'}</td>
             </tr>
             <tr>
               <td className="sno-col">2.</td>
               <td className="label-col">Name of the Applicant</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{student?.name || 'N/A'}</td>
+              <td className="value-col">{student?.name || '-'}</td>
             </tr>
             <tr>
               <td className="sno-col">3.</td>
               <td className="label-col">Date of Birth</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.dob || 'N/A'}</td>
+              <td className="value-col">{application?.dob || '-'}</td>
             </tr>
             <tr>
               <td className="sno-col">4.</td>
               <td className="label-col">(a) Name of the Father & Mother</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.father_name || 'N/A'} - {application?.mother_name || 'N/A'}</td>
+              <td className="value-col">{application?.father_name || '-'} - {application?.mother_name || '-'}</td>
             </tr>
             <tr>
               <td className="sno-col"></td>
               <td className="label-col">(b) Name of the Guardian</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.guardian_name || 'N/A'}</td>
+              <td className="value-col">{application?.guardian_name || '-'}</td>
             </tr>
             <tr>
               <td className="sno-col">5.</td>
               <td className="label-col">Father's & Mother's Occupation</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.father_occupation || 'N/A'} - {application?.mother_occupation || 'N/A'}</td>
+              <td className="value-col">{application?.father_occupation || '-'} - {application?.mother_occupation || '-'}</td>
             </tr>
             <tr>
               <td className="sno-col">6.</td>
               <td className="label-col">Gender</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.gender || 'N/A'}</td>
+              <td className="value-col">{application?.gender || '-'}</td>
             </tr>
             <tr>
               <td className="sno-col">7.</td>
               <td className="label-col">Mother Tongue</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.mother_tongue || 'N/A'}</td>
+              <td className="value-col">{application?.mother_tongue || '-'}</td>
             </tr>
             <tr>
               <td className="sno-col">8.</td>
               <td className="label-col">Nationality</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.nationality || 'N/A'}</td>
+              <td className="value-col">{application?.nationality || '-'}</td>
             </tr>
             <tr>
               <td className="sno-col">9.</td>
               <td className="label-col">Religion</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.religion || 'N/A'}</td>
+              <td className="value-col">{application?.religion || '-'}</td>
             </tr>
             <tr>
               <td className="sno-col">10.</td>
               <td className="label-col">Community</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.community || 'N/A'}
+              <td className="value-col">{application?.community || '-'}
                 {application?.community_view && (
                   <a href={application.community_view} target="_blank" rel="noopener noreferrer" className="text-blue-600 ml-2 underline text-sm">View</a>
                 )}
@@ -813,19 +818,19 @@ const Preview = () => {
               <td className="sno-col">12.</td>
               <td className="label-col">Mobile No. / Telephone No.</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{student?.phone || 'N/A'}</td>
+              <td className="value-col">{student?.phone || '-'}</td>
             </tr>
             <tr>
               <td className="sno-col">13.</td>
               <td className="label-col">E-mail ID</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{student?.email || 'N/A'}</td>
+              <td className="value-col">{student?.email || '-'}</td>
             </tr>
             <tr>
               <td className="sno-col">14.</td>
               <td className="label-col">(a)Aadhaar Card No. & Aadhaar Name</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.aadhaar_no || 'N/A'}
+              <td className="value-col">{application?.aadhaar_no || '-'}
                 {application?.aadhaar_view && (
                   <a href={application.aadhaar_view} target="_blank" rel="noopener noreferrer" className="text-blue-600 ml-2 underline text-sm">View</a>
                 )}
@@ -836,13 +841,13 @@ const Preview = () => {
               <td className="sno-col"></td>
               <td className="label-col">(b)ABC ID</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.abc_id || 'N/A'}</td>
+              <td className="value-col">{application?.abc_id || '-'}</td>
             </tr>
             <tr>
               <td className="sno-col"></td>
               <td className="label-col">(c)DEB ID</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.deb_id || 'N/A'}</td>
+              <td className="value-col">{application?.deb_id || '-'}</td>
             </tr>
             <tr>
               <td className="sno-col">15.</td>
@@ -854,13 +859,13 @@ const Preview = () => {
               <td className="sno-col">16.</td>
               <td className="label-col">Blood Group</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.blood_group || 'N/A'}</td>
+              <td className="value-col">{application?.blood_group || '-'}</td>
             </tr>
             <tr>
               <td className="sno-col">17.</td>
               <td className="label-col">Access to Internet</td>
               <td className="text-center" style={{ padding: '8px', fontWeight: 500 }}>:</td>
-              <td className="value-col">{application?.access_internet || 'N/A'}</td>
+              <td className="value-col">{application?.access_internet || '-'}</td>
             </tr>
           </tbody>
         </table>
@@ -886,14 +891,14 @@ const Preview = () => {
               <tbody>
                 {student_details.qualifications.map((qual, index) => (
                   <tr key={index}>
-                    <td>{qual.course || 'N/A'}</td>
-                    <td>{qual.institute_name || 'N/A'}</td>
-                    <td>{qual.board || 'N/A'}</td>
-                    <td>{qual.subject_studied || 'N/A'}</td>
-                    <td>{qual.reg_no || 'N/A'}</td>
-                    <td className="text-center">{qual.percentage || 'N/A'}%</td>
-                    <td className="text-center">{qual.month_year?.split(' ')[0] || 'N/A'}</td>
-                    <td className="text-center">{qual.month_year?.split(' ')[1] || qual.year_of_passing || 'N/A'}</td>
+                    <td>{qual.course || '-'}</td>
+                    <td>{qual.institute_name || '-'}</td>
+                    <td>{qual.board || '-'}</td>
+                    <td>{qual.subject_studied || '-'}</td>
+                    <td>{qual.reg_no || '-'}</td>
+                    <td className="text-center">{qual.percentage || '-'}%</td>
+                    <td className="text-center">{qual.month_year?.split(' ')[0] || '-'}</td>
+                    <td className="text-center">{qual.month_year?.split(' ')[1] || qual.year_of_passing || '-'}</td>
                     <td className="text-center">{qual.mode_of_study || 'Regular'}</td>
                   </tr>
                 ))}

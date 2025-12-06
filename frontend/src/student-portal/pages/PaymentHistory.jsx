@@ -16,6 +16,8 @@ import { generateReceiptPDF } from '../utils/pdfGenerator';
 const PaymentHistory = () => {
   const [paymentData, setPaymentData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [transactionDetails, setTransactionDetails] = useState(null);
+  const [applicationFee, setApplicationFee] = useState('236.00');
 
   useEffect(() => {
     fetchPaymentHistory();
@@ -36,6 +38,21 @@ const PaymentHistory = () => {
 
       if (response.data.status === 'success') {
         setPaymentData(response.data.data);
+        // Set dynamic application fee
+        if (response.data.data.payment?.application_fee) {
+          setApplicationFee(response.data.data.payment.application_fee.toFixed(2));
+        }
+
+        // Fetch transaction details if payment is completed
+        if (response.data.data.application?.payment_status === 'P') {
+          const receiptResponse = await axios.get(
+            'http://localhost:8000/api/download-receipt/',
+            { headers: { Authorization: `Token ${token}` }, responseType: 'json' }
+          );
+          if (receiptResponse.data.status === 'success') {
+            setTransactionDetails(receiptResponse.data.data);
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching payment history:', error);
@@ -141,7 +158,7 @@ const PaymentHistory = () => {
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-600 mb-1">Amount</p>
-              <p className="text-3xl font-bold text-gray-900">₹236.00</p>
+              <p className="text-3xl font-bold text-gray-900">₹{applicationFee}</p>
               <p className="text-xs text-gray-500 mt-1">Including GST</p>
             </div>
           </div>
@@ -199,6 +216,12 @@ const PaymentHistory = () => {
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Course</p>
                     <p className="text-sm font-medium text-gray-900">
+                      {paymentData.application.degree || paymentData.application.course || paymentData.application.mode_of_study}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Mode of Study</p>
+                    <p className="text-sm font-medium text-gray-900">
                       {paymentData.application.mode_of_study}
                     </p>
                   </div>
@@ -214,14 +237,32 @@ const PaymentHistory = () => {
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Transaction ID</p>
                     <p className="font-mono text-sm font-semibold text-gray-900">
-                      TXN{Date.now()}
+                      {transactionDetails?.transaction_id || 'N/A'}
                     </p>
                   </div>
+                  {transactionDetails?.bank_transaction_id && (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Bank Transaction ID</p>
+                      <p className="font-mono text-sm font-semibold text-gray-900">
+                        {transactionDetails.bank_transaction_id}
+                      </p>
+                    </div>
+                  )}
+                  {transactionDetails?.order_id && (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Order ID</p>
+                      <p className="font-mono text-sm font-semibold text-gray-900">
+                        {transactionDetails.order_id}
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Payment Method</p>
                     <div className="flex items-center gap-2">
                       <CreditCardIcon className="h-4 w-4 text-gray-600" />
-                      <p className="text-sm font-medium text-gray-900">Online Payment</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {transactionDetails?.gateway_name || 'Online Payment'}
+                      </p>
                     </div>
                   </div>
                   <div>
@@ -229,11 +270,14 @@ const PaymentHistory = () => {
                     <div className="flex items-center gap-2">
                       <CalendarIcon className="h-4 w-4 text-gray-600" />
                       <p className="text-sm font-medium text-gray-900">
-                        {new Date().toLocaleDateString('en-IN', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
+                        {transactionDetails?.transaction_date 
+                          ? new Date(transactionDetails.transaction_date).toLocaleDateString('en-IN', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })
+                          : 'N/A'
+                        }
                       </p>
                     </div>
                   </div>
@@ -241,7 +285,7 @@ const PaymentHistory = () => {
                     <p className="text-xs text-gray-500 mb-1">Status</p>
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-300">
                       <CheckCircleIcon className="h-4 w-4" />
-                      SUCCESS
+                      {transactionDetails?.payment_status || 'SUCCESS'}
                     </span>
                   </div>
                 </div>
@@ -255,16 +299,12 @@ const PaymentHistory = () => {
               </h4>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Application Fee</span>
-                  <span className="text-sm font-medium text-gray-900">₹200.00</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">GST (18%)</span>
-                  <span className="text-sm font-medium text-gray-900">₹36.00</span>
+                  <span className="text-sm text-gray-600">Application Fee (Including GST)</span>
+                  <span className="text-sm font-medium text-gray-900">₹{applicationFee}</span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                  <span className="text-base font-bold text-gray-900">Total Amount</span>
-                  <span className="text-xl font-bold text-green-600">₹236.00</span>
+                  <span className="text-base font-bold text-gray-900">Total Amount Paid</span>
+                  <span className="text-xl font-bold text-green-600">₹{transactionDetails?.amount || applicationFee}</span>
                 </div>
               </div>
             </div>

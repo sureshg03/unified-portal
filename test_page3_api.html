@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Page3 API</title>
+</head>
+<body>
+    <h1>Testing Page3 API</h1>
+    <button onclick="testAPI()">Test API Call</button>
+    <pre id="output"></pre>
+
+    <script>
+        async function testAPI() {
+            const token = localStorage.getItem('token');
+            const output = document.getElementById('output');
+            
+            if (!token) {
+                output.textContent = 'ERROR: No token found in localStorage';
+                return;
+            }
+            
+            output.textContent = 'Fetching...\n';
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/application/page3/', {
+                    headers: {
+                        'Authorization': `Token ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                output.textContent = JSON.stringify(data, null, 2);
+                
+                console.log('Full Response:', data);
+                
+                if (data.status === 'success' && data.data) {
+                    console.log('Document URLs:');
+                    console.log('Photo:', data.data.photo_url);
+                    console.log('Signature:', data.data.signature_url);
+                    console.log('Community:', data.data.community_certificate_url);
+                    console.log('Aadhaar:', data.data.aadhaar_url);
+                    console.log('TC:', data.data.transfer_certificate_url);
+                }
+            } catch (error) {
+                output.textContent = 'ERROR: ' + error.message;
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -720,15 +720,21 @@ export const generateProfessionalApplicationPDF = (data, mode = 'preview') => {
           </tr>
           <tr>
             <td class="row-number"></td>
-            <td class="field-label">Course</td>
+            <td class="field-label">Degree</td>
             <td class="field-separator">:</td>
-            <td class="field-value">${data.course || data.course_name || data.selected_course || 'Social Welfare Administration'}</td>
+            <td class="field-value">${data.degree || data.course?.split(' - ')[0] || localStorage.getItem('selected_degree') || '-'}</td>
+          </tr>
+          <tr>
+            <td class="row-number"></td>
+            <td class="field-label">Branch / Specialization</td>
+            <td class="field-separator">:</td>
+            <td class="field-value">${data.branch_name || data.course?.split(' - ')[1] || localStorage.getItem('selected_branch') || '-'}</td>
           </tr>
           <tr>
             <td class="row-number"></td>
             <td class="field-label">Medium</td>
             <td class="field-separator">:</td>
-            <td class="field-value">${data.medium || data.medium_of_instruction || 'English'}</td>
+            <td class="field-value">${data.medium || data.medium_of_instruction || localStorage.getItem('selected_medium') || 'English'}</td>
           </tr>
           <tr>
             <td class="row-number">2.</td>

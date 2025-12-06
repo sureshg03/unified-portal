@@ -13,6 +13,7 @@ const PaymentPage = () => {
     const [applicationData, setApplicationData] = useState(null);
     const [error, setError] = useState(null);
     const [paymentDetails, setPaymentDetails] = useState(null);
+    const [applicationFee, setApplicationFee] = useState('354.00');
     useEffect(() => {
         fetchApplicationData();
     }, []);
@@ -28,6 +29,10 @@ const PaymentPage = () => {
             const response = await axios.get('http://localhost:8000/api/application-payment-data/', { headers: { Authorization: `Token ${token}` } });
             if (response.data.status === 'success') {
                 setApplicationData(response.data.data);
+                // Set dynamic application fee from API
+                if (response.data.data.payment?.application_fee) {
+                    setApplicationFee(response.data.data.payment.application_fee.toFixed(2));
+                }
                 setError(null);
             }
             else {
@@ -62,7 +67,7 @@ const PaymentPage = () => {
                     transaction_id: response.data.data?.transaction_id || `TXN${Date.now()}`,
                     bank_transaction_id: response.data.data?.bank_transaction_id || `BANK${Date.now()}`,
                     order_id: response.data.data?.order_id || `ORD${Date.now()}`,
-                    amount: response.data.data?.amount || '354.00',
+                    amount: response.data.data?.amount || applicationFee,
                     payment_mode: 'DUMMY_GATEWAY',
                     transaction_date: new Date().toLocaleString(),
                     status: 'SUCCESS'
@@ -248,6 +253,42 @@ const PaymentPage = () => {
           </div>
         </div>
 
+        {/* Application Number Card - Prominent Display */}
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }} 
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl shadow-lg overflow-hidden"
+        >
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-14 h-14 bg-white/20 rounded-lg flex items-center justify-center">
+                  <DocumentArrowDownIcon className="h-8 w-8 text-white"/>
+                </div>
+                <div>
+                  <p className="text-sm text-purple-100 font-medium mb-1">
+                    {application.application_id ? 'Your Application Number' : 'Application Number Format'}
+                  </p>
+                  <div className="font-mono text-2xl font-bold text-white">
+                    {application.application_id || applicationData.application_id_format?.format || 'PU/ODL/XXXX/A25/XXXX'}
+                  </div>
+                  {!application.application_id && (
+                    <p className="text-xs text-purple-200 mt-1 italic">
+                      Complete payment to generate your unique Application ID
+                    </p>
+                  )}
+                </div>
+              </div>
+              {application.application_id && (
+                <div className="flex items-center space-x-2 bg-white/20 px-4 py-2 rounded-lg">
+                  <CheckCircleIcon className="h-5 w-5 text-white"/>
+                  <span className="text-sm font-semibold text-white">Generated</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </motion.div>
+
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left Column - Student & Application Info */}
           <div className="lg:col-span-1 space-y-6">
@@ -264,10 +305,23 @@ const PaymentPage = () => {
                   </div>
                 </div>
                 
-                {application.application_id && (<div className="mt-4 pt-4 border-t border-white/20">
-                    <p className="text-xs text-indigo-200 mb-1">Application ID</p>
-                    <p className="font-mono text-sm font-semibold">{application.application_id}</p>
-                  </div>)}
+                <div className="mt-4 pt-4 border-t border-white/20">
+                  <p className="text-xs text-indigo-200 mb-1">
+                    {application.application_id ? 'Application ID' : 'Application Number Format'}
+                  </p>
+                  {application.application_id ? (
+                    <p className="font-mono text-sm font-semibold bg-white/10 px-3 py-2 rounded">{application.application_id}</p>
+                  ) : (
+                    <div>
+                      <p className="font-mono text-sm font-semibold bg-white/10 px-3 py-2 rounded mb-2">
+                        {applicationData.application_id_format?.format || 'PU/ODL/XXXX/A25/XXXX'}
+                      </p>
+                      <p className="text-xs text-indigo-100 italic">
+                        Will be generated after payment completion
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
               
               <div className="p-6 space-y-3">
@@ -326,7 +380,7 @@ const PaymentPage = () => {
                             </div>
                             <div>
                               <p className="text-xs text-gray-600 uppercase tracking-wide font-medium">Application Fee</p>
-                              <p className="text-3xl font-bold text-gray-900">₹354.00</p>
+                              <p className="text-3xl font-bold text-gray-900">₹{applicationFee}</p>
                             </div>
                           </div>
                           <div className="text-right">
@@ -343,7 +397,7 @@ const PaymentPage = () => {
                         </div>
                         <div className="flex items-center justify-between pt-2">
                           <span className="text-sm font-bold text-gray-900">Total Amount</span>
-                          <span className="text-lg font-bold text-blue-600">₹354.00</span>
+                          <span className="text-lg font-bold text-blue-600">₹{applicationFee}</span>
                         </div>
                       </div>
 
@@ -367,7 +421,7 @@ const PaymentPage = () => {
                             <ShieldCheckIcon className="h-5 w-5 text-white"/>
                           </span>
                           <span className="text-sm">Pay Now</span>
-                          <span className="text-sm font-mono ml-1">₹354.00</span>
+                          <span className="text-sm font-mono ml-1">₹{applicationFee}</span>
                           <ArrowRightIcon className="h-4 w-4 ml-1 opacity-90"/>
                         </button>)}
 
@@ -467,7 +521,7 @@ const PaymentPage = () => {
                         </tr>
                         <tr className="hover:bg-gray-50 transition-colors">
                           <td className="py-3 pr-4 font-semibold text-gray-700">Transaction Amount</td>
-                          <td className="py-3 font-bold text-green-600 text-lg">₹{paymentDetails?.amount || '354.00'}</td>
+                          <td className="py-3 font-bold text-green-600 text-lg">₹{paymentDetails?.amount || applicationFee}</td>
                         </tr>
                         <tr className="hover:bg-gray-50 transition-colors">
                           <td className="py-3 pr-4 font-semibold text-gray-700">Payment Mode</td>
