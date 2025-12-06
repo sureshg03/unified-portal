@@ -100,6 +100,53 @@ class ApplicationSettingsViewSet(viewsets.ModelViewSet):
         created_by = getattr(user, 'lsc_code', None) or getattr(user, 'email', 'admin')
         serializer.save(created_by=str(created_by))
     
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
+    def active_academic_year(self, request):
+        """Get the academic year from the active/open admission settings"""
+        try:
+            # First try to get OPEN admission
+            active_admission = ApplicationSettings.objects.filter(
+                status='OPEN',
+                is_active=True
+            ).order_by('-admission_year').first()
+            
+            # If no OPEN admission, get the most recent active one
+            if not active_admission:
+                active_admission = ApplicationSettings.objects.filter(
+                    is_active=True
+                ).order_by('-admission_year').first()
+            
+            if active_admission:
+                return Response({
+                    'status': 'success',
+                    'academic_year': active_admission.admission_year,
+                    'admission_code': active_admission.admission_code,
+                    'admission_status': active_admission.status
+                })
+            else:
+                # Fallback to current year calculation
+                from datetime import datetime
+                current_year = datetime.now().year
+                fallback_year = f"{current_year}-{current_year + 1}"
+                return Response({
+                    'status': 'success',
+                    'academic_year': fallback_year,
+                    'admission_code': None,
+                    'admission_status': 'CLOSED'
+                })
+        except Exception as e:
+            # Fallback to current year calculation
+            from datetime import datetime
+            current_year = datetime.now().year
+            fallback_year = f"{current_year}-{current_year + 1}"
+            return Response({
+                'status': 'success',
+                'academic_year': fallback_year,
+                'admission_code': None,
+                'admission_status': 'CLOSED',
+                'error': str(e)
+            })
+    
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():

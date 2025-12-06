@@ -32,10 +32,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
       filter: 'blur(0px)', 
       transition: { 
         duration: 0.6, 
-        ease: [0.22, 1, 0.36, 1],
-        type: 'spring', 
-        stiffness: 120,
-        damping: 20
+        ease: [0.22, 1, 0.36, 1]
       } 
     },
     exit: { 
@@ -59,10 +56,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
       transition: { 
         duration: 0.5, 
         ease: [0.22, 1, 0.36, 1],
-        delay: i * 0.08,
-        type: 'spring', 
-        stiffness: 150,
-        damping: 15
+        delay: i * 0.08
       },
     }),
     hover: {
@@ -70,10 +64,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
       scale: 1.02,
       transition: { 
         duration: 0.3, 
-        ease: 'easeOut',
-        type: 'spring',
-        stiffness: 400,
-        damping: 10
+        ease: [0.4, 0, 0.2, 1]
       },
     },
     active: { 

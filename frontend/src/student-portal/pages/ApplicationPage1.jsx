@@ -134,14 +134,21 @@ const ApplicationPage1 = () => {
 
     const fetchAcademicYear = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/academic-year/`);
+        // Fetch from ApplicationSettings active academic year
+        const res = await axios.get(`${API_BASE_URL}/portal/application-settings/active_academic_year/`);
+        if (res.data.status === 'success' && res.data.academic_year) {
+          setFormData((prev) => ({
+            ...prev,
+            academic_year: res.data.academic_year,
+          }));
+        }
+      } catch (err) {
+        console.error('Error fetching academic year:', err.response?.data || err.message);
+        // Fallback to default year calculation
         setFormData((prev) => ({
           ...prev,
-          academic_year: res.data.academic_year || defaultAcademicYear,
+          academic_year: defaultAcademicYear,
         }));
-      } catch (err) {
-        toast.error('Error fetching academic year.');
-        console.error(err.response?.data || err.message);
       }
     };
 
@@ -254,7 +261,7 @@ const ApplicationPage1 = () => {
           transition={{ duration: 0.8 }}
           className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-purple-200/40"
         >
-          <h3 className="text-3xl sm:text-3xl mb-5 font-bold font-poppins bg-clip-text text-transparent bg-gradient-to-r from-indigo-700 to-purple-900 mb-6 sm:mb-4 tracking-tight text-center">
+          <h3 className="text-3xl sm:text-3xl mb-6 sm:mb-4 font-bold font-poppins bg-clip-text text-transparent bg-gradient-to-r from-indigo-700 to-purple-900 tracking-tight text-center">
             Basic Information
           </h3>
           {loading && (

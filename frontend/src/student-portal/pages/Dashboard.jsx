@@ -77,7 +77,7 @@ const Dashboard = () => {
       if (res.data && res.data.length > 0) {
         const settings = res.data[0];
         const isOpen = settings.status === 'OPEN' && settings.is_open && !settings.is_close;
-        
+
         setApplicationStatus(settings.status);
         setOpeningDate(settings.opening_date);
         setClosingDate(settings.closing_date);
@@ -87,9 +87,9 @@ const Dashboard = () => {
         if (!silent) {
           if (isOpen !== isApplicationOpen) {
             if (isOpen) {
-              toast.success('🎉 Applications are now OPEN!', { duration: 5000 });
+              toast.success('Applications are now OPEN!', { duration: 5000 });
             } else {
-              toast.error('⚠️ Applications are now CLOSED', { duration: 5000 });
+              toast.error('Applications are now CLOSED', { duration: 5000 });
             }
           }
         }
@@ -165,7 +165,7 @@ const Dashboard = () => {
     const handleResize = () => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
-          setIsSidebarOpen(window.innerWidth >= 768 ? true : false);
+        setIsSidebarOpen(window.innerWidth >= 768 ? true : false);
       }, 100);
     };
     handleResize();
@@ -230,21 +230,19 @@ const Dashboard = () => {
                   <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-48 -mt-48"></div>
                   <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -ml-32 -mb-32"></div>
                   <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent"></div>
-                  
-                  <div className="relative z-10 p-6 md:p-8">
-                    <div className="flex items-center gap-3 mb-4">
-                      
-                        <h1 className="text-2xl md:text-3xl font-semibold text-white mb-2">
-                          Welcome back, {userData.name}! 
-                        </h1>
-                        <p className="text-base md:text-lg text-indigo-100">
-                          Your application is in progress
-                        </p>
-                      </div>
+
+                  <div className="relative z-10 p-5 sm:p-6 md:p-8 lg:p-10">
+                    <div className="text-center mb-4 sm:mb-5 md:mb-6">
+                      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 sm:mb-3">
+                        Welcome back, {userData.name}!
+                      </h1>
+                      <p className="text-base sm:text-lg md:text-xl text-white/90">
+                        Your application is in progress
+                      </p>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                      <motion.div 
+                      <motion.div
                         whileHover={{ scale: 1.02, y: -2 }}
                         className="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/30 shadow-lg"
                       >
@@ -252,13 +250,14 @@ const Dashboard = () => {
                           <div className="w-12 h-12 bg-green-500/30 rounded-xl flex items-center justify-center shadow-lg">
                             <CheckCircleIcon className="h-6 w-6 text-green-200" />
                           </div>
-                          
-                            <p className="text-xs text-green-100 uppercase tracking-wider font-medium mb-0.5">Application</p>
-                            <p className="text-base md:text-lg font-semibold text-white">Submitted</p>
+                          <div>
+                            <p className="text-xs text-green-100 uppercase tracking-wider font-medium mb-1">Application</p>
+                            <p className="text-lg md:text-xl font-semibold text-white">Submitted</p>
                           </div>
+                        </div>
                       </motion.div>
-                      
-                      <motion.div 
+
+                      <motion.div
                         whileHover={{ scale: 1.02, y: -2 }}
                         className="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/30 shadow-lg"
                       >
@@ -266,13 +265,14 @@ const Dashboard = () => {
                           <div className="w-12 h-12 bg-blue-500/30 rounded-xl flex items-center justify-center shadow-lg">
                             <ClockIcon className="h-6 w-6 text-blue-200" />
                           </div>
-                          
-                            <p className="text-xs text-blue-100 uppercase tracking-wider font-medium mb-0.5">Status</p>
-                            <p className="text-base md:text-lg font-semibold text-white">Under Review</p>
+                          <div>
+                            <p className="text-xs text-blue-100 uppercase tracking-wider font-medium mb-1">Status</p>
+                            <p className="text-lg md:text-xl font-semibold text-white">Under Review</p>
                           </div>
+                        </div>
                       </motion.div>
-                      
-                      <motion.div 
+
+                      <motion.div
                         whileHover={{ scale: 1.02, y: -2 }}
                         className="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/30 shadow-lg"
                       >
@@ -289,6 +289,7 @@ const Dashboard = () => {
                         </div>
                       </motion.div>
                     </div>
+                  </div>
                 </motion.div>
 
                 {/* Quick Actions Cards */}
@@ -426,8 +427,8 @@ const Dashboard = () => {
                 </motion.div>
               </div>
             ) : (
-              <WelcomeSection 
-                deadline={deadline} 
+              <WelcomeSection
+                deadline={deadline}
                 handleNewApplication={handleNewApplication}
                 isApplicationOpen={isApplicationOpen}
                 applicationStatus={applicationStatus}
@@ -463,7 +464,7 @@ const Dashboard = () => {
       case 'prospectus':
         return <Prospectus />;
       case 'applications':
-        return <Applications applications={applications} handleOpenApplication={handleOpenApplication} />;
+        return <Applications handleOpenApplication={handleOpenApplication} />;
       case 'payment':
         return <Payment />;
       default:
@@ -558,11 +559,11 @@ const Dashboard = () => {
           </motion.div>
 
           {/* Main Content */}
-          <main className="flex-1 px-4 sm:px-6 md:px-8 py-6 pt-20 md:pt-6 z-20 overflow-y-auto scrollbar">
-            <div className="max-w-5xl mx-auto">
+          <main className="flex-1 px-6 sm:px-8 md:px-10 py-8 pt-20 md:pt-8 z-20 overflow-y-auto scrollbar">
+            <div className="max-w-6xl mx-auto">
               {renderContent()}
             </div>
-            <footer className="mt-8 w-full max-w-5xl mx-auto border-t border-gray-200 pt-4">
+            <footer className="mt-12 w-full max-w-6xl mx-auto border-t border-gray-200 pt-6">
               <Footer />
             </footer>
           </main>
@@ -698,8 +699,8 @@ const Dashboard = () => {
         /* Responsive adjustments */
         @media (min-width: 768px) {
           main {
-            margin-left: 272px; /* 256px sidebar + 16px gap */
-            width(100% - 272px); /* Occupy remaining space after sidebar and gap */
+            margin-left: 288px; /* 256px sidebar + 32px gap */
+            width(100% - 288px); /* Occupy remaining space after sidebar and gap */
           }
         }
         @media (max-width: 767px) {

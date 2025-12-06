@@ -51,6 +51,7 @@ const StudentApplicationView.FC = () => {
   const navigate = useNavigate();
   const [student, setStudent] = useState<>(null);
   const [loading, setLoading] = useState(true);
+  const [academicYear, setAcademicYear] = useState('2025-26');
 
   // Extract application ID from URL
   const pathParts = location.pathname.split('/');
@@ -60,8 +61,20 @@ const StudentApplicationView.FC = () => {
   useEffect(() => {
     if (applicationId) {
       fetchStudentDetails();
+      fetchAcademicYear();
     }
   }, [applicationId]);
+
+  const fetchAcademicYear = async () => {
+    try {
+      const res = await axios.get('http://localhost:8000/portal/application-settings/active_academic_year/');
+      if (res.data.status === 'success' && res.data.academic_year) {
+        setAcademicYear(res.data.academic_year);
+      }
+    } catch (err) {
+      console.error('Error fetching academic year:', err);
+    }
+  };
 
   const fetchStudentDetails = async () => {
     try {
@@ -225,7 +238,7 @@ const StudentApplicationView.FC = () => {
 
           <>
             <>
-              Open and Distance Learning Programme (ODL) Admission for the Academic Year {student.academic_year || '2025-26'}
+              Open and Distance Learning Programme (ODL) Admission for the Academic Year {student.academic_year || academicYear}
             <>
 
             {/* Application Info Box with Photo */}

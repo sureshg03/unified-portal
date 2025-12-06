@@ -140,7 +140,7 @@ const ApplicationDownloadDashboard = () => {
         className="mb-8"
       >
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg">
+          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
             <DocumentTextIcon className="h-10 w-10 text-white" />
           </div>
           <div>
@@ -154,16 +154,14 @@ const ApplicationDownloadDashboard = () => {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className={`p-6 rounded-xl border-2 mb-6 shadow-lg ${
-          isPaid
-            ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-500'
-            : 'bg-gradient-to-br from-orange-50 to-yellow-50 border-orange-500'
-        }`}
+        className={`p-6 rounded-xl border-2 mb-6 shadow-lg ${isPaid
+            ? 'bg-green-50 border-green-500'
+            : 'bg-orange-50 border-orange-500'
+          }`}
       >
         <div className="flex items-center gap-4">
-          <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg ${
-            isPaid ? 'bg-green-500' : 'bg-orange-500'
-          }`}>
+          <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg ${isPaid ? 'bg-green-500' : 'bg-orange-500'
+            }`}>
             {isPaid ? (
               <CheckCircleIcon className="h-8 w-8 text-white" />
             ) : (
@@ -191,7 +189,7 @@ const ApplicationDownloadDashboard = () => {
         className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden mb-6"
       >
         {/* Card Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6">
+        <div className="bg-blue-600 p-6">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
               <IdentificationIcon className="h-6 w-6 text-white" />
@@ -208,7 +206,7 @@ const ApplicationDownloadDashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Left Column */}
             <div className="space-y-4">
-              <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
+              <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <IdentificationIcon className="h-6 w-6 text-blue-600 mt-0.5" />
                 <div>
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Application ID</p>
@@ -218,7 +216,7 @@ const ApplicationDownloadDashboard = () => {
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-purple-50 to-purple-50 rounded-lg border border-purple-200">
+              <div className="flex items-start gap-3 p-4 bg-purple-50 rounded-lg border border-purple-200">
                 <DocumentTextIcon className="h-6 w-6 text-purple-600 mt-0.5" />
                 <div>
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Student Name</p>
@@ -228,7 +226,7 @@ const ApplicationDownloadDashboard = () => {
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-indigo-50 to-violet-50 rounded-lg border border-indigo-200">
+              <div className="flex items-start gap-3 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
                 <AcademicCapIcon className="h-6 w-6 text-indigo-600 mt-0.5" />
                 <div>
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Course Applied</p>
@@ -241,21 +239,20 @@ const ApplicationDownloadDashboard = () => {
 
             {/* Right Column */}
             <div className="space-y-4">
-              <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
+              <div className="flex items-start gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
                 <CheckCircleIcon className="h-6 w-6 text-green-600 mt-0.5" />
                 <div>
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Status</p>
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold ${
-                    isPaid
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold ${isPaid
                       ? 'bg-green-100 text-green-700 border border-green-300'
                       : 'bg-orange-100 text-orange-700 border border-orange-300'
-                  }`}>
+                    }`}>
                     {isPaid ? 'VERIFIED' : 'PENDING PAYMENT'}
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
+              <div className="flex items-start gap-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                 <CalendarIcon className="h-6 w-6 text-yellow-600 mt-0.5" />
                 <div>
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Submission Date</p>
@@ -269,7 +266,7 @@ const ApplicationDownloadDashboard = () => {
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-rose-50 to-red-50 rounded-lg border border-rose-200">
+              <div className="flex items-start gap-3 p-4 bg-rose-50 rounded-lg border border-rose-200">
                 <DocumentCheckIcon className="h-6 w-6 text-rose-600 mt-0.5" />
                 <div>
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Email</p>
@@ -293,11 +290,10 @@ const ApplicationDownloadDashboard = () => {
         {/* Print Preview Card */}
         <motion.div
           whileHover={{ scale: isPaid ? 1.03 : 1 }}
-          className={`bg-gradient-to-br rounded-xl shadow-xl p-6 text-white relative overflow-hidden group ${
-            isPaid
-              ? 'from-indigo-600 to-purple-600 cursor-pointer'
-              : 'from-gray-400 to-gray-500 cursor-not-allowed'
-          }`}
+          className={`bg-indigo-600 rounded-xl shadow-xl p-6 text-white relative overflow-hidden group ${isPaid
+              ? 'cursor-pointer'
+              : 'opacity-60 cursor-not-allowed'
+            }`}
           onClick={isPaid ? handlePrintPreview : null}
         >
           <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
@@ -318,7 +314,7 @@ const ApplicationDownloadDashboard = () => {
                   animate={{ x: [0, 5, 0] }}
                   transition={{ repeat: Infinity, duration: 1.5 }}
                 >
-                  ΓåÆ
+                  →
                 </motion.div>
               </div>
             ) : (
@@ -332,11 +328,10 @@ const ApplicationDownloadDashboard = () => {
         {/* Direct Download Card */}
         <motion.div
           whileHover={{ scale: isPaid ? 1.03 : 1 }}
-          className={`bg-gradient-to-br rounded-xl shadow-xl p-6 text-white relative overflow-hidden group ${
-            isPaid
-              ? 'from-blue-600 to-cyan-600 cursor-pointer'
-              : 'from-gray-400 to-gray-500 cursor-not-allowed'
-          }`}
+          className={`bg-blue-600 rounded-xl shadow-xl p-6 text-white relative overflow-hidden group ${isPaid
+              ? 'cursor-pointer'
+              : 'opacity-60 cursor-not-allowed'
+            }`}
           onClick={isPaid ? handleDirectDownload : null}
         >
           <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
@@ -357,7 +352,7 @@ const ApplicationDownloadDashboard = () => {
                   animate={{ x: [0, 5, 0] }}
                   transition={{ repeat: Infinity, duration: 1.5 }}
                 >
-                  ΓåÆ
+                  →
                 </motion.div>
               </div>
             ) : (
@@ -371,11 +366,10 @@ const ApplicationDownloadDashboard = () => {
         {/* Print Directly Card */}
         <motion.div
           whileHover={{ scale: isPaid ? 1.03 : 1 }}
-          className={`bg-gradient-to-br rounded-xl shadow-xl p-6 text-white relative overflow-hidden group ${
-            isPaid
-              ? 'from-green-600 to-emerald-600 cursor-pointer'
-              : 'from-gray-400 to-gray-500 cursor-not-allowed'
-          }`}
+          className={`bg-green-600 rounded-xl shadow-xl p-6 text-white relative overflow-hidden group ${isPaid
+              ? 'cursor-pointer'
+              : 'opacity-60 cursor-not-allowed'
+            }`}
           onClick={isPaid ? handlePrintPreview : null}
         >
           <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
@@ -396,7 +390,7 @@ const ApplicationDownloadDashboard = () => {
                   animate={{ x: [0, 5, 0] }}
                   transition={{ repeat: Infinity, duration: 1.5 }}
                 >
-                  ΓåÆ
+                  →
                 </motion.div>
               </div>
             ) : (

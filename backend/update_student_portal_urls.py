@@ -82,14 +82,12 @@ def replace_hardcoded_urls(content):
     # Fix closing quotes/backticks
     content = re.sub(
         r"`\$\{API_BASE_URL\}([^`'\"]*)'",
-        r"`${API_BASE_URL}\1`",
+        r"`\$\{API_BASE_URL\}\1`",
         content
     )
     content = re.sub(
-        r'`\$\{API_BASE_URL\}([^`\'"]*)
-
-"',
-        r"`${API_BASE_URL}\1`",
+        r'`\$\{API_BASE_URL\}([^`\'"]*)`',
+        r"`\$\{API_BASE_URL\}\1`",
         content
     )
     

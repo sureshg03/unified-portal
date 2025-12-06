@@ -698,17 +698,18 @@ def verify_dummy_payment(request):
         logger.info(f"Processing dummy payment for user: {user.email}")
         
         # Get the student to fetch LSC code
-        try:
-            student = Student.objects.get(email=user.email)
-            lsc_code = student.lsc_code or "LC0000"  # Default if no LSC code
-        except Student.DoesNotExist:
-            lsc_code = "LC0000"
-            logger.warning(f"Student not found for {user.email}, using default LSC code")
+        student = Student.objects.filter(email=user.email).first()
+        if student and student.lsc_code:
+            lsc_code = student.lsc_code
+            logger.info(f"Using student LSC code: {lsc_code}")
+        else:
+            # Default to CDOE main center for direct registrations
+            lsc_code = "LC2101"
+            logger.info(f"Student has no LSC code, using CDOE main center: {lsc_code}")
         
         # Get the application to fetch mode_of_study
-        try:
-            application = Application.objects.get(user=user)
-        except Application.DoesNotExist:
+        application = Application.objects.filter(user=user).first()
+        if not application:
             return Response({
                 'status': 'error',
                 'message': 'Application not found. Please complete your application first.'
@@ -724,47 +725,53 @@ def verify_dummy_payment(request):
         
         # Generate Application ID
         # Format: PU/MODE/LSC_CODE/YEAR/NUMBER
-        # Example: PU/ODL/LC2101/A24/0001
+        # Example: PU/ODL/LC2101/A25/0001
         
-        # Determine mode code
-        mode_mapping = {
-            'Online': 'ODL',
-            'Distance': 'DL',
-            'Regular': 'REG',
-            'Part-Time': 'PT'
-        }
-        mode_code = mode_mapping.get(application.mode_of_study, 'ODL')
+        # Determine mode code (frontend sends ODL or OL directly)
+        mode_code = application.mode_of_study if application.mode_of_study in ['ODL', 'OL'] else 'ODL'
+        logger.info(f"Using mode code: {mode_code}")
         
         # Get year code from academic_year or current year
         from datetime import datetime
         if application.academic_year:
-            # Extract year from academic_year (e.g., "2024-25" -> "A24")
-            year_part = application.academic_year.split('-')[0]
+            # Extract year from academic_year (e.g., "2024-2025" or "2024-25" -> "A24")
+            year_part = application.academic_year.split('-')[0].strip()
             year_code = f"A{year_part[-2:]}"
+            logger.info(f"Using academic year from application: {application.academic_year} -> {year_code}")
         else:
             # Use current year
             current_year = datetime.now().year
             year_code = f"A{str(current_year)[-2:]}"
+            logger.info(f"No academic year in application, using current year: {year_code}")
         
         # Get the next serial number for this combination
         # Find the latest application with similar pattern
         pattern_prefix = f"PU/{mode_code}/{lsc_code}/{year_code}/"
+        logger.info(f"Searching for applications with prefix: {pattern_prefix}")
+        
         latest_app = Application.objects.filter(
             application_id__startswith=pattern_prefix
         ).order_by('-application_id').first()
         
         if latest_app and latest_app.application_id:
             # Extract the serial number from the last application
-            last_serial = int(latest_app.application_id.split('/')[-1])
-            new_serial = last_serial + 1
+            try:
+                last_serial = int(latest_app.application_id.split('/')[-1])
+                new_serial = last_serial + 1
+                logger.info(f"Found existing application: {latest_app.application_id}, new serial: {new_serial}")
+            except (ValueError, IndexError) as e:
+                logger.warning(f"Could not parse serial from {latest_app.application_id}: {e}")
+                new_serial = 1
         else:
             new_serial = 1
+            logger.info(f"No existing applications found with prefix {pattern_prefix}, starting at 0001")
         
         # Format serial number as 4 digits
         serial_number = f"{new_serial:04d}"
         
         # Create the full application ID
         application_id = f"PU/{mode_code}/{lsc_code}/{year_code}/{serial_number}"
+        logger.info(f"Generated Application ID: {application_id}")
         
         # Update application
         application.application_id = application_id
@@ -945,19 +952,17 @@ def get_application_payment_data(request):
         user = request.user
         logger.info(f"Fetching application payment data for user: {user.email}")
         
-        # Get Student
-        try:
-            student = Student.objects.get(email=user.email)
-        except Student.DoesNotExist:
+        # Get Student - use filter().first() to handle duplicates
+        student = Student.objects.filter(email=user.email).first()
+        if not student:
             return Response({
                 'status': 'error',
                 'message': 'Student profile not found. Please complete your profile first.'
             }, status=404)
         
-        # Get Application
-        try:
-            application = Application.objects.get(user=user)
-        except Application.DoesNotExist:
+        # Get Application - use filter().first() to handle duplicates
+        application = Application.objects.filter(user=user).first()
+        if not application:
             return Response({
                 'status': 'error',
                 'message': 'Application not found. Please complete your application first.'
@@ -1004,13 +1009,22 @@ def get_application_payment_data(request):
         }
         mode_code = mode_mapping.get(application.mode_of_study, 'ODL')
         
+        # Get LSC information with proper defaults
+        if student.lsc_code and student.lsc_name:
+            lsc_code = student.lsc_code
+            lsc_name = student.lsc_name
+        else:
+            # Default to CDOE main center for direct registrations
+            lsc_code = 'LC2101'
+            lsc_name = 'Centre for Distance and Online Education (CDOE)'
+        
         # Build response data
         response_data = {
             'student': {
                 'name': student.name,
                 'email': student.email,
-                'lsc_code': student.lsc_code or 'LSC001',
-                'lsc_name': student.lsc_name or 'Default Center'
+                'lsc_code': lsc_code,
+                'lsc_name': lsc_name
             },
             'application': {
                 'id': application.id,
@@ -1028,9 +1042,9 @@ def get_application_payment_data(request):
             'application_id_format': {
                 'prefix': 'PU',
                 'mode': mode_code,
-                'lsc': student.lsc_code or 'LSC001',
+                'lsc': lsc_code,
                 'year': admission_code,
-                'format': f"PU/{mode_code}/{student.lsc_code or 'LSC001'}/{admission_code}/XXXX"
+                'format': f"PU/{mode_code}/{lsc_code}/{admission_code}/XXXX"
             }
         }
         
@@ -1587,10 +1601,11 @@ def get_application_preview(request):
             logger.error(f"Error fetching StudentDetails for {user.email}: {str(e)}")
             data['student_details'] = None
 
-        # Fetch MarksheetUpload data - use email-based lookup
+        # Fetch MarksheetUpload data - use StudentDetails instead of Student
         try:
-            if student:
-                marksheet_uploads = MarksheetUpload.objects.filter(student=student)
+            student_details_obj = StudentDetails.objects.filter(email=user.email).first()
+            if student_details_obj:
+                marksheet_uploads = MarksheetUpload.objects.filter(student=student_details_obj)
                 data['marksheet_uploads'] = MarksheetUploadSerializer(marksheet_uploads, many=True).data
             else:
                 data['marksheet_uploads'] = []

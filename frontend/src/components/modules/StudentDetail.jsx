@@ -23,6 +23,7 @@ const StudentDetail = () => {
   const [notEligibleReason, setNotEligibleReason] = useState('');
   const [notConfirmedReason, setNotConfirmedReason] = useState('');
   const [saving, setSaving] = useState(false);
+  const [academicYear, setAcademicYear] = useState('2025-26');
 
   const pathParts = location.pathname.split('/');
   // Extract applicationId from URL - handle IDs that contain slashes
@@ -38,11 +39,23 @@ const StudentDetail = () => {
   useEffect(() => {
     if (applicationId && applicationId !== 'verify') {
       fetchStudentDetails();
+      fetchAcademicYear();
     } else {
       console.error('Invalid application ID:', applicationId);
       toast.error('Invalid application ID in URL');
     }
   }, [applicationId]);
+
+  const fetchAcademicYear = async () => {
+    try {
+      const res = await axios.get('http://localhost:8000/portal/application-settings/active_academic_year/');
+      if (res.data.status === 'success' && res.data.academic_year) {
+        setAcademicYear(res.data.academic_year);
+      }
+    } catch (err) {
+      console.error('Error fetching academic year:', err);
+    }
+  };
 
   const fetchStudentDetails = async () => {
     try {
@@ -832,7 +845,7 @@ const StudentDetail = () => {
             </div>
             <div className="bg-blue-50 rounded-lg p-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">Academic Year</label>
-              <p className="text-lg font-semibold text-blue-800">{student.academic_year || '2025-26'}</p>
+              <p className="text-lg font-semibold text-blue-800">{student.academic_year || academicYear}</p>
             </div>
           </div>
         </div>
