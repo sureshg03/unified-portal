@@ -18,6 +18,8 @@ const PaymentHistory = () => {
   const [loading, setLoading] = useState(true);
   const [transactionDetails, setTransactionDetails] = useState(null);
   const [applicationFee, setApplicationFee] = useState('236.00');
+  const [semesterPayments, setSemesterPayments] = useState([]);
+  const [allTransactions, setAllTransactions] = useState([]);
 
   useEffect(() => {
     fetchPaymentHistory();
@@ -31,18 +33,27 @@ const PaymentHistory = () => {
         return;
       }
 
-      console.log('📊 Fetching payment history from database...');
-      const response = await axios.get(
+      console.log('📊 Fetching complete payment history from database...');
+
+      // Fetch application payment history
+      const appResponse = await axios.get(
         'http://localhost:8000/api/payment-history/',
         { headers: { Authorization: `Token ${token}` } }
       );
 
-      console.log('📨 Payment history response:', response.data);
+      // Fetch all semester payments
+      const semesterResponse = await axios.get(
+        'http://localhost:8000/api/semester-payments/',
+        { headers: { Authorization: `Token ${token}` } }
+      );
 
-      if (response.data.status === 'success') {
-        const data = response.data.data;
+      console.log('📨 Application payment response:', appResponse.data);
+      console.log('📨 Semester payments response:', semesterResponse.data);
+
+      if (appResponse.data.status === 'success') {
+        const data = appResponse.data.data;
         setPaymentData(data);
-        console.log('✅ Payment data set:', data);
+        console.log('✅ Application payment data set:', data);
         
         // Set dynamic application fee
         if (data.payment?.application_fee) {
@@ -58,10 +69,56 @@ const PaymentHistory = () => {
         } else {
           console.log('ℹ️ No transaction details found in database');
         }
-      } else {
-        console.warn('⚠️ Unexpected response status:', response.data);
-        toast.error(response.data.message || 'Failed to load payment history');
       }
+
+      // Process semester payments
+      if (semesterResponse.data.status === 'success') {
+        const semesterData = semesterResponse.data.payments || [];
+        setSemesterPayments(semesterData);
+        console.log('✅ Semester payments loaded:', semesterData);
+      }
+
+      // Combine all transactions for display
+      const allTxns = [];
+
+      // Add application payment if exists
+      if (appResponse.data.status === 'success' && appResponse.data.data.transaction) {
+        allTxns.push({
+          id: appResponse.data.data.transaction.transaction_id,
+          type: 'application',
+          title: 'Application Fee',
+          description: 'One-time application processing fee',
+          amount: parseFloat(appResponse.data.data.transaction.amount),
+          status: 'paid',
+          transactionId: appResponse.data.data.transaction.transaction_id,
+          date: appResponse.data.data.transaction.transaction_date,
+          paymentMethod: appResponse.data.data.transaction.payment_mode || 'Online',
+          semester: null
+        });
+      }
+
+      // Add semester payments
+      if (semesterResponse.data.status === 'success') {
+        const semesterTxns = (semesterResponse.data.payments || []).map(payment => ({
+          id: payment.transaction_id || `SEM-${payment.semester_number}-${Date.now()}`,
+          type: 'semester',
+          title: `${payment.semester} Fee`,
+          description: `Semester ${payment.semester_number} tuition fee`,
+          amount: parseFloat(payment.amount),
+          status: payment.payment_status === 'SUCCESS' ? 'paid' : 'pending',
+          transactionId: payment.transaction_id,
+          date: payment.payment_date,
+          paymentMethod: payment.payment_method || 'Online',
+          semester: payment.semester_number
+        }));
+        allTxns.push(...semesterTxns);
+      }
+
+      // Sort transactions by date (newest first)
+      allTxns.sort((a, b) => new Date(b.date) - new Date(a.date));
+      setAllTransactions(allTxns);
+      console.log('✅ All transactions combined:', allTxns);
+
     } catch (error) {
       console.error('❌ Error fetching payment history:', error);
       console.error('Error response:', error.response?.data);
@@ -113,12 +170,25 @@ const PaymentHistory = () => {
   const isPaid = paymentData?.application?.payment_status === 'P';
   const isSemesterPaid = paymentData?.payment?.semester_fee_paid === true || paymentData?.application?.semester_payment_status === 'P';
   
+  // Calculate totals from actual transaction data
+  const totalPaid = allTransactions
+    .filter(txn => txn.status === 'paid')
+    .reduce((sum, txn) => sum + txn.amount, 0);
+  
+  const totalPending = allTransactions
+    .filter(txn => txn.status === 'pending')
+    .reduce((sum, txn) => sum + txn.amount, 0);
+  
   console.log('🎨 Rendering PaymentHistory:', {
     paymentData,
     isPaid,
     transactionDetails,
     applicationFee,
-    loading
+    loading,
+    semesterPayments,
+    allTransactions,
+    totalPaid,
+    totalPending
   });
 
   return (
@@ -203,19 +273,24 @@ const PaymentHistory = () => {
                 </div>
                 <div>
                   <h2 className={`text-xl font-bold ${isSemesterPaid ? 'text-green-700' : 'text-blue-700'}`}>
-                    First Semester Fee
+                    Semester Fees
                   </h2>
                   <p className={`text-sm ${isSemesterPaid ? 'text-green-600' : 'text-blue-600'} mt-1`}>
                     {isSemesterPaid
-                      ? 'Payment completed successfully'
-                      : 'Semester tuition fee payment'}
+                      ? `${semesterPayments.filter(p => p.payment_status === 'SUCCESS').length} semester(s) paid`
+                      : 'Semester tuition fee payments'}
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-600 mb-1">Amount</p>
-                <p className="text-2xl font-bold text-gray-900">₹20,000</p>
-                <p className="text-xs text-gray-500 mt-1">Per Semester</p>
+                <p className="text-sm text-gray-600 mb-1">Total Paid</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  ₹{semesterPayments
+                    .filter(p => p.payment_status === 'SUCCESS')
+                    .reduce((sum, p) => sum + parseFloat(p.amount), 0)
+                    .toLocaleString()}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Across all semesters</p>
               </div>
             </div>
           </div>
@@ -259,76 +334,68 @@ const PaymentHistory = () => {
 
         {/* Transaction List */}
         <div className="divide-y divide-gray-200">
-          {/* Application Fee Transaction */}
-          {isPaid && (
-            <div className="p-6 hover:bg-gray-50 transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <CheckCircleIcon className="h-6 w-6 text-green-600" />
+          {allTransactions.length > 0 ? (
+            allTransactions.map((transaction, index) => (
+              <div key={transaction.id || index} className="p-6 hover:bg-gray-50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                      transaction.status === 'paid' ? 'bg-green-100' : 'bg-orange-100'
+                    }`}>
+                      {transaction.status === 'paid' ? (
+                        <CheckCircleIcon className={`h-6 w-6 ${
+                          transaction.status === 'paid' ? 'text-green-600' : 'text-orange-600'
+                        }`} />
+                      ) : (
+                        <ClockIcon className="h-6 w-6 text-orange-600" />
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900">{transaction.title}</h4>
+                      <p className="text-sm text-gray-600">{transaction.description}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {transaction.transactionId ? (
+                          <>Transaction ID: {transaction.transactionId} • </>
+                        ) : (
+                          <>Reference ID: {transaction.id} • </>
+                        )}
+                        {transaction.date 
+                          ? new Date(transaction.date).toLocaleDateString('en-IN')
+                          : 'Date not available'
+                        }
+                        {transaction.paymentMethod && (
+                          <> • {transaction.paymentMethod}</>
+                        )}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-lg font-semibold text-gray-900">Application Fee</h4>
-                    <p className="text-sm text-gray-600">One-time application processing fee</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Transaction ID: {transactionDetails?.transaction_id || 'N/A'} • 
-                      {transactionDetails?.transaction_date 
-                        ? new Date(transactionDetails.transaction_date).toLocaleDateString('en-IN')
-                        : 'N/A'
-                      }
+                  <div className="text-right">
+                    <p className={`text-lg font-bold ${
+                      transaction.status === 'paid' ? 'text-green-600' : 'text-gray-900'
+                    }`}>
+                      ₹{transaction.amount.toLocaleString()}
                     </p>
+                    {transaction.status === 'paid' ? (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                        <CheckCircleIcon className="h-3 w-3" />
+                        Paid
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
+                        <ClockIcon className="h-3 w-3" />
+                        Pending
+                      </span>
+                    )}
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-green-600">₹{applicationFee}</p>
-                  <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
-                    <CheckCircleIcon className="h-3 w-3" />
-                    Paid
-                  </span>
                 </div>
               </div>
+            ))
+          ) : (
+            <div className="p-6 text-center text-gray-500">
+              <BanknotesIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p>No transactions found</p>
             </div>
           )}
-
-          {/* Semester Fee Transaction */}
-          <div className="p-6 hover:bg-gray-50 transition-colors">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isSemesterPaid ? 'bg-green-100' : 'bg-blue-100'}`}>
-                  {isSemesterPaid ? (
-                    <CheckCircleIcon className={`h-6 w-6 ${isSemesterPaid ? 'text-green-600' : 'text-blue-600'}`} />
-                  ) : (
-                    <BanknotesIcon className="h-6 w-6 text-blue-600" />
-                  )}
-                </div>
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900">First Semester Fee</h4>
-                  <p className="text-sm text-gray-600">Semester 1 tuition fee (2025-26)</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {isSemesterPaid ? (
-                      <>Transaction ID: SEM2025-001 • December 7, 2025</>
-                    ) : (
-                      <>Due Date: December 20, 2025 • Status: Pending Payment</>
-                    )}
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className={`text-lg font-bold ${isSemesterPaid ? 'text-green-600' : 'text-gray-900'}`}>₹20,000</p>
-                {isSemesterPaid ? (
-                  <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
-                    <CheckCircleIcon className="h-3 w-3" />
-                    Paid
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
-                    <ClockIcon className="h-3 w-3" />
-                    Pending
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
       </motion.div>
 
@@ -344,19 +411,19 @@ const PaymentHistory = () => {
           <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
             <p className="text-sm text-green-600 font-medium">Total Paid</p>
             <p className="text-2xl font-bold text-green-700">
-              ₹{(isPaid ? parseFloat(applicationFee) : 0) + (isSemesterPaid ? 20000 : 0)}.00
+              ₹{totalPaid.toLocaleString()}.00
             </p>
           </div>
           <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
             <p className="text-sm text-orange-600 font-medium">Pending Payments</p>
             <p className="text-2xl font-bold text-orange-700">
-              ₹{(!isPaid ? parseFloat(applicationFee) : 0) + (!isSemesterPaid ? 20000 : 0)}.00
+              ₹{totalPending.toLocaleString()}.00
             </p>
           </div>
           <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-sm text-blue-600 font-medium">Total Due</p>
+            <p className="text-sm text-blue-600 font-medium">Total Transactions</p>
             <p className="text-2xl font-bold text-blue-700">
-              ₹{(!isPaid ? parseFloat(applicationFee) : 0) + (!isSemesterPaid ? 20000 : 0)}.00
+              {allTransactions.length}
             </p>
           </div>
         </div>
