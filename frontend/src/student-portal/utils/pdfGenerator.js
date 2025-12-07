@@ -329,7 +329,7 @@ export const generateReceiptPDF = (receiptData) => {
             <table>
               <tr><td>Course</td><td>${receiptData.course}</td></tr>
               <tr><td>Mode of Study</td><td>${receiptData.mode_of_study}</td></tr>
-              <tr><td>LSC Center</td><td>${receiptData.lsc_code} - ${receiptData.lsc_name}</td></tr>
+              <tr><td>LSC Center</td><td>${receiptData.lsc_code && receiptData.lsc_name ? `${receiptData.lsc_code} - ${receiptData.lsc_name}` : 'Direct Admission (CDOE Main Campus)'}</td></tr>
               <tr><td>Receipt Date</td><td>${receiptData.receipt_date || new Date().toLocaleDateString()}</td></tr>
             </table>
           </div>
@@ -582,6 +582,818 @@ export const generateApplicationPDF = (applicationData) => {
         window.onload = function() {
           window.print();
         }
+      </script>
+    </body>
+    </html>
+  `;
+
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(html);
+  printWindow.document.close();
+};
+
+export const generateIndividualReceiptPDF = (receiptData) => {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <base href="${window.location.origin}/">
+      <title>Payment Receipt - ${receiptData.transaction_id || receiptData.receipt_number}</title>
+      <style>
+        @page {
+          size: A4;
+          margin: 10mm;
+          @top-left { content: none; }
+          @top-center { content: none; }
+          @top-right { content: none; }
+          @bottom-left { content: none; }
+          @bottom-center { content: none; }
+          @bottom-right { content: none; }
+        }
+
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+
+        body {
+          font-family: 'Arial', sans-serif;
+          margin: 0;
+          padding: 15px;
+          color: #333;
+          font-size: 11px;
+          line-height: 1.3;
+        }
+
+        .container {
+          max-width: 100%;
+          border: 2px solid #2563eb;
+          padding: 15px;
+        }
+
+        .header {
+          text-align: center;
+          border-bottom: 3px solid #2563eb;
+          padding-bottom: 12px;
+          margin-bottom: 12px;
+        }
+
+        .header-content {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 8px;
+        }
+
+        .logo {
+          width: 70px;
+          height: 70px;
+          object-fit: contain;
+          margin-bottom: 8px;
+        }
+
+        .university-info {
+          text-align: center;
+          width: 100%;
+        }
+
+        .university-info h1 {
+          color: #4a04bcff;
+          font-size: 20px;
+          font-weight: bold;
+          margin-bottom: 4px;
+          line-height: 1.2;
+        }
+
+        .university-info .subtitle {
+          font-size: 9px;
+          color: #4b5563;
+          margin: 2px 0;
+          line-height: 1.3;
+        }
+
+        .cdoe-title {
+          font-size: 12px;
+          font-weight: bold;
+          color: #1100ccff;
+          margin: 5px 0 2px 0;
+        }
+
+        .odl-subtitle {
+          font-size: 10px;
+          color: #ff6600;
+          font-style: italic;
+          font-weight: 500;
+        }
+
+        .receipt-title {
+          background: #2563eb;
+          color: white;
+          padding: 8px;
+          font-weight: bold;
+          font-size: 14px;
+          margin-top: 10px;
+          text-align: center;
+          letter-spacing: 1px;
+        }
+
+        .content-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-bottom: 10px;
+        }
+
+        .full-width {
+          grid-column: 1 / -1;
+        }
+
+        .info-box {
+          border: 1px solid #d1d5db;
+          padding: 8px;
+          background: #f9fafb;
+        }
+
+        .info-box h3 {
+          color: #1e40af;
+          font-size: 11px;
+          font-weight: bold;
+          margin-bottom: 6px;
+          padding-bottom: 4px;
+          border-bottom: 2px solid #2563eb;
+        }
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 10px;
+        }
+
+        table td {
+          padding: 4px 6px;
+          border: 1px solid #d1d5db;
+        }
+
+        table td:first-child {
+          font-weight: 600;
+          color: #4b5563;
+          background: #f3f4f6;
+          width: 40%;
+        }
+
+        table td:last-child {
+          color: #111827;
+        }
+
+        .amount-box {
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white;
+          padding: 10px;
+          text-align: center;
+          border-radius: 5px;
+        }
+
+        .amount-box .amount {
+          font-size: 24px;
+          font-weight: bold;
+          margin: 3px 0;
+        }
+
+        .amount-box .label {
+          font-size: 9px;
+          opacity: 0.9;
+        }
+
+        .status-badge {
+          background: #d1fae5;
+          color: #065f46;
+          padding: 3px 10px;
+          border-radius: 12px;
+          font-weight: 600;
+          font-size: 10px;
+        }
+
+        .footer {
+          margin-top: 10px;
+          text-align: center;
+          padding-top: 8px;
+          border-top: 2px solid #e5e7eb;
+          color: #6b7280;
+          font-size: 9px;
+        }
+
+        .security-note {
+          background: #fef3c7;
+          border-left: 3px solid #f59e0b;
+          padding: 6px 8px;
+          margin: 8px 0;
+          font-size: 9px;
+        }
+
+        .action-buttons {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          display: flex;
+          gap: 10px;
+          z-index: 1000;
+          background: white;
+          padding: 10px;
+          border-radius: 8px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn {
+          padding: 10px 20px;
+          border: none;
+          border-radius: 5px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .btn-print {
+          background: #2563eb;
+          color: white;
+        }
+
+        .btn-print:hover {
+          background: #1d4ed8;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-back {
+          background: #6c757d;
+          color: white;
+        }
+
+        .btn-back:hover {
+          background: #545b62;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+        }
+
+        @media print {
+          body {
+            margin: 0;
+            padding: 10px;
+          }
+
+          .no-print {
+            display: none !important;
+          }
+
+          .action-buttons {
+            display: none !important;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="action-buttons no-print">
+        <button class="btn btn-back" onclick="window.close()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 7.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5z"/>
+          </svg>
+          Back
+        </button>
+        <button class="btn btn-print" onclick="window.print()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+            <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/>
+          </svg>
+          Print
+        </button>
+      </div>
+
+      <div class="container">
+        <div class="header">
+          <div class="header-content">
+            <img src="/logo.jpg" alt="University Logo" class="logo" />
+            <div class="university-info">
+              <h1>Periyar University</h1>
+              <div class="subtitle">State University - NAAC 'A+' Grade - NIRF Rank 94</div>
+              <div class="subtitle">State Public University Rank 40 - SDG Institutions Rank Band: 11-50</div>
+              <div class="subtitle">Salem-636011, Tamilnadu, India.</div>
+              <div class="cdoe-title">CENTRE FOR DISTANCE AND ONLINE EDUCATION (CDOE)</div>
+              <div class="odl-subtitle">Open and Distance Learning</div>
+            </div>
+          </div>
+          <div class="receipt-title">${receiptData.type === 'application' ? 'APPLICATION FEE' : 'SEMESTER FEE'} PAYMENT RECEIPT</div>
+        </div>
+
+        <div class="content-grid">
+          <div class="info-box">
+            <h3>Student Information</h3>
+            <table>
+              <tr><td>Application ID</td><td><strong>${receiptData.application_id}</strong></td></tr>
+              <tr><td>Name</td><td>${receiptData.student_name}</td></tr>
+              <tr><td>Email</td><td>${receiptData.email}</td></tr>
+              <tr><td>Phone</td><td>${receiptData.phone || 'N/A'}</td></tr>
+            </table>
+          </div>
+
+          <div class="info-box">
+            <h3>Payment Details</h3>
+            <table>
+              <tr><td>Payment Type</td><td>${receiptData.title}</td></tr>
+              <tr><td>Description</td><td>${receiptData.description}</td></tr>
+              ${receiptData.semester ? `<tr><td>Semester</td><td>${receiptData.semester}</td></tr>` : ''}
+              <tr><td>Payment Date</td><td>${receiptData.date ? new Date(receiptData.date).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN')}</td></tr>
+            </table>
+          </div>
+
+          <div class="info-box full-width">
+            <div class="amount-box">
+              <div class="label">Amount Paid (Including GST)</div>
+              <div class="amount">₹${receiptData.amount}</div>
+              <div class="label">Payment Status: <span class="status-badge">${receiptData.status === 'paid' ? 'SUCCESS' : 'PENDING'}</span></div>
+            </div>
+          </div>
+
+          <div class="info-box full-width">
+            <h3>Transaction Details</h3>
+            <table>
+              <tr>
+                <td>Transaction ID</td>
+                <td>${receiptData.transactionId || receiptData.id || 'N/A'}</td>
+                <td>Receipt Number</td>
+                <td>${receiptData.receipt_number || 'N/A'}</td>
+              </tr>
+              <tr>
+                <td>Payment Method</td>
+                <td>${receiptData.paymentMethod || 'Online Payment'}</td>
+                <td>Transaction Date</td>
+                <td>${receiptData.date ? new Date(receiptData.date).toLocaleString('en-IN') : new Date().toLocaleString('en-IN')}</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <div class="security-note">
+          <strong>⚠️ Important:</strong> This is an official payment receipt for ${receiptData.title}.
+          Please save this for your records. For any queries, contact the admission office with your Application ID.
+        </div>
+
+        <div class="footer">
+          <p><strong>This is a computer-generated receipt and does not require a signature.</strong></p>
+          <p>Generated on: ${new Date().toLocaleString()} | © ${new Date().getFullYear()} Periyar University CDOE. All rights reserved.</p>
+        </div>
+      </div>
+
+      <script>
+        document.addEventListener('keydown', function(e) {
+          if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+            e.preventDefault();
+            window.print();
+          }
+          if (e.key === 'Escape') {
+            window.close();
+          }
+        });
+      </script>
+    </body>
+    </html>
+  `;
+
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(html);
+  printWindow.document.close();
+};
+
+export const generateOverallPaymentReceiptPDF = (receiptData) => {
+  const { student, application, transactions, summary } = receiptData;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <base href="${window.location.origin}/">
+      <title>Complete Payment History - ${application.application_id}</title>
+      <style>
+        @page {
+          size: A4;
+          margin: 10mm;
+          @top-left { content: none; }
+          @top-center { content: none; }
+          @top-right { content: none; }
+          @bottom-left { content: none; }
+          @bottom-center { content: none; }
+          @bottom-right { content: none; }
+        }
+
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+
+        body {
+          font-family: 'Arial', sans-serif;
+          margin: 0;
+          padding: 15px;
+          color: #333;
+          font-size: 11px;
+          line-height: 1.3;
+        }
+
+        .container {
+          max-width: 100%;
+          border: 2px solid #2563eb;
+          padding: 15px;
+        }
+
+        .header {
+          text-align: center;
+          border-bottom: 3px solid #2563eb;
+          padding-bottom: 12px;
+          margin-bottom: 12px;
+        }
+
+        .header-content {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 8px;
+        }
+
+        .logo {
+          width: 70px;
+          height: 70px;
+          object-fit: contain;
+          margin-bottom: 8px;
+        }
+
+        .university-info {
+          text-align: center;
+          width: 100%;
+        }
+
+        .university-info h1 {
+          color: #4a04bcff;
+          font-size: 20px;
+          font-weight: bold;
+          margin-bottom: 4px;
+          line-height: 1.2;
+        }
+
+        .university-info .subtitle {
+          font-size: 9px;
+          color: #4b5563;
+          margin: 2px 0;
+          line-height: 1.3;
+        }
+
+        .cdoe-title {
+          font-size: 12px;
+          font-weight: bold;
+          color: #1100ccff;
+          margin: 5px 0 2px 0;
+        }
+
+        .odl-subtitle {
+          font-size: 10px;
+          color: #ff6600;
+          font-style: italic;
+          font-weight: 500;
+        }
+
+        .receipt-title {
+          background: #2563eb;
+          color: white;
+          padding: 8px;
+          font-weight: bold;
+          font-size: 14px;
+          margin-top: 10px;
+          text-align: center;
+          letter-spacing: 1px;
+        }
+
+        .content-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-bottom: 10px;
+        }
+
+        .full-width {
+          grid-column: 1 / -1;
+        }
+
+        .info-box {
+          border: 1px solid #d1d5db;
+          padding: 8px;
+          background: #f9fafb;
+        }
+
+        .info-box h3 {
+          color: #1e40af;
+          font-size: 11px;
+          font-weight: bold;
+          margin-bottom: 6px;
+          padding-bottom: 4px;
+          border-bottom: 2px solid #2563eb;
+        }
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 10px;
+        }
+
+        table td {
+          padding: 4px 6px;
+          border: 1px solid #d1d5db;
+        }
+
+        table td:first-child {
+          font-weight: 600;
+          color: #4b5563;
+          background: #f3f4f6;
+          width: 40%;
+        }
+
+        table td:last-child {
+          color: #111827;
+        }
+
+        .transactions-table {
+          margin-top: 10px;
+        }
+
+        .transactions-table th {
+          background: #2563eb;
+          color: white;
+          padding: 6px;
+          text-align: left;
+          font-weight: 600;
+        }
+
+        .transactions-table td {
+          padding: 4px 6px;
+          border: 1px solid #d1d5db;
+        }
+
+        .amount-box {
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white;
+          padding: 10px;
+          text-align: center;
+          border-radius: 5px;
+        }
+
+        .amount-box .amount {
+          font-size: 24px;
+          font-weight: bold;
+          margin: 3px 0;
+        }
+
+        .amount-box .label {
+          font-size: 9px;
+          opacity: 0.9;
+        }
+
+        .summary-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 8px;
+          margin-top: 10px;
+        }
+
+        .summary-item {
+          text-align: center;
+          padding: 8px;
+          border-radius: 4px;
+        }
+
+        .summary-paid {
+          background: #d1fae5;
+          color: #065f46;
+        }
+
+        .summary-pending {
+          background: #fed7aa;
+          color: #92400e;
+        }
+
+        .summary-total {
+          background: #e0e7ff;
+          color: #3730a3;
+        }
+
+        .footer {
+          margin-top: 10px;
+          text-align: center;
+          padding-top: 8px;
+          border-top: 2px solid #e5e7eb;
+          color: #6b7280;
+          font-size: 9px;
+        }
+
+        .security-note {
+          background: #fef3c7;
+          border-left: 3px solid #f59e0b;
+          padding: 6px 8px;
+          margin: 8px 0;
+          font-size: 9px;
+        }
+
+        .action-buttons {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          display: flex;
+          gap: 10px;
+          z-index: 1000;
+          background: white;
+          padding: 10px;
+          border-radius: 8px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn {
+          padding: 10px 20px;
+          border: none;
+          border-radius: 5px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .btn-print {
+          background: #2563eb;
+          color: white;
+        }
+
+        .btn-print:hover {
+          background: #1d4ed8;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-back {
+          background: #6c757d;
+          color: white;
+        }
+
+        .btn-back:hover {
+          background: #545b62;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+        }
+
+        @media print {
+          body {
+            margin: 0;
+            padding: 10px;
+          }
+
+          .no-print {
+            display: none !important;
+          }
+
+          .action-buttons {
+            display: none !important;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="action-buttons no-print">
+        <button class="btn btn-back" onclick="window.close()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 7.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5z"/>
+          </svg>
+          Back
+        </button>
+        <button class="btn btn-print" onclick="window.print()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+            <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/>
+          </svg>
+          Print
+        </button>
+      </div>
+
+      <div class="container">
+        <div class="header">
+          <div class="header-content">
+            <img src="/logo.jpg" alt="University Logo" class="logo" />
+            <div class="university-info">
+              <h1>Periyar University</h1>
+              <div class="subtitle">State University - NAAC 'A+' Grade - NIRF Rank 94</div>
+              <div class="subtitle">State Public University Rank 40 - SDG Institutions Rank Band: 11-50</div>
+              <div class="subtitle">Salem-636011, Tamilnadu, India.</div>
+              <div class="cdoe-title">CENTRE FOR DISTANCE AND ONLINE EDUCATION (CDOE)</div>
+              <div class="odl-subtitle">Open and Distance Learning</div>
+            </div>
+          </div>
+          <div class="receipt-title">COMPLETE PAYMENT HISTORY RECEIPT</div>
+        </div>
+
+        <div class="content-grid">
+          <div class="info-box">
+            <h3>Student Information</h3>
+            <table>
+              <tr><td>Application ID</td><td><strong>${application.application_id}</strong></td></tr>
+              <tr><td>Name</td><td>${student.name}</td></tr>
+              <tr><td>Email</td><td>${student.email}</td></tr>
+              <tr><td>Phone</td><td>${student.phone || 'N/A'}</td></tr>
+            </table>
+          </div>
+
+          <div class="info-box">
+            <h3>Course Details</h3>
+            <table>
+              <tr><td>Course</td><td>${application.course}</td></tr>
+              <tr><td>Mode of Study</td><td>${application.mode_of_study}</td></tr>
+              <tr><td>Academic Year</td><td>${application.academic_year}</td></tr>
+              <tr><td>LSC Center</td><td>${student.lsc_code && student.lsc_name ? `${student.lsc_code} - ${student.lsc_name}` : 'Direct Admission (CDOE Main Campus)'}</td></tr>
+            </table>
+          </div>
+
+          <div class="info-box full-width">
+            <h3>Payment Summary</h3>
+            <div class="summary-grid">
+              <div class="summary-item summary-paid">
+                <div style="font-weight: bold; font-size: 14px;">₹${summary.totalPaid.toLocaleString()}</div>
+                <div style="font-size: 9px;">Total Paid</div>
+              </div>
+              <div class="summary-item summary-pending">
+                <div style="font-weight: bold; font-size: 14px;">₹${summary.totalPending.toLocaleString()}</div>
+                <div style="font-size: 9px;">Pending Payments</div>
+              </div>
+              <div class="summary-item summary-total">
+                <div style="font-weight: bold; font-size: 14px;">${summary.totalTransactions}</div>
+                <div style="font-size: 9px;">Total Transactions</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-box full-width">
+            <h3>All Payment Transactions</h3>
+            <table class="transactions-table">
+              <thead>
+                <tr>
+                  <th>Payment Type</th>
+                  <th>Description</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Transaction ID</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${transactions.map(txn => `
+                  <tr>
+                    <td>${txn.title}</td>
+                    <td>${txn.description}</td>
+                    <td>₹${txn.amount.toLocaleString()}</td>
+                    <td>${txn.status === 'paid' ? 'Paid' : 'Pending'}</td>
+                    <td>${txn.transactionId || txn.id || 'N/A'}</td>
+                    <td>${txn.date ? new Date(txn.date).toLocaleDateString('en-IN') : 'N/A'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="security-note">
+          <strong>⚠️ Important:</strong> This is your complete payment history record showing all transactions.
+          Please save this for your records. For any queries, contact the admission office with your Application ID.
+        </div>
+
+        <div class="footer">
+          <p><strong>This is a computer-generated payment history report and does not require a signature.</strong></p>
+          <p>Generated on: ${new Date().toLocaleString()} | © ${new Date().getFullYear()} Periyar University CDOE. All rights reserved.</p>
+        </div>
+      </div>
+
+      <script>
+        document.addEventListener('keydown', function(e) {
+          if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+            e.preventDefault();
+            window.print();
+          }
+          if (e.key === 'Escape') {
+            window.close();
+          }
+        });
       </script>
     </body>
     </html>

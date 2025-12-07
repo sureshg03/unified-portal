@@ -135,14 +135,30 @@ def get_semester_payments(request):
         user = request.user
         payments = SemesterPayment.objects.filter(user=user)
         serializer = SemesterPaymentSerializer(payments, many=True)
-        
+
+        # Get student details for LSC information
+        from .models import Student
+        student = Student.objects.filter(email=user.email).first()
+
+        # Build student info with LSC data
+        student_info = {}
+        if student:
+            student_info = {
+                'name': student.name,
+                'email': student.email,
+                'phone': student.phone or '',
+                'lsc_code': student.lsc_code or '',
+                'lsc_name': student.lsc_name or ''
+            }
+
         return Response({
             'status': 'success',
+            'student': student_info,
             'payments': serializer.data,
             'first_semester_paid': SemesterPayment.has_paid_first_semester(user),
             'paid_semesters': SemesterPayment.get_paid_semesters(user)
         }, status=status.HTTP_200_OK)
-        
+
     except Exception as e:
         return Response({
             'status': 'error',
@@ -180,26 +196,42 @@ def get_payment_receipt(request, semester_number):
     """Get payment receipt for a specific semester"""
     try:
         user = request.user
-        
+
         payment = SemesterPayment.objects.filter(
             user=user,
             semester_number=semester_number,
             payment_status='SUCCESS'
         ).first()
-        
+
         if not payment:
             return Response({
                 'status': 'error',
                 'message': f'No payment found for semester {semester_number}'
             }, status=status.HTTP_404_NOT_FOUND)
-        
+
         serializer = SemesterPaymentSerializer(payment)
-        
+
+        # Get student details for LSC information
+        from .models import Student
+        student = Student.objects.filter(email=user.email).first()
+
+        # Build student info with LSC data
+        student_info = {}
+        if student:
+            student_info = {
+                'name': student.name,
+                'email': student.email,
+                'phone': student.phone or '',
+                'lsc_code': student.lsc_code or '',
+                'lsc_name': student.lsc_name or ''
+            }
+
         return Response({
             'status': 'success',
+            'student': student_info,
             'receipt': serializer.data
         }, status=status.HTTP_200_OK)
-        
+
     except Exception as e:
         return Response({
             'status': 'error',

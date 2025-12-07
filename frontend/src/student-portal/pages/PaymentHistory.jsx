@@ -11,7 +11,7 @@ import {
   DocumentArrowDownIcon,
   ReceiptPercentIcon,
 } from '@heroicons/react/24/outline';
-import { generateReceiptPDF } from '../utils/pdfGenerator';
+import { generateReceiptPDF, generateIndividualReceiptPDF, generateOverallPaymentReceiptPDF } from '../utils/pdfGenerator';
 
 const PaymentHistory = () => {
   const [paymentData, setPaymentData] = useState(null);
@@ -20,10 +20,32 @@ const PaymentHistory = () => {
   const [applicationFee, setApplicationFee] = useState('236.00');
   const [semesterPayments, setSemesterPayments] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
+  const [semesterStudentData, setSemesterStudentData] = useState(null);
 
   useEffect(() => {
     fetchPaymentHistory();
+    fetchUserProfile(); // Fetch user profile for LSC information
   }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await axios.get(
+        'http://localhost:8000/api/user-profile/',
+        { headers: { Authorization: `Token ${token}` } }
+      );
+
+      if (response.data.status === 'success') {
+        // Store user profile data in localStorage for LSC information
+        localStorage.setItem('userProfile', JSON.stringify(response.data.data));
+        console.log('✅ User profile stored for LSC data:', response.data.data);
+      }
+    } catch (error) {
+      console.warn('Could not fetch user profile for LSC data:', error);
+    }
+  };
 
   const fetchPaymentHistory = async () => {
     try {
@@ -75,6 +97,13 @@ const PaymentHistory = () => {
       if (semesterResponse.data.status === 'success') {
         const semesterData = semesterResponse.data.payments || [];
         setSemesterPayments(semesterData);
+        
+        // Store student data from semester payments API (includes LSC information)
+        if (semesterResponse.data.student) {
+          setSemesterStudentData(semesterResponse.data.student);
+          console.log('✅ Semester student data with LSC info loaded:', semesterResponse.data.student);
+        }
+        
         console.log('✅ Semester payments loaded:', semesterData);
       }
 
@@ -159,6 +188,94 @@ const PaymentHistory = () => {
     }
   };
 
+  const handleDownloadIndividualReceipt = (transaction) => {
+    try {
+      // Get LSC information - prioritize semester payments API data
+      let lscCode = semesterStudentData?.lsc_code || paymentData?.student?.lsc_code || '';
+      let lscName = semesterStudentData?.lsc_name || paymentData?.student?.lsc_name || '';
+
+      // If not available from API data, try to get from localStorage user profile
+      if (!lscCode || !lscName) {
+        const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+        lscCode = userProfile.lsc_code || lscCode;
+        lscName = userProfile.lsc_name || lscName;
+      }
+
+      // Prepare receipt data for individual transaction
+      const receiptData = {
+        ...transaction,
+        application_id: paymentData?.application?.application_id || '',
+        student_name: semesterStudentData?.name || paymentData?.student?.name || '',
+        email: semesterStudentData?.email || paymentData?.student?.email || '',
+        phone: semesterStudentData?.phone || paymentData?.student?.phone || '',
+        course: paymentData?.application?.course || '',
+        mode_of_study: paymentData?.application?.mode_of_study || '',
+        lsc_code: lscCode,
+        lsc_name: lscName,
+        receipt_number: transaction.receipt_number || transaction.transactionId,
+      };
+
+      // Debug logging
+      console.log('Generating individual receipt with data:', {
+        transaction,
+        semesterStudentData,
+        paymentStudentData: paymentData?.student,
+        application: paymentData?.application,
+        lsc_code: receiptData.lsc_code,
+        lsc_name: receiptData.lsc_name,
+        userProfile: JSON.parse(localStorage.getItem('userProfile') || '{}')
+      });
+
+      toast.success(`Generating ${transaction.title} receipt...`);
+      generateIndividualReceiptPDF(receiptData);
+    } catch (error) {
+      console.error('Error generating individual receipt:', error);
+      toast.error('Failed to generate receipt');
+    }
+  };
+
+  const handleDownloadOverallReceipt = () => {
+    try {
+      // Get LSC information - prioritize semester payments API data
+      let studentData = { ...(semesterStudentData || paymentData?.student) };
+      if ((!studentData?.lsc_code || !studentData?.lsc_name) && (semesterStudentData || paymentData?.student)) {
+        // Try to get from user profile data if stored
+        const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+        studentData.lsc_code = userProfile.lsc_code || studentData.lsc_code || '';
+        studentData.lsc_name = userProfile.lsc_name || studentData.lsc_name || '';
+      }
+
+      // Prepare overall receipt data
+      const receiptData = {
+        student: studentData,
+        application: paymentData?.application || {},
+        transactions: allTransactions,
+        summary: {
+          totalPaid,
+          totalPending,
+          totalTransactions: allTransactions.length
+        }
+      };
+
+      // Debug logging
+      console.log('Generating overall receipt with data:', {
+        student: receiptData.student,
+        application: receiptData.application,
+        transactions: receiptData.transactions,
+        summary: receiptData.summary,
+        lsc_code: receiptData.student?.lsc_code,
+        lsc_name: receiptData.student?.lsc_name,
+        userProfile: JSON.parse(localStorage.getItem('userProfile') || '{}')
+      });
+
+      toast.success('Generating complete payment history receipt...');
+      generateOverallPaymentReceiptPDF(receiptData);
+    } catch (error) {
+      console.error('Error generating overall receipt:', error);
+      toast.error('Failed to generate payment history receipt');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -204,17 +321,30 @@ const PaymentHistory = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Payment History</h1>
             <p className="text-gray-600">Track all your payments including application and semester fees</p>
           </div>
-          {isPaid && (
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleDownloadReceipt}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-lg shadow-md transition-all duration-200"
-            >
-              <DocumentArrowDownIcon className="h-5 w-5" />
-              <span>Download Receipt</span>
-            </motion.button>
-          )}
+          <div className="flex gap-3">
+            {isPaid && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleDownloadReceipt}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-lg shadow-md transition-all duration-200"
+              >
+                <DocumentArrowDownIcon className="h-5 w-5" />
+                <span>Application Receipt</span>
+              </motion.button>
+            )}
+            {allTransactions.length > 0 && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleDownloadOverallReceipt}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-md transition-all duration-200"
+              >
+                <ReceiptPercentIcon className="h-5 w-5" />
+                <span>Complete History</span>
+              </motion.button>
+            )}
+          </div>
         </div>
       </motion.div>
 
@@ -318,7 +448,7 @@ const PaymentHistory = () => {
         className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden mb-6"
       >
         {/* Card Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-600 p-6">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
               <ReceiptPercentIcon className="h-6 w-6 text-white" />
@@ -375,17 +505,31 @@ const PaymentHistory = () => {
                     }`}>
                       ₹{transaction.amount.toLocaleString()}
                     </p>
-                    {transaction.status === 'paid' ? (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
-                        <CheckCircleIcon className="h-3 w-3" />
-                        Paid
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
-                        <ClockIcon className="h-3 w-3" />
-                        Pending
-                      </span>
-                    )}
+                    <div className="flex items-center justify-end gap-2 mt-1">
+                      {transaction.status === 'paid' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                          <CheckCircleIcon className="h-3 w-3" />
+                          Paid
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
+                          <ClockIcon className="h-3 w-3" />
+                          Pending
+                        </span>
+                      )}
+                      {transaction.status === 'paid' && (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleDownloadIndividualReceipt(transaction)}
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-semibold rounded text-xs"
+                          title={`Download ${transaction.title} receipt`}
+                        >
+                          <DocumentArrowDownIcon className="h-3 w-3" />
+                          <span>Receipt</span>
+                        </motion.button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
