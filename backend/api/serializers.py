@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Student, MarksheetUpload, StudentDetails
+from .models import Student, MarksheetUpload, StudentDetails, SemesterPayment
 
 
 class StudentSerializer(serializers.ModelSerializer):
@@ -166,3 +166,16 @@ class AddCourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Courses
         fields = ['course_short_code', 'course_full_name', 'branch_name', 'num_semesters', 'num_years', 'course_code', 'degree', 'application_fee', 'language', 'code2']
+
+
+class SemesterPaymentSerializer(serializers.ModelSerializer):
+    """Serializer for semester payment records"""
+    class Meta:
+        model = SemesterPayment
+        fields = [
+            'id', 'application_id', 'student_email', 'student_name',
+            'semester', 'semester_number', 'amount', 'transaction_id',
+            'receipt_number', 'payment_method', 'payment_status',
+            'card_last_four', 'payment_date', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at']

@@ -51,6 +51,8 @@ urlpatterns = [
     path('verify-payment/', views.verify_payment, name='verify_payment'),
     path('pgResponse/', views.payment_callback, name='payment_callback'),
     path('download-application/', views.download_application, name='download_application'),
+    path('download-application-pdf/', views.download_application_pdf, name='download_application_pdf'),
+    path('send-application-email/', views.send_application_email, name='send_application_email'),
     path('download-receipt/', views.download_receipt, name='download_receipt'),
     
     # LSC Admin - Student Admissions Management
@@ -71,5 +73,12 @@ urlpatterns = [
     path('lsc-admin/pending-revalidations/', admin_views.get_pending_revalidations, name='get_pending_revalidations'),
     path('resubmit-documents/verify/<str:token>/', admin_views.verify_resubmission_link, name='verify_resubmission_link'),
     path('resubmit-documents/submit/<str:token>/', admin_views.submit_resubmitted_documents, name='submit_resubmitted_documents'),
+    
+    # Semester Payment Endpoints
+    path('semester-payments/process/', views.process_semester_payment, name='process_semester_payment'),
+    path('semester-payments/', views.get_semester_payments, name='get_semester_payments'),
+    path('semester-payments/status/', views.get_payment_status_v2, name='get_payment_status_v2'),
+    path('semester-payments/receipt/<int:semester_number>/', views.get_payment_receipt, name='get_payment_receipt'),
+    path('semester-payments/check/<int:semester_number>/', views.check_semester_payment, name='check_semester_payment'),
   
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

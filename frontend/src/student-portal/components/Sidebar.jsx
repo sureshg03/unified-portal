@@ -23,7 +23,8 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
     eligibility_status: 'Pending',
     admission_confirmed: false,
     enrollment_no: null,
-    application_id: null
+    application_id: null,
+    first_semester_paid: false // New field for first semester payment
   });
 
   useEffect(() => {
@@ -57,12 +58,16 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
           console.log('Raw response data.data:', JSON.stringify(data.data, null, 2));
           
           if (data.status === 'success' && data.data) {
+            // Use backend data for first semester payment status
+            const firstSemesterPaid = data.data.first_semester_paid || false;
+            
             const newStatus = {
               eligibility_verified: data.data.eligibility_verified || false,
               eligibility_status: data.data.eligibility_status || 'Pending',
               admission_confirmed: data.data.admission_confirmed || false,
               enrollment_no: data.data.enrollment_no || null,
-              application_id: data.data.application_id || null
+              application_id: data.data.application_id || null,
+              first_semester_paid: firstSemesterPaid // Use backend API data
             };
             console.log('Setting verification status:', newStatus);
             setVerificationStatus(newStatus);
@@ -164,49 +169,21 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
         console.log('Badge: Not Ready (gray)');
         return { text: 'Not Ready', color: 'bg-gray-500', pulse: false };
       }
+    } else if (itemName === 'firstSemesterPayment') {
+      if (verificationStatus.first_semester_paid) {
+        return { text: 'Paid', color: 'bg-green-500', pulse: true };
+      } else {
+        return { text: 'Pay Now', color: 'bg-orange-500', pulse: true };
+      }
     }
     return null;
   };
 
-  // Conditional menu items based on payment status with enhanced styling
-  const menuItems = isPaid
-    ? [
-        { 
-          name: 'dashboard', 
-          label: 'Dashboard', 
-          icon: HomeIcon, 
-          gradient: 'from-purple-700 via-purple-500 to-purple-500',
-          iconBg: 'from-purple-400 to-purple-600',
-          shadow: 'shadow-purple-500/50'
-        },
-        { 
-          name: 'applicationProgress', 
-          label: 'Application Status', 
-          icon: ClipboardDocumentCheckIcon, 
-          gradient: 'from-pink-700 via-pink-700 to-pink-700',
-          iconBg: 'from-pink-400 to-pink-600',
-          shadow: 'shadow-violet-500/50',
-          badge: true
-        },
-        { 
-          name: 'applicationDownload', 
-          label: 'Download Application', 
-          icon: ArrowDownTrayIcon, 
-          gradient: 'from-blue-600 via-blue-600 to-blue-600',
-          iconBg: 'from-blue-400 to-blue-600',
-          shadow: 'shadow-cyan-500/50',
-          badge: true
-        },
-        { 
-          name: 'paymentHistory', 
-          label: 'Payment History', 
-          icon: BanknotesIcon, 
-          gradient: 'from-green-600 via-green-600 to-green-600',
-          iconBg: 'from-green-400 to-green-600',
-          shadow: 'shadow-emerald-500/50'
-        },
-      ]
-    : [
+  // Conditional menu items based on verification and payment status
+  const getMenuItems = () => {
+    // If not eligibility verified, show limited application menu
+    if (!verificationStatus.eligibility_verified) {
+      return [
         { 
           name: 'dashboard', 
           label: 'Dashboard', 
@@ -232,6 +209,127 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
           shadow: 'shadow-purple-500/50'
         },
       ];
+    }
+
+    // If eligibility verified but first semester not paid, show payment prompt
+    if (verificationStatus.eligibility_verified && !verificationStatus.first_semester_paid) {
+      return [
+        { 
+          name: 'dashboard', 
+          label: 'Dashboard', 
+          icon: HomeIcon, 
+          gradient: 'from-purple-700 via-purple-500 to-purple-500',
+          iconBg: 'from-purple-400 to-purple-600',
+          shadow: 'shadow-purple-500/50'
+        },
+        { 
+          name: 'applicationProgress', 
+          label: 'Check Application Status', 
+          icon: ClipboardDocumentCheckIcon, 
+          gradient: 'from-pink-700 via-pink-700 to-pink-700',
+          iconBg: 'from-pink-400 to-pink-600',
+          shadow: 'shadow-violet-500/50',
+          badge: true
+        },
+        { 
+          name: 'applicationDownload', 
+          label: 'Download Application Form', 
+          icon: ArrowDownTrayIcon, 
+          gradient: 'from-blue-600 via-blue-600 to-blue-600',
+          iconBg: 'from-blue-400 to-blue-600',
+          shadow: 'shadow-cyan-500/50',
+          badge: true
+        },
+        { 
+          name: 'firstSemesterPayment', 
+          label: 'Pay First Semester Fee', 
+          icon: BanknotesIcon, 
+          gradient: 'from-green-600 via-green-600 to-green-600',
+          iconBg: 'from-green-400 to-green-600',
+          shadow: 'shadow-emerald-500/50',
+          badge: true
+        },
+      ];
+    }
+
+    // If eligibility verified and first semester paid, show full student portal
+    return [
+      { 
+        name: 'dashboard', 
+        label: 'Dashboard', 
+        icon: HomeIcon, 
+        gradient: 'from-purple-700 via-purple-500 to-purple-500',
+        iconBg: 'from-purple-400 to-purple-600',
+        shadow: 'shadow-purple-500/50'
+      },
+      { 
+        name: 'studentIdCard', 
+        label: 'Student ID Card', 
+        icon: UserCircleIcon, 
+        gradient: 'from-blue-600 via-blue-600 to-blue-600',
+        iconBg: 'from-blue-400 to-blue-600',
+        shadow: 'shadow-cyan-500/50'
+      },
+      { 
+        name: 'profile', 
+        label: 'Profile & Settings', 
+        icon: UserCircleIcon, 
+        gradient: 'from-indigo-600 via-indigo-600 to-indigo-600',
+        iconBg: 'from-indigo-400 to-indigo-600',
+        shadow: 'shadow-indigo-500/50'
+      },
+      { 
+        name: 'payments', 
+        label: 'Semester Payments', 
+        icon: BanknotesIcon, 
+        gradient: 'from-green-600 via-green-600 to-green-600',
+        iconBg: 'from-green-400 to-green-600',
+        shadow: 'shadow-emerald-500/50'
+      },
+      { 
+        name: 'paymentHistory', 
+        label: 'Payment History', 
+        icon: BanknotesIcon, 
+        gradient: 'from-emerald-600 via-emerald-600 to-emerald-600',
+        iconBg: 'from-emerald-400 to-emerald-600',
+        shadow: 'shadow-emerald-500/50'
+      },
+      { 
+        name: 'materials', 
+        label: 'Study Materials', 
+        icon: DocumentTextIcon, 
+        gradient: 'from-orange-600 via-orange-600 to-orange-600',
+        iconBg: 'from-orange-400 to-orange-600',
+        shadow: 'shadow-orange-500/50'
+      },
+      { 
+        name: 'videoLessons', 
+        label: 'Video Lessons', 
+        icon: AcademicCapIcon, 
+        gradient: 'from-red-600 via-red-600 to-red-600',
+        iconBg: 'from-red-400 to-red-600',
+        shadow: 'shadow-red-500/50'
+      },
+      { 
+        name: 'assignments', 
+        label: 'Assignments', 
+        icon: ClipboardDocumentCheckIcon, 
+        gradient: 'from-yellow-600 via-yellow-600 to-yellow-600',
+        iconBg: 'from-yellow-400 to-yellow-600',
+        shadow: 'shadow-yellow-500/50'
+      },
+      { 
+        name: 'feedback', 
+        label: 'Feedback', 
+        icon: SparklesIcon, 
+        gradient: 'from-pink-600 via-pink-600 to-pink-600',
+        iconBg: 'from-pink-400 to-pink-600',
+        shadow: 'shadow-pink-500/50'
+      },
+    ];
+  };
+
+  const menuItems = getMenuItems();
 
   return (
     <AnimatePresence>
@@ -290,22 +388,6 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
               }}
             />
           </div>
-
-          {/* Debug Panel - Remove after testing */}
-          {isPaid && (
-            <div className="relative px-4 sm:px-5 lg:px-6 pt-20 sm:pt-8 pb-2">
-              <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3 text-xs">
-                <div className="font-bold text-yellow-200 mb-1">Debug Status:</div>
-                <div className="text-yellow-100 space-y-0.5">
-                  <div>Verified: {String(verificationStatus.eligibility_verified)}</div>
-                  <div>Status: {verificationStatus.eligibility_status}</div>
-                  <div>Confirmed: {String(verificationStatus.admission_confirmed)}</div>
-                  <div>Enrollment: {verificationStatus.enrollment_no || 'None'}</div>
-                  <div>App ID: {verificationStatus.application_id || 'None'}</div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Header Section with Enhanced Design */}
           <div className="relative px-4 sm:px-5 lg:px-6 pt-2 sm:pt-2 lg:pt-2 pb-6">
@@ -436,7 +518,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
                     </motion.div>
 
                     {/* Label */}
-                    <span className="relative z-10 font-semibold tracking-wide">
+                    <span className="relative z-10 font-semibold tracking-wide flex-1 text-left">
                       {item.label}
                     </span>
 
@@ -446,7 +528,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
                       if (badge) {
                         return (
                           <motion.div
-                            className={`relative z-10 ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold text-white ${badge.color} shadow-lg flex items-center gap-1`}
+                            className={`relative z-10 ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold text-white ${badge.color} shadow-lg flex items-center gap-1 flex-shrink-0`}
                             initial={{ scale: 0, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ duration: 0.3 }}

@@ -255,3 +255,60 @@ class ApplicationPayment(models.Model):
 
     def __str__(self):
         return f"{self.application_id} - {self.payment_status}"
+
+
+class SemesterPayment(models.Model):
+    """Model for tracking semester-wise fee payments"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    application_id = models.CharField(max_length=100, blank=True, null=True)
+    student_email = models.EmailField(max_length=191)
+    student_name = models.CharField(max_length=200, blank=True, null=True)
+    semester = models.CharField(max_length=20)  # e.g., "SEM - 1", "SEM - 2"
+    semester_number = models.IntegerField()  # 1, 2, 3, 4, 5, 6
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    transaction_id = models.CharField(max_length=100, unique=True)
+    receipt_number = models.CharField(max_length=100, unique=True)
+    payment_method = models.CharField(max_length=50, default='Credit/Debit Card')
+    payment_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('PENDING', 'Pending'),
+            ('SUCCESS', 'Success'),
+            ('FAILED', 'Failed'),
+            ('REFUNDED', 'Refunded'),
+        ],
+        default='PENDING',
+    )
+    card_last_four = models.CharField(max_length=4, blank=True, null=True)
+    payment_date = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'semester_payments'
+        ordering = ['-payment_date']
+        indexes = [
+            models.Index(fields=['user', 'semester_number']),
+            models.Index(fields=['student_email', 'payment_status']),
+            models.Index(fields=['transaction_id']),
+        ]
+
+    def __str__(self):
+        return f"{self.student_email} - {self.semester} - {self.payment_status}"
+
+    @classmethod
+    def has_paid_first_semester(cls, user):
+        """Check if user has paid first semester fee"""
+        return cls.objects.filter(
+            user=user,
+            semester_number=1,
+            payment_status='SUCCESS'
+        ).exists()
+
+    @classmethod
+    def get_paid_semesters(cls, user):
+        """Get list of paid semester numbers for a user"""
+        return list(cls.objects.filter(
+            user=user,
+            payment_status='SUCCESS'
+        ).values_list('semester_number', flat=True))

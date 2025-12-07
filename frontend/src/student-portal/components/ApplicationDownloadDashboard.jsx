@@ -10,14 +10,15 @@ import {
   IdentificationIcon,
   AcademicCapIcon,
   DocumentCheckIcon,
-  PrinterIcon,
+  EnvelopeIcon,
   EyeIcon,
   ClockIcon,
 } from '@heroicons/react/24/outline';
-import { generateProfessionalApplicationPDF } from '../utils/professionalPdfGenerator';
+import { generateApplicationFormPDF } from '../utils/applicationFormPDFGenerator';
 
 const ApplicationDownloadDashboard = () => {
   const [applicationData, setApplicationData] = useState(null);
+  const [verificationStatus, setVerificationStatus] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,13 +33,29 @@ const ApplicationDownloadDashboard = () => {
         return;
       }
 
-      const response = await axios.get(
-        'http://localhost:8000/api/application-payment-data/',
-        { headers: { Authorization: `Token ${token}` } }
-      );
+      // Fetch both application data and verification status
+      const [appResponse, profileResponse] = await Promise.all([
+        axios.get('http://localhost:8000/api/application-payment-data/', {
+          headers: { Authorization: `Token ${token}` }
+        }),
+        axios.get('http://localhost:8000/api/user-profile/', {
+          headers: { Authorization: `Token ${token}` }
+        })
+      ]);
 
-      if (response.data.status === 'success') {
-        setApplicationData(response.data.data);
+      if (appResponse.data.status === 'success') {
+        setApplicationData(appResponse.data.data);
+      }
+
+      if (profileResponse.data.status === 'success') {
+        const profile = profileResponse.data.data;
+        setVerificationStatus({
+          eligibility_verified: profile.eligibility_verified,
+          eligibility_status: profile.eligibility_status,
+          admission_confirmed: profile.admission_confirmed,
+          enrollment_no: profile.enrollment_no,
+          application_id: profile.application_id
+        });
       }
     } catch (error) {
       console.error('Error fetching application data:', error);
@@ -48,7 +65,7 @@ const ApplicationDownloadDashboard = () => {
     }
   };
 
-  const handlePrintPreview = async () => {
+  const handleViewApplication = async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -56,7 +73,7 @@ const ApplicationDownloadDashboard = () => {
         return;
       }
 
-      const loadingToast = toast.loading('Opening print preview...');
+      const loadingToast = toast.loading('Opening application preview...');
 
       const response = await axios.get(
         'http://localhost:8000/api/download-application/',
@@ -68,13 +85,14 @@ const ApplicationDownloadDashboard = () => {
 
       if (response.data.status === 'success') {
         toast.dismiss(loadingToast);
-        toast.success('Opening print preview...');
-        generateProfessionalApplicationPDF(response.data.data, 'print');
+        toast.success('Opening preview...');
+        // Open in new tab for viewing with complete details
+        generateApplicationFormPDF(response.data.data, 'preview');
       }
     } catch (error) {
       toast.dismiss();
-      console.error('Error opening print preview:', error);
-      toast.error(error.response?.data?.message || 'Failed to open print preview');
+      console.error('Error opening preview:', error);
+      toast.error(error.response?.data?.message || 'Failed to open preview');
     }
   };
 
@@ -86,10 +104,10 @@ const ApplicationDownloadDashboard = () => {
         return;
       }
 
-      const loadingToast = toast.loading('Downloading application form...');
+      const loadingToast = toast.loading('Preparing print preview...');
 
       const response = await axios.get(
-        'http://localhost:8000/api/download-application/',
+        'http://localhost:8000/api/download-application-pdf/',
         {
           headers: { Authorization: `Token ${token}` },
           responseType: 'json',
@@ -98,13 +116,58 @@ const ApplicationDownloadDashboard = () => {
 
       if (response.data.status === 'success') {
         toast.dismiss(loadingToast);
-        toast.success('Downloading application form...');
-        generateProfessionalApplicationPDF(response.data.data, 'download');
+        toast.success('Opening print preview...');
+        // Open print preview with complete details
+        generateApplicationFormPDF(response.data.data, 'download');
       }
     } catch (error) {
       toast.dismiss();
-      console.error('Error downloading application:', error);
-      toast.error(error.response?.data?.message || 'Failed to download application');
+      console.error('Error opening print preview:', error);
+      toast.error(error.response?.data?.message || 'Failed to open print preview');
+    }
+  };
+
+  const handleEmailApplication = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Please log in again.');
+        return;
+      }
+
+      if (!applicationData?.student?.email) {
+        toast.error('Email address not found');
+        return;
+      }
+
+      const loadingToast = toast.loading('Sending application to your email...');
+
+      // Use the download API and send via email in backend
+      const response = await axios.post(
+        'http://localhost:8000/api/send-application-email/',
+        { email: applicationData.student.email },
+        {
+          headers: { Authorization: `Token ${token}` }
+        }
+      );
+
+      if (response.data.status === 'success') {
+        toast.dismiss(loadingToast);
+        toast.success(`Application sent to ${applicationData.student.email}!`);
+      } else {
+        toast.dismiss(loadingToast);
+        toast.error(response.data.message || 'Failed to send email');
+      }
+    } catch (error) {
+      toast.dismiss();
+      console.error('Error emailing application:', error);
+      
+      // If endpoint doesn't exist, show helpful message
+      if (error.response?.status === 404) {
+        toast.error('Email feature is not available yet. Please use Download instead.');
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to send email');
+      }
     }
   };
 
@@ -131,8 +194,9 @@ const ApplicationDownloadDashboard = () => {
   }
 
   const isPaid = applicationData.application.payment_status === 'P';
-  const isVerified = applicationData.application.is_verified || false;
-  const canDownload = isPaid && isVerified;
+  const isEligibilityVerified = verificationStatus?.eligibility_verified || false;
+  const isAdmissionConfirmed = verificationStatus?.admission_confirmed || false;
+  const canDownload = isPaid && (isEligibilityVerified || isAdmissionConfirmed);
 
   return (
     <div className="max-w-5xl mx-auto p-6">
@@ -174,8 +238,8 @@ const ApplicationDownloadDashboard = () => {
         </motion.div>
       )}
 
-      {/* Verification Pending Banner */}
-      {isPaid && !isVerified && (
+      {/* Verification Status Banners */}
+      {isPaid && !isEligibilityVerified && !isAdmissionConfirmed && (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -186,17 +250,38 @@ const ApplicationDownloadDashboard = () => {
               <ClockIcon className="h-8 w-8 text-white" />
             </div>
             <div className="flex-1">
-              <h2 className="text-xl font-bold text-yellow-700">Verification Pending</h2>
+              <h2 className="text-xl font-bold text-yellow-700">Eligibility Verification Pending</h2>
               <p className="text-sm mt-1 text-yellow-600">
-                Your documents are under review by the LSC admin. Download will be available once verified.
+                Your documents are under review by the LSC admin. Download will be available once eligibility is verified.
               </p>
             </div>
           </div>
         </motion.div>
       )}
 
-      {/* Verified Status Banner */}
-      {canDownload && (
+      {/* Eligibility Verified but Admission Pending */}
+      {isPaid && isEligibilityVerified && !isAdmissionConfirmed && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="p-6 rounded-xl border-2 mb-6 shadow-lg bg-blue-50 border-blue-500"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg bg-blue-500">
+              <CheckCircleIcon className="h-8 w-8 text-white" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-blue-700">Eligibility Verified - Awaiting Admission</h2>
+              <p className="text-sm mt-1 text-blue-600">
+                Your eligibility has been verified. Waiting for final admission confirmation.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Admission Confirmed Banner */}
+      {isAdmissionConfirmed && (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -207,10 +292,15 @@ const ApplicationDownloadDashboard = () => {
               <CheckCircleIcon className="h-8 w-8 text-white" />
             </div>
             <div className="flex-1">
-              <h2 className="text-xl font-bold text-green-700">Documents Verified & Ready</h2>
+              <h2 className="text-xl font-bold text-green-700">Admission Confirmed - Ready to Download</h2>
               <p className="text-sm mt-1 text-green-600">
-                Your application has been verified by LSC admin and is ready for download
+                Your admission has been confirmed. You can now download your application form.
               </p>
+              {verificationStatus?.enrollment_no && (
+                <p className="text-sm mt-2 font-semibold text-green-700">
+                  Enrollment No: {verificationStatus.enrollment_no}
+                </p>
+              )}
             </div>
           </div>
         </motion.div>
@@ -325,7 +415,7 @@ const ApplicationDownloadDashboard = () => {
         transition={{ delay: 0.2 }}
         className="grid grid-cols-1 md:grid-cols-3 gap-6"
       >
-        {/* Print Preview Card */}
+        {/* View Application Card */}
         <motion.div
           whileHover={{ scale: canDownload ? 1.03 : 1 }}
           className={`bg-indigo-600 rounded-xl shadow-xl p-6 text-white relative overflow-hidden group ${
@@ -333,17 +423,17 @@ const ApplicationDownloadDashboard = () => {
               ? 'cursor-pointer'
               : 'opacity-60 cursor-not-allowed'
           }`}
-          onClick={canDownload ? handlePrintPreview : null}
+          onClick={canDownload ? handleViewApplication : null}
         >
           <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
           <div className="relative z-10">
             <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
               <EyeIcon className="h-10 w-10 text-white" />
             </div>
-            <h3 className="text-xl font-bold mb-2">Print Preview</h3>
+            <h3 className="text-xl font-bold mb-2">View Application</h3>
             <p className="text-sm text-indigo-100 mb-4">
               {canDownload
-                ? 'View and print your application form'
+                ? 'Preview your application form online'
                 : !isPaid
                 ? 'Available after payment'
                 : 'Available after verification'}
@@ -381,17 +471,17 @@ const ApplicationDownloadDashboard = () => {
             <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
               <ArrowDownTrayIcon className="h-10 w-10 text-white" />
             </div>
-            <h3 className="text-xl font-bold mb-2">Download PDF</h3>
+            <h3 className="text-xl font-bold mb-2">Print/Save PDF</h3>
             <p className="text-sm text-blue-100 mb-4">
               {canDownload
-                ? 'Download form directly as PDF file'
+                ? 'Opens print preview to save as PDF'
                 : !isPaid
                 ? 'Available after payment'
                 : 'Available after verification'}
             </p>
             {canDownload ? (
               <div className="flex items-center gap-2 text-sm font-semibold">
-                <span>Download Now</span>
+                <span>Open Print Preview</span>
                 <motion.div
                   animate={{ x: [0, 5, 0] }}
                   transition={{ repeat: Infinity, duration: 1.5 }}
@@ -407,7 +497,7 @@ const ApplicationDownloadDashboard = () => {
           </div>
         </motion.div>
 
-        {/* Print Directly Card */}
+        {/* Email Application Card */}
         <motion.div
           whileHover={{ scale: canDownload ? 1.03 : 1 }}
           className={`bg-green-600 rounded-xl shadow-xl p-6 text-white relative overflow-hidden group ${
@@ -415,24 +505,24 @@ const ApplicationDownloadDashboard = () => {
               ? 'cursor-pointer'
               : 'opacity-60 cursor-not-allowed'
           }`}
-          onClick={canDownload ? handlePrintPreview : null}
+          onClick={canDownload ? handleEmailApplication : null}
         >
           <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
           <div className="relative z-10">
             <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-              <PrinterIcon className="h-10 w-10 text-white" />
+              <EnvelopeIcon className="h-10 w-10 text-white" />
             </div>
-            <h3 className="text-xl font-bold mb-2">Quick Print</h3>
+            <h3 className="text-xl font-bold mb-2">Email Copy</h3>
             <p className="text-sm text-green-100 mb-4">
               {canDownload
-                ? 'Open print dialog immediately'
+                ? 'Send application details to your email'
                 : !isPaid
                 ? 'Available after payment'
                 : 'Available after verification'}
             </p>
             {canDownload ? (
               <div className="flex items-center gap-2 text-sm font-semibold">
-                <span>Print Now</span>
+                <span>Send Email</span>
                 <motion.div
                   animate={{ x: [0, 5, 0] }}
                   transition={{ repeat: Infinity, duration: 1.5 }}

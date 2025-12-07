@@ -26,26 +26,29 @@ const ApplicationProgress = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const response = await axios.get(
-        'http://localhost:8000/api/application-payment-data/',
-        { headers: { Authorization: `Token ${token}` } }
-      );
+      // Fetch both application data and verification status
+      const [appResponse, profileResponse] = await Promise.all([
+        axios.get('http://localhost:8000/api/application-payment-data/', {
+          headers: { Authorization: `Token ${token}` }
+        }),
+        axios.get('http://localhost:8000/api/user-profile/', {
+          headers: { Authorization: `Token ${token}` }
+        })
+      ]);
 
-      if (response.data.status === 'success') {
-        setApplicationData(response.data.data);
-        
-        // Parse document validation status if available
-        const application = response.data.data.application;
-        if (application.document_validation) {
-          try {
-            const validationData = typeof application.document_validation === 'string' 
-              ? JSON.parse(application.document_validation) 
-              : application.document_validation;
-            setVerificationStatus(validationData);
-          } catch (e) {
-            console.error('Error parsing document validation:', e);
-          }
-        }
+      if (appResponse.data.status === 'success') {
+        setApplicationData(appResponse.data.data);
+      }
+
+      if (profileResponse.data.status === 'success') {
+        const profile = profileResponse.data.data;
+        setVerificationStatus({
+          eligibility_verified: profile.eligibility_verified,
+          eligibility_status: profile.eligibility_status,
+          admission_confirmed: profile.admission_confirmed,
+          enrollment_no: profile.enrollment_no,
+          application_id: profile.application_id
+        });
       }
     } catch (error) {
       console.error('Error fetching application status:', error);
@@ -60,9 +63,11 @@ const ApplicationProgress = () => {
 
     const application = applicationData.application;
     const isPaid = application.payment_status === 'P';
-    const hasApplicationId = Boolean(application.application_id);
-    const isVerified = verificationStatus && verificationStatus.status === 'approved';
-    const isRejected = verificationStatus && verificationStatus.status === 'rejected';
+    const isEligibilityVerified = verificationStatus?.eligibility_verified || false;
+    const eligibilityStatus = verificationStatus?.eligibility_status || 'Pending';
+    const isAdmissionConfirmed = verificationStatus?.admission_confirmed || false;
+    const enrollmentNo = verificationStatus?.enrollment_no;
+    const isRejected = eligibilityStatus === 'Not Eligible';
     
     return [
       {
@@ -83,32 +88,39 @@ const ApplicationProgress = () => {
       },
       {
         id: 3,
-        title: 'Document Verification',
+        title: 'Eligibility Verification',
         description: isRejected 
-          ? `Document verification failed: ${verificationStatus.comments || 'Please resubmit required documents'}` 
-          : 'LSC admin is reviewing your submitted documents',
+          ? 'Your application has been marked as Not Eligible' 
+          : isEligibilityVerified
+          ? 'Your eligibility has been verified and approved'
+          : 'LSC admin is reviewing your eligibility and documents',
         icon: DocumentMagnifyingGlassIcon,
-        status: isRejected ? 'rejected' : (isVerified ? 'completed' : (isPaid ? 'in-progress' : 'pending')),
-        color: isRejected ? 'red' : (isVerified ? 'green' : (isPaid ? 'blue' : 'gray')),
-        verifiedBy: verificationStatus?.verified_by,
-        verifiedDate: verificationStatus?.verified_date,
-        comments: verificationStatus?.comments,
+        status: isRejected ? 'rejected' : (isEligibilityVerified ? 'completed' : (isPaid ? 'in-progress' : 'pending')),
+        color: isRejected ? 'red' : (isEligibilityVerified ? 'green' : (isPaid ? 'blue' : 'gray')),
+        statusText: eligibilityStatus,
       },
       {
         id: 4,
-        title: 'Academic Review',
-        description: 'Academic qualifications and eligibility are being verified',
+        title: 'Admission Confirmation',
+        description: isAdmissionConfirmed
+          ? 'Your admission has been confirmed'
+          : isEligibilityVerified
+          ? 'Waiting for final admission confirmation'
+          : 'Pending eligibility verification',
         icon: AcademicCapIcon,
-        status: isVerified ? 'in-progress' : 'pending',
-        color: isVerified ? 'blue' : 'gray',
+        status: isAdmissionConfirmed ? 'completed' : (isEligibilityVerified ? 'in-progress' : 'pending'),
+        color: isAdmissionConfirmed ? 'green' : (isEligibilityVerified ? 'blue' : 'gray'),
       },
       {
         id: 5,
-        title: 'Final Approval',
-        description: 'Final verification and approval by the admission committee',
+        title: 'Enrollment Number',
+        description: enrollmentNo 
+          ? `Your enrollment number: ${enrollmentNo}`
+          : 'Enrollment number will be generated after admission confirmation',
         icon: ShieldCheckIcon,
-        status: 'pending',
-        color: 'gray',
+        status: enrollmentNo ? 'completed' : 'pending',
+        color: enrollmentNo ? 'green' : 'gray',
+        enrollmentNo: enrollmentNo,
       },
     ];
   };

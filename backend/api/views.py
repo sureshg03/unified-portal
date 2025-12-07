@@ -4,14 +4,22 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMessage
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from .models import Student, Application, StudentDetails, Payment, ApplicationPayment, Courses
+from .models import Student, Application, StudentDetails, Payment, ApplicationPayment, Courses, SemesterPayment
 from .serializers import ApplicationSerializer, StudentDetailsSerializer, AddCourseSerializer
 from .utils import get_real_academic_year
 from .models import StudentDetails, MarksheetUpload
+# Import semester payment views
+from .semester_payment_views import (
+    process_semester_payment,
+    get_semester_payments,
+    get_payment_status as get_payment_status_v2,
+    get_payment_receipt,
+    check_semester_payment
+)
 import random
 import time
 import smtplib
@@ -19,6 +27,10 @@ import ssl
 import logging
 from django.db import IntegrityError
 import json
+from django.http import HttpResponse
+from xhtml2pdf import pisa
+from io import BytesIO
+from django.template.loader import render_to_string
 
 
 logger = logging.getLogger(__name__)
@@ -311,17 +323,7 @@ def get_user_profile(request):
                     photo_url = f"{request.scheme}://{request.get_host()}{photo_url}"
         
         # Get application verification status
-        logger.info(f"\n{'='*80}")
-        logger.info(f"🔍 USER PROFILE REQUEST START")
-        logger.info(f"User Email: {user.email}")
-        logger.info(f"User ID: {user.id}")
-        logger.info(f"User Username: {user.username}")
-        
-        # Try to find application by user
-        all_applications = Application.objects.filter(user=user)
-        logger.info(f"Total applications for user: {all_applications.count()}")
-        
-        application = all_applications.first()
+        application = Application.objects.filter(user=user).first()
         eligibility_verified = False
         eligibility_status = 'Pending'
         admission_confirmed = False
@@ -336,35 +338,13 @@ def get_user_profile(request):
             enrollment_no = str(application.enrollment_no) if application.enrollment_no else None
             application_id = str(application.application_id) if application.application_id else None
             
-            logger.info(f"\n✅ APPLICATION FOUND!")
-            logger.info(f"Application ID: {application_id}")
-            logger.info(f"Application User ID: {application.user_id if hasattr(application, 'user_id') else 'N/A'}")
-            logger.info(f"Application User Email: {application.user.email if application.user else 'N/A'}")
-            logger.info(f"\n📊 VERIFICATION STATUS:")
-            logger.info(f"eligibility_verified (DB): {application.eligibility_verified} (type: {type(application.eligibility_verified)})")
-            logger.info(f"eligibility_verified (converted): {eligibility_verified}")
-            logger.info(f"eligibility_status (DB): {application.eligibility_status}")
-            logger.info(f"eligibility_status (converted): {eligibility_status}")
-            logger.info(f"admission_confirmed (DB): {application.admission_confirmed} (type: {type(application.admission_confirmed)})")
-            logger.info(f"admission_confirmed (converted): {admission_confirmed}")
-            logger.info(f"enrollment_no (DB): {application.enrollment_no}")
-            logger.info(f"enrollment_no (converted): {enrollment_no}")
-            logger.info(f"verified_date: {application.verified_date if hasattr(application, 'verified_date') else 'N/A'}")
-            logger.info(f"verified_by: {application.verified_by if hasattr(application, 'verified_by') else 'N/A'}")
+            logger.info(f"USER PROFILE for {user.email}: App={application_id}, Verified={eligibility_verified}, Status={eligibility_status}, Confirmed={admission_confirmed}, Enrollment={enrollment_no}")
         else:
-            logger.warning(f"\n❌ NO APPLICATION FOUND!")
-            logger.warning(f"Checked for user: {user.email} (ID: {user.id})")
-            # Check if there are any applications at all
-            total_apps = Application.objects.all().count()
-            logger.warning(f"Total applications in database: {total_apps}")
-            if total_apps > 0:
-                # Show first few applications for debugging
-                sample_apps = Application.objects.all()[:5]
-                logger.warning("Sample applications in DB:")
-                for app in sample_apps:
-                    logger.warning(f"  - App ID: {app.application_id}, User: {app.user.email if app.user else 'NO USER'}, Status: {app.eligibility_status}")
+            logger.warning(f"NO APPLICATION found for user: {user.email}")
         
-        logger.info(f"{'='*80}\n")
+        # Check first semester payment status
+        first_semester_paid = SemesterPayment.has_paid_first_semester(user)
+        paid_semesters = SemesterPayment.get_paid_semesters(user)
         
         response_data = {
             "email": user.email,
@@ -376,16 +356,12 @@ def get_user_profile(request):
             "eligibility_status": eligibility_status,
             "admission_confirmed": admission_confirmed,
             "enrollment_no": enrollment_no,
-            "application_id": application_id
+            "application_id": application_id,
+            "first_semester_paid": first_semester_paid,
+            "paid_semesters": paid_semesters
         }
         
-        logger.info(f"\n📤 RESPONSE DATA BEING SENT:")
-        logger.info(f"eligibility_verified: {response_data['eligibility_verified']} (type: {type(response_data['eligibility_verified'])})")
-        logger.info(f"eligibility_status: {response_data['eligibility_status']}")
-        logger.info(f"admission_confirmed: {response_data['admission_confirmed']} (type: {type(response_data['admission_confirmed'])})")
-        logger.info(f"enrollment_no: {response_data['enrollment_no']}")
-        logger.info(f"application_id: {response_data['application_id']}")
-        logger.info(f"{'='*80}\n")
+        logger.info(f"SENDING RESPONSE: verified={response_data['eligibility_verified']}, status={response_data['eligibility_status']}, confirmed={response_data['admission_confirmed']}, first_sem_paid={first_semester_paid}")
         
         return Response(
             {
@@ -990,8 +966,11 @@ def clear_payment(request):
         
         # Get the application
         try:
-            application = Application.objects.get(user=user)
-        except Application.DoesNotExist:
+            application = Application.objects.filter(user=user).first()
+            if not application:
+                raise Application.DoesNotExist("Application not found")
+        except Exception as e:
+            logger.warning(f"Error getting application for user {user.email}: {e}")
             return Response({
                 'status': 'error',
                 'message': 'Application not found.'
@@ -1355,15 +1334,29 @@ class ApplicationPage3View(APIView):
             logger.info(f"Fetched from Application - email: {email}, name_initial: {name_initial}")
             
             try:
-                student_details = StudentDetails.objects.get(user=request.user)
-                serializer = StudentDetailsSerializer(student_details)
-                response_data = serializer.data
-                # Ensure name_initial and email are always present from Application
-                response_data['email'] = email
-                response_data['name_initial'] = name_initial or response_data.get('name_initial', '')
-                logger.info(f"Returning existing StudentDetails with name_initial: {response_data['name_initial']}")
-            except StudentDetails.DoesNotExist:
-                logger.info(f"StudentDetails not found, creating default response with name_initial: {name_initial}")
+                student_details = StudentDetails.objects.filter(user=request.user).first()
+                if student_details:
+                    serializer = StudentDetailsSerializer(student_details)
+                    response_data = serializer.data
+                    # Ensure name_initial and email are always present from Application
+                    response_data['email'] = email
+                    response_data['name_initial'] = name_initial or response_data.get('name_initial', '')
+                    logger.info(f"Returning existing StudentDetails with name_initial: {response_data['name_initial']}")
+                else:
+                    logger.info(f"StudentDetails not found, creating default response with name_initial: {name_initial}")
+                    response_data = {
+                        'email': email,
+                        'name_initial': name_initial,
+                        'qualifications': [],
+                        'semester_marks': [],
+                        'current_designation': '',
+                        'current_institute': '',
+                        'years_experience': '',
+                        'annual_income': ''
+                    }
+            except Exception as e:
+                logger.warning(f"Error getting student details for user {request.user.email}: {e}")
+                # Fallback to default response
                 response_data = {
                     'email': email,
                     'name_initial': name_initial,
@@ -1374,6 +1367,7 @@ class ApplicationPage3View(APIView):
                     'years_experience': '',
                     'annual_income': ''
                 }
+            
             return Response({'status': 'success', 'data': response_data}, status=status.HTTP_200_OK)
         except Exception as e:
             logger.error(f"Error in GET /api/application/page3/: {str(e)}")
@@ -1591,8 +1585,9 @@ def upload_documents(request):
 def educational_details(request):
     user = request.user
     try:
-        student_details = StudentDetails.objects.get(user=user)
-    except StudentDetails.DoesNotExist:
+        student_details = StudentDetails.objects.filter(user=user).first()
+    except Exception as e:
+        logger.warning(f"Error getting student details for user {user.email}: {e}")
         student_details = None
 
     if request.method == 'GET':
@@ -2041,12 +2036,14 @@ def confirm_preview(request):
             )
 
         try:
-            application = Application.objects.get(
+            application = Application.objects.filter(
                 user=request.user,
                 id=application_id,
                 status='Draft',
                 is_active=True
-            )
+            ).first()
+            if not application:
+                raise Application.DoesNotExist("Application not found")
             application.status = 'In Progress'
             application.save()
             logger.info(f"Application {application_id} status updated to 'In Progress' for user: {request.user.email}")
@@ -2192,7 +2189,9 @@ def verify_payment(request):
 
         # Fetch payment entry
         try:
-            payment = Payment.objects.get(application_id=application_id, user=request.user)
+            payment = Payment.objects.filter(application_id=application_id, user=request.user).first()
+            if not payment:
+                raise Payment.DoesNotExist("Payment not found")
         except Payment.DoesNotExist:
             logger.warning(f"No payment found for application_id: {application_id}")
             return Response(
@@ -2235,15 +2234,16 @@ def verify_payment(request):
         # Update application status for successful payments
         if payment_status == 'success':
             try:
-                application = Application.objects.get(
+                application = Application.objects.filter(
                     user=request.user,
                     id=app_data.get('data', {}).get('id'),
                     status__in=['Draft', 'In Progress'],
                     is_active=True
-                )
-                application.status = 'Completed'
-                application.is_active = False
-                application.save()
+                ).first()
+                if application:
+                    application.status = 'Completed'
+                    application.is_active = False
+                    application.save()
                 logger.info(f"Application {application.id} status updated to 'Completed' for user: {request.user.email}")
             except Application.DoesNotExist:
                 logger.warning(f"No active Draft or In Progress application found for user: {request.user.email}")
@@ -2277,8 +2277,12 @@ def verify_payment(request):
     except Exception as e:
         logger.error(f"Payment verification error for user {request.user.email}: {str(e)}")
         try:
-            payment = Payment.objects.get(application_id=application_id, user=request.user)
-        except Payment.DoesNotExist:
+            payment = Payment.objects.filter(application_id=application_id, user=request.user).first()
+        except Exception as e:
+            logger.warning(f"Error getting payment for user {request.user.email}: {e}")
+            payment = None
+        
+        if not payment:
             payment = Payment(
                 user=request.user,
                 application_id=application_id,
@@ -3178,6 +3182,743 @@ def download_application(request):
         return Response(
             {"status": "error", "message": f"Failed to fetch application data: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+def generate_application_pdf_html(application_data):
+    """
+    Generate HTML for application PDF matching the professional format
+    Optimized for xhtml2pdf rendering
+    """
+    # Extract photo and signature URLs
+    photo_url = application_data.get('photo_url', '')
+    signature_url = application_data.get('signature_url', '')
+    
+    # Build photo HTML
+    photo_html = 'Photo Not Uploaded'
+    if photo_url:
+        try:
+            # Remove /media/ prefix if it exists in photo_url
+            clean_photo_url = photo_url.replace('/media/', '') if photo_url.startswith('/media/') else photo_url
+            full_photo_url = f"{settings.MEDIA_ROOT}/{clean_photo_url}" if not photo_url.startswith('http') else photo_url
+            photo_html = f'<img src="{full_photo_url}" width="90" height="120" />'
+        except:
+            photo_html = 'Photo Not Uploaded'
+    
+    # Build signature HTML
+    signature_html = '___________________'
+    if signature_url:
+        try:
+            # Remove /media/ prefix if it exists in signature_url
+            clean_signature_url = signature_url.replace('/media/', '') if signature_url.startswith('/media/') else signature_url
+            full_signature_url = f"{settings.MEDIA_ROOT}/{clean_signature_url}" if not signature_url.startswith('http') else signature_url
+            signature_html = f'<img src="{full_signature_url}" width="120" height="30" />'
+        except:
+            signature_html = '___________________'
+    
+    # Build qualifications table rows
+    qualifications_html = ''
+    qualifications = application_data.get('qualifications')
+    if qualifications and isinstance(qualifications, list) and len(qualifications) > 0:
+        for qual in qualifications:
+            if not qual or not isinstance(qual, dict):
+                continue
+                
+            # Parse subjects
+            subjects = qual.get('subject_studied', 'Not Specified')
+            if isinstance(subjects, list):
+                subjects = ', '.join(str(s) for s in subjects if s)
+            elif subjects is None:
+                subjects = 'Not Specified'
+            else:
+                subjects = str(subjects)
+            
+            # Parse month/year
+            month = qual.get('month_of_passing') or 'N/A'
+            year = qual.get('year_of_passing') or 'N/A'
+            
+            qualifications_html += f'''
+            <tr>
+                <td style="text-align: center; padding: 3px; font-size: 8pt;">{qual.get('course') or '-'}</td>
+                <td style="text-align: center; padding: 3px; font-size: 7pt;">{qual.get('institute_name') or '-'}</td>
+                <td style="text-align: center; padding: 3px; font-size: 8pt;">{qual.get('board') or '-'}</td>
+                <td style="text-align: left; padding: 3px; font-size: 7pt;">{subjects[:40]}</td>
+                <td style="text-align: center; padding: 3px; font-size: 8pt;">{qual.get('reg_no') or '-'}</td>
+                <td style="text-align: center; padding: 3px; font-size: 8pt;">{qual.get('percentage') or 'N/A'}</td>
+                <td style="text-align: center; padding: 3px; font-size: 8pt;">{month}</td>
+                <td style="text-align: center; padding: 3px; font-size: 8pt;">{year}</td>
+                <td style="text-align: center; padding: 3px; font-size: 8pt;">{qual.get('mode_of_study') or 'Regular'}</td>
+            </tr>
+            '''
+    
+    if not qualifications_html:
+        qualifications_html = '<tr><td colspan="9" style="text-align: center; padding: 8px; font-size: 9pt;">No qualification data available</td></tr>'
+    
+    # Build enrollment row if exists
+    enrollment_row = ''
+    if application_data.get('enrollment_no'):
+        enrollment_row = f'''
+        <tr>
+            <td colspan="2" style="background: #d4edda; padding: 5px; border: 1px solid #000;">
+                <b>Enrollment No :</b> <span style="color: #155724; font-size: 11pt;"><b>{application_data['enrollment_no']}</b></span>
+            </td>
+        </tr>
+        '''
+    
+    html = f'''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            @page {{ size: A4; margin: 10mm; }}
+            body {{ font-family: Arial, sans-serif; font-size: 9pt; line-height: 1.2; color: #000; margin: 0; padding: 0; }}
+            table {{ width: 100%; border-collapse: collapse; margin-bottom: 5px; table-layout: fixed; }}
+            td, th {{ border: 1px solid #000; padding: 4px; vertical-align: middle; word-wrap: break-word; }}
+            .header-border {{ border-bottom: 3px solid #8B008B; padding-bottom: 5px; margin-bottom: 8px; }}
+            .uni-name {{ font-size: 20pt; font-weight: bold; color: #8B008B; margin: 0; padding: 0; }}
+            .uni-sub {{ font-size: 8pt; color: #333; margin: 1px 0; padding: 0; }}
+            .uni-addr {{ font-size: 9pt; color: #333; font-weight: bold; margin: 2px 0 5px 0; padding: 0; }}
+            .cdoe {{ color: #FF8C00; font-size: 12pt; font-weight: bold; margin: 3px 0 1px 0; padding: 0; }}
+            .odl {{ color: #FF8C00; font-size: 10pt; font-weight: bold; margin: 0; padding: 0; }}
+            .title {{ font-size: 10pt; font-weight: bold; text-decoration: underline; text-align: center; margin: 6px 0; }}
+            .sec-header {{ background: #e9ecef; font-weight: bold; padding: 4px 8px; margin: 5px 0 3px 0; border: 1px solid #000; font-size: 9pt; }}
+            .row-num {{ width: 20px; text-align: center; font-weight: bold; background: #e9ecef; font-size: 9pt; }}
+            .lbl {{ width: 150px; font-weight: 500; background: #f8f9fa; font-size: 9pt; }}
+            .val {{ font-weight: 600; font-size: 9pt; }}
+            .pay-title {{ text-align: center; font-size: 10pt; font-weight: bold; text-decoration: underline; margin: 4px 0; }}
+            .pay-lbl {{ font-weight: bold; width: 100px; background: #e9ecef; font-size: 8pt; }}
+            .pay-val {{ font-weight: 600; font-size: 8pt; }}
+            .pay-success {{ color: #28a745; font-weight: bold; background: #d4edda; font-size: 8pt; }}
+            .decl-title {{ font-size: 10pt; font-weight: bold; text-align: center; text-decoration: underline; margin: 4px 0; }}
+            .decl-text {{ font-size: 8.5pt; line-height: 1.3; text-align: justify; margin: 3px 0; }}
+        </style>
+    </head>
+    <body>
+        <!-- Header -->
+        <div class="header-border">
+            <p class="uni-name">Periyar University</p>
+            <p class="uni-sub">State University - NAAC 'A++' Grade - NIRF Rank 94</p>
+            <p class="uni-sub">State Public University Rank 40 - SDG Institutions Rank Band: 11-50</p>
+            <p class="uni-addr">Salem-636011, Tamilnadu, India</p>
+            <p class="cdoe">CENTRE FOR DISTANCE AND ONLINE EDUCATION (CDOE)</p>
+            <p class="odl">Open and Distance Learning</p>
+        </div>
+
+        <p class="title">Open and Distance Learning Programme (ODL) Admission for the Academic Year {application_data.get('academic_year', '2025-26')}</p>
+
+        <!-- Application Info -->
+        <table>
+            <tr>
+                <td style="padding: 5px; width: 70%;"><b>Application No :</b> {application_data.get('application_id', '-')}</td>
+                <td style="padding: 5px; width: 30%; text-align: center;">Applicant Photo</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><b>Applied Date :</b> {application_data.get('applied_date', '-')}</td>
+                <td style="text-align: center; vertical-align: top; padding: 5px;">{photo_html}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><b>LSC :</b> {application_data.get('lsc_name', 'CDOE')}</td>
+                <td style="text-align: center; vertical-align: top; padding: 5px;"></td>
+            </tr>
+            {enrollment_row}
+        </table>
+
+        <!-- Personal Details -->
+        <table>
+            <tr><td class="row-num">1.</td><td class="lbl">Programme Applied</td><td style="width: 8px;">:</td><td class="val">{application_data.get('programme', 'DIPLOMA')}</td></tr>
+            <tr><td class="row-num"></td><td class="lbl">Degree</td><td>:</td><td class="val">{application_data.get('course', '-')}</td></tr>
+            <tr><td class="row-num"></td><td class="lbl">Branch / Specialization</td><td>:</td><td class="val">{application_data.get('course', '-')}</td></tr>
+            <tr><td class="row-num"></td><td class="lbl">Medium</td><td>:</td><td class="val">{application_data.get('medium', 'English')}</td></tr>
+            <tr><td class="row-num">2.</td><td class="lbl">Name of the Applicant</td><td>:</td><td class="val">{application_data.get('student_name', '-')}</td></tr>
+            <tr><td class="row-num">3.</td><td class="lbl">Date of Birth</td><td>:</td><td class="val">{application_data.get('dob', '-')}</td></tr>
+            <tr><td class="row-num">4.</td><td class="lbl">(a) Father & Mother Name</td><td>:</td><td class="val">{application_data.get('father_name', '-')} / {application_data.get('mother_name', '-')}</td></tr>
+            <tr><td class="row-num"></td><td class="lbl">(b) Guardian Name</td><td>:</td><td class="val">{application_data.get('guardian_name', '-')}</td></tr>
+            <tr><td class="row-num">5.</td><td class="lbl">Parent Occupation</td><td>:</td><td class="val">{application_data.get('parent_occupation', '-')}</td></tr>
+            <tr><td class="row-num">6.</td><td class="lbl">Gender</td><td>:</td><td class="val">{application_data.get('gender', '-')}</td></tr>
+            <tr><td class="row-num">7.</td><td class="lbl">Mother Tongue</td><td>:</td><td class="val">{application_data.get('mother_tongue', '-')}</td></tr>
+            <tr><td class="row-num">8.</td><td class="lbl">Nationality</td><td>:</td><td class="val">{application_data.get('nationality', 'Indian')}</td></tr>
+            <tr><td class="row-num">9.</td><td class="lbl">Religion</td><td>:</td><td class="val">{application_data.get('religion', '-')}</td></tr>
+            <tr><td class="row-num">10.</td><td class="lbl">Community</td><td>:</td><td class="val">{application_data.get('community', '-')}</td></tr>
+        </table>
+
+        <!-- Address -->
+        <div class="sec-header">11. Communication Address &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Permanent Address</div>
+        <table>
+            <tr>
+                <td style="width: 50%; vertical-align: top; padding: 5px; font-size: 8.5pt;">{application_data.get('communication_address', '-')}</td>
+                <td style="width: 50%; vertical-align: top; padding: 5px; font-size: 8.5pt;">{application_data.get('permanent_address', '-')}</td>
+            </tr>
+        </table>
+
+        <!-- Contact Details -->
+        <table>
+            <tr><td class="row-num">12.</td><td class="lbl">Mobile No.</td><td>:</td><td class="val">{application_data.get('phone', '-')}</td></tr>
+            <tr><td class="row-num">13.</td><td class="lbl">E-mail ID</td><td>:</td><td class="val">{application_data.get('email', '-')}</td></tr>
+            <tr><td class="row-num">14.</td><td class="lbl">(a) Aadhaar No & Name</td><td>:</td><td class="val">{application_data.get('aadhaar_number', '-')}, {application_data.get('aadhaar_name', '')}</td></tr>
+            <tr><td class="row-num"></td><td class="lbl">(b) ABC ID</td><td>:</td><td class="val">{application_data.get('abc_id', '')}</td></tr>
+            <tr><td class="row-num"></td><td class="lbl">(c) DEB ID</td><td>:</td><td class="val">{application_data.get('deb_id', '')}</td></tr>
+            <tr><td class="row-num">15.</td><td class="lbl">Differently Abled</td><td>:</td><td class="val">{application_data.get('differently_abled', 'No')}</td></tr>
+            <tr><td class="row-num">16.</td><td class="lbl">Blood Group</td><td>:</td><td class="val">{application_data.get('blood_group', '-')}</td></tr>
+            <tr><td class="row-num">17.</td><td class="lbl">Access to Internet</td><td>:</td><td class="val">{application_data.get('internet_access', 'Yes')}</td></tr>
+        </table>
+
+        <!-- Education -->
+        <div class="sec-header">18. Education Qualification</div>
+        <table>
+            <thead>
+                <tr style="background: #e9ecef;">
+                    <th style="width: 9%; font-size: 8pt; padding: 2px; text-align: center;">Course</th>
+                    <th style="width: 14%; font-size: 8pt; padding: 2px; text-align: center;">Institution</th>
+                    <th style="width: 9%; font-size: 8pt; padding: 2px; text-align: center;">Board</th>
+                    <th style="width: 18%; font-size: 8pt; padding: 2px; text-align: center;">Subject Studied</th>
+                    <th style="width: 10%; font-size: 8pt; padding: 2px; text-align: center;">Register No</th>
+                    <th style="width: 6%; font-size: 8pt; padding: 2px; text-align: center;">%</th>
+                    <th style="width: 7%; font-size: 8pt; padding: 2px; text-align: center;">Month</th>
+                    <th style="width: 7%; font-size: 8pt; padding: 2px; text-align: center;">Year</th>
+                    <th style="width: 9%; font-size: 8pt; padding: 2px; text-align: center;">Mode</th>
+                </tr>
+            </thead>
+            <tbody>{qualifications_html}</tbody>
+        </table>
+
+        <!-- Work Experience -->
+        <div class="sec-header">19. Working Experience</div>
+        <table>
+            <thead>
+                <tr style="background: #e9ecef;">
+                    <th style="width: 25%; font-size: 8pt; padding: 2px;">Current Designation</th>
+                    <th style="width: 35%; font-size: 8pt; padding: 2px;">Current Institution</th>
+                    <th style="width: 20%; font-size: 8pt; padding: 2px;">Experience (Years)</th>
+                    <th style="width: 20%; font-size: 8pt; padding: 2px;">Annual Income (Rs)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="text-align: center; padding: 3px; font-size: 8.5pt;">{application_data.get('current_designation', 'N/A')}</td>
+                    <td style="text-align: center; padding: 3px; font-size: 8.5pt;">{application_data.get('current_institution', 'N/A')}</td>
+                    <td style="text-align: center; padding: 3px; font-size: 8.5pt;">{application_data.get('work_experience_years', 'N/A')}</td>
+                    <td style="text-align: center; padding: 3px; font-size: 8.5pt;">{application_data.get('annual_income', 'N/A')}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Payment -->
+        <p class="pay-title">Payment Status</p>
+        <table style="border: 2px solid #000;">
+            <tr>
+                <td class="pay-lbl">Order ID</td><td class="pay-val">{application_data.get('order_id', '-')}</td>
+                <td class="pay-lbl">Amount</td><td class="pay-val">Rs. {application_data.get('amount', '236.00')}</td>
+                <td class="pay-lbl">Status</td><td class="pay-success">{application_data.get('payment_status_display', 'SUCCESS')}</td>
+            </tr>
+            <tr>
+                <td class="pay-lbl">Bank</td><td class="pay-val">{application_data.get('bank_name', '-')}</td>
+                <td class="pay-lbl">Mode</td><td class="pay-val">{application_data.get('payment_mode', 'UPI')}</td>
+                <td class="pay-lbl">Date</td><td class="pay-val">{application_data.get('transaction_date', '-')[:16]}</td>
+            </tr>
+        </table>
+
+        <!-- Declaration -->
+        <p class="decl-title">DECLARATION</p>
+        <table style="border: 2px solid #000;">
+            <tr>
+                <td style="padding: 6px;">
+                    <p class="decl-text">
+                        I hereby declare that all the information provided in this application form is true and correct to the best of my knowledge and belief.
+                        I understand that any false or misleading information may result in the rejection of my application or cancellation of my admission.
+                    </p>
+                    <p class="decl-text">
+                        I agree to abide by all the rules and regulations of the Centre for Distance and Online Education (CDOE), Periyar University.
+                    </p>
+                    <br/>
+                    <p style="font-size: 8.5pt; font-weight: bold; margin: 2px 0;">Place: _________________</p>
+                    <p style="font-size: 8.5pt; font-weight: bold; margin: 2px 0;">Date: _________________</p>
+                    <p style="text-align: right; margin: 20px 10px 5px 0;">
+                        {signature_html}<br/>
+                        <span style="font-size: 8.5pt; font-weight: bold;">Applicant's Signature</span>
+                    </p>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Footer -->
+        <div style="margin-top: 15px; text-align: center; font-size: 8pt; padding: 10px; background: #f8f9fa; border-top: 3px solid #8B008B;">
+            © Periyar University, Salem. All Rights Reserved.
+        </div>
+    </body>
+    </html>
+    '''
+    return html
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def send_application_email(request):
+    """
+    Send application form PDF to the user's email address with PDF attachment.
+    """
+    try:
+        user = request.user
+        email = request.data.get('email', user.email)
+        
+        # Get application data using the same logic as download_application
+        application = Application.objects.filter(user=user, status__in=['In Progress', 'Completed']).first()
+        if not application:
+            logger.warning(f"No application found for user: {user.email}")
+            return Response(
+                {"status": "error", "message": "No application found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Get student details
+        student = Student.objects.filter(email=user.email).first()
+        student_details = StudentDetails.objects.filter(user=user).first()
+        payment = Payment.objects.filter(user=user, application_id=application.application_id).first()
+        
+        # Try multiple methods to get fee payment
+        fee_payment = ApplicationPayment.objects.filter(user=user, application_id=application.application_id).first()
+        if not fee_payment:
+            fee_payment = ApplicationPayment.objects.filter(user=user).order_by('-transaction_date').first()
+        
+        student_name = student.name if student else user.email
+        application_id = application.application_id or "N/A"
+        # Get submission date from payment transaction date or verified_date
+        submission_date = 'N/A'
+        if fee_payment and hasattr(fee_payment, 'transaction_date') and fee_payment.transaction_date:
+            submission_date = fee_payment.transaction_date.strftime('%d-%m-%Y')
+            logger.info(f"Using fee_payment transaction_date: {submission_date}")
+        elif payment and hasattr(payment, 'payment_date') and payment.payment_date:
+            submission_date = payment.payment_date.strftime('%d-%m-%Y')
+            logger.info(f"Using payment payment_date: {submission_date}")
+        elif payment and hasattr(payment, 'transaction_date') and payment.transaction_date:
+            submission_date = payment.transaction_date.strftime('%d-%m-%Y')
+            logger.info(f"Using payment transaction_date: {submission_date}")
+        elif hasattr(application, 'verified_date') and application.verified_date:
+            submission_date = application.verified_date.strftime('%d-%m-%Y')
+            logger.info(f"Using application verified_date: {submission_date}")
+        else:
+            logger.warning(f"No submission date found for application {application_id}")
+        
+        # Prepare application data for PDF
+        lsc_code = student.lsc_code if student and student.lsc_code else ''
+        lsc_name = student.lsc_name if student and student.lsc_name else ''
+        
+        # Resolve photo and signature URLs
+        resolved_photo_url = ''
+        resolved_signature_url = ''
+        try:
+            if student_details and getattr(student_details, 'photo_url', None):
+                resolved_photo_url = student_details.photo_url or ''
+            elif hasattr(application, 'photo_url') and getattr(application, 'photo_url', None):
+                resolved_photo_url = application.photo_url or ''
+            
+            if student_details and getattr(student_details, 'signature_url', None):
+                resolved_signature_url = student_details.signature_url or ''
+        except Exception:
+            resolved_photo_url = ''
+            resolved_signature_url = ''
+
+        application_data = {
+            'application_id': application_id,
+            'enrollment_no': application.enrollment_no if hasattr(application, 'enrollment_no') else '',
+            'applied_date': submission_date,
+            'photo_url': resolved_photo_url,
+            'signature_url': resolved_signature_url,
+            'programme': application.programme_applied or 'DIPLOMA',
+            'course': application.course or '',
+            'medium': application.medium or '',
+            'mode_of_study': application.mode_of_study or '',
+            'academic_year': application.academic_year or '2025-26',
+            'lsc_code': lsc_code,
+            'lsc_name': lsc_name,
+            'student_name': student.name if student else '',
+            'name': student.name if student else '',
+            'dob': application.dob.strftime('%d-%m-%Y') if application.dob else '',
+            'gender': application.gender or '',
+            'father_name': application.father_name or '',
+            'mother_name': application.mother_name or '',
+            'guardian_name': application.guardian_name or '',
+            'parent_occupation': f"{application.father_occupation or 'N/A'} - {application.mother_occupation or 'N/A'}",
+            'mother_tongue': application.mother_tongue or '',
+            'nationality': application.nationality or 'Indian',
+            'religion': application.religion or '',
+            'community': application.community or '',
+            'email': user.email,
+            'phone': student.phone if student else '',
+            'communication_address': f"{application.comm_area or ''}, {application.comm_town or ''}, {application.comm_district or ''}, {application.comm_state or ''} - {application.comm_pincode or ''}, {application.comm_country or ''}".strip(', '),
+            'permanent_address': f"{application.perm_area or ''}, {application.perm_town or ''}, {application.perm_district or ''}, {application.perm_state or ''} - {application.perm_pincode or ''}, {application.perm_country or ''}".strip(', '),
+            'aadhaar_number': application.aadhaar_no or '',
+            'aadhaar_name': application.name_as_aadhaar or '',
+            'abc_id': application.abc_id or '',
+            'deb_id': application.deb_id or '',
+            'differently_abled': application.differently_abled or 'No',
+            'blood_group': application.blood_group or '',
+            'internet_access': application.access_internet or 'Yes',
+            'qualifications': student_details.qualifications if (student_details and student_details.qualifications) else [],
+            'current_designation': student_details.current_designation if student_details else '',
+            'current_institution': student_details.current_institute if student_details else '',
+            'work_experience_years': student_details.years_experience if student_details else 'N/A',
+            'annual_income': student_details.annual_income if student_details else 'N/A',
+            'payment_status_display': 'TXN_SUCCESS' if application.payment_status == 'P' else 'PENDING',
+            'order_id': (fee_payment.order_id if fee_payment and fee_payment.order_id else (payment.transaction_id if payment and hasattr(payment, 'transaction_id') and payment.transaction_id else 'N/A')),
+            'amount': str(fee_payment.amount) if (fee_payment and fee_payment.amount) else (str(payment.amount) if payment and hasattr(payment, 'amount') and payment.amount else '236.00'),
+            'payment_mode': (fee_payment.payment_mode if fee_payment and fee_payment.payment_mode else (payment.payment_mode if payment and hasattr(payment, 'payment_mode') and payment.payment_mode else 'Online')),
+            'bank_name': (fee_payment.bank_name if fee_payment and hasattr(fee_payment, 'bank_name') and fee_payment.bank_name else (payment.bank_name if payment and hasattr(payment, 'bank_name') and payment.bank_name else 'N/A')),
+            'transaction_date': (fee_payment.transaction_date.strftime('%d-%m-%Y %H:%M:%S') if (fee_payment and hasattr(fee_payment, 'transaction_date') and fee_payment.transaction_date) else (payment.payment_date.strftime('%d-%m-%Y %H:%M:%S') if payment and hasattr(payment, 'payment_date') and payment.payment_date else 'N/A')),
+        }
+        
+        # Generate HTML content for email
+        try:
+            # Build qualifications HTML
+            qualifications_html = ''
+            if application_data.get('qualifications'):
+                logger.info(f"Qualifications data: {application_data.get('qualifications')}")
+                for i, qual in enumerate(application_data['qualifications']):
+                    logger.info(f"Qualification {i}: {qual}")
+                    subjects = qual.get('subject_studied', 'Not Specified')
+                    if isinstance(subjects, list):
+                        subjects = ', '.join(str(s) for s in subjects if s)
+                    
+                    # Get year - try multiple fields
+                    year = qual.get('year_of_passing') or qual.get('year') or qual.get('passing_year') or 'N/A'
+                    logger.info(f"Year for qualification {i}: {year} (from keys: {list(qual.keys())})")
+                    
+                    qualifications_html += f'''
+                    <tr>
+                        <td style="border: 1px solid #ddd; padding: 8px;">{qual.get('course', '-')}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">{qual.get('institute_name', '-')}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">{qual.get('board', '-')}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">{subjects}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">{qual.get('percentage', 'N/A')}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">{year}</td>
+                    </tr>
+                    '''
+            else:
+                qualifications_html = '<tr><td colspan="6" style="border: 1px solid #ddd; padding: 8px; text-align: center;">No qualification data</td></tr>'
+            
+            # Get photo URL for email (use full backend URL)
+            photo_html = ''
+            if resolved_photo_url:
+                # Convert to web-accessible URL - use backend URL for media files
+                # Remove /media/ prefix if present to avoid duplication
+                photo_web_url = resolved_photo_url.replace('/media/', '', 1) if resolved_photo_url.startswith('/media/') else resolved_photo_url
+                # Also remove media/ prefix if present
+                photo_web_url = photo_web_url.replace('media/', '', 1) if photo_web_url.startswith('media/') else photo_web_url
+                backend_url = getattr(settings, 'BACKEND_URL', 'http://localhost:8000')
+                full_photo_url = f"{backend_url}/media/{photo_web_url}" if not resolved_photo_url.startswith('http') else resolved_photo_url
+                logger.info(f"Original photo URL: {resolved_photo_url}")
+                logger.info(f"Cleaned photo URL: {photo_web_url}")
+                logger.info(f"Full photo URL for email: {full_photo_url}")
+                photo_html = f'''<div style="text-align: center; padding: 10px;">
+                    <img src="{full_photo_url}" style="max-width: 150px; max-height: 180px; border: 2px solid #ddd; display: block; margin: 0 auto;" alt="Applicant Photo">
+                    <p style="font-size: 11px; color: #666; margin-top: 5px;">Applicant Photo</p>
+                </div>'''
+            else:
+                photo_html = '<div style="width: 150px; height: 180px; border: 1px solid #ddd; display: inline-block; text-align: center; line-height: 180px; background: #f0f0f0; margin: 0 auto;">Photo Not Uploaded</div>'
+            
+            # Prepare email content
+            subject = f"CDOE Application Form - {application_id}"
+            
+            # Create comprehensive HTML email
+            email_html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; }}
+        .header {{ background: #8B008B; color: white; padding: 20px; text-align: center; }}
+        .content {{ padding: 20px; background: #fff; }}
+        .info-box {{ background: #f8f9fa; border-left: 4px solid #8B008B; padding: 15px; margin: 20px 0; }}
+        .section {{ margin: 20px 0; }}
+        .section-title {{ background: #e9ecef; padding: 10px; font-weight: bold; border-left: 4px solid #8B008B; margin: 15px 0 10px 0; }}
+        table {{ width: 100%; border-collapse: collapse; margin: 10px 0; }}
+        th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+        th {{ background-color: #e9ecef; font-weight: bold; }}
+        .photo-section {{ text-align: center; margin: 15px 0; }}
+        .footer {{ background: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #666; margin-top: 30px; }}
+        .label {{ font-weight: bold; color: #555; }}
+        .value {{ color: #000; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 style="margin: 0;">PERIYAR UNIVERSITY</h1>
+        <p style="margin: 5px 0;">Centre for Distance and Online Education (CDOE)</p>
+        <p style="margin: 5px 0; font-size: 14px;">Salem-636011, Tamilnadu, India</p>
+    </div>
+    
+    <div class="content">
+        <p>Dear <strong>{student_name}</strong>,</p>
+        
+        <p>Your application for Centre for Distance and Online Education (CDOE), Periyar University has been successfully submitted.</p>
+        
+        <div class="info-box">
+            <h3 style="margin: 0 0 10px 0;">Application Summary</h3>
+            <p style="margin: 5px 0;"><span class="label">Application ID:</span> <span class="value">{application_id}</span></p>
+            <p style="margin: 5px 0;"><span class="label">Programme:</span> <span class="value">{application.programme_applied or 'N/A'}</span></p>
+            <p style="margin: 5px 0;"><span class="label">Course:</span> <span class="value">{application.course or 'N/A'}</span></p>
+            <p style="margin: 5px 0;"><span class="label">Medium:</span> <span class="value">{application.medium or 'N/A'}</span></p>
+            <p style="margin: 5px 0;"><span class="label">Submission Date:</span> <span class="value">{submission_date}</span></p>
+            {f'<p style="margin: 5px 0;"><span class="label">Enrollment No:</span> <span class="value" style="color: green; font-weight: bold;">{application.enrollment_no}</span></p>' if application.enrollment_no else ''}
+        </div>
+        
+        <div class="photo-section">
+            {photo_html}
+        </div>
+        
+        <div class="section-title">Personal Details</div>
+        <table>
+            <tr><td class="label" style="width: 40%;">Name</td><td class="value">{application_data.get('student_name', '-')}</td></tr>
+            <tr><td class="label">Date of Birth</td><td class="value">{application_data.get('dob', '-')}</td></tr>
+            <tr><td class="label">Gender</td><td class="value">{application_data.get('gender', '-')}</td></tr>
+            <tr><td class="label">Father's Name</td><td class="value">{application_data.get('father_name', '-')}</td></tr>
+            <tr><td class="label">Mother's Name</td><td class="value">{application_data.get('mother_name', '-')}</td></tr>
+            <tr><td class="label">Guardian Name</td><td class="value">{application_data.get('guardian_name', '-')}</td></tr>
+            <tr><td class="label">Mother Tongue</td><td class="value">{application_data.get('mother_tongue', '-')}</td></tr>
+            <tr><td class="label">Nationality</td><td class="value">{application_data.get('nationality', 'Indian')}</td></tr>
+            <tr><td class="label">Religion</td><td class="value">{application_data.get('religion', '-')}</td></tr>
+            <tr><td class="label">Community</td><td class="value">{application_data.get('community', '-')}</td></tr>
+            <tr><td class="label">Blood Group</td><td class="value">{application_data.get('blood_group', '-')}</td></tr>
+            <tr><td class="label">Differently Abled</td><td class="value">{application_data.get('differently_abled', 'No')}</td></tr>
+        </table>
+        
+        <div class="section-title">Contact Information</div>
+        <table>
+            <tr><td class="label" style="width: 40%;">Mobile Number</td><td class="value">{application_data.get('phone', '-')}</td></tr>
+            <tr><td class="label">Email</td><td class="value">{application_data.get('email', '-')}</td></tr>
+            <tr><td class="label">Aadhaar Number</td><td class="value">{application_data.get('aadhaar_number', '-')}</td></tr>
+            <tr><td class="label">ABC ID</td><td class="value">{application_data.get('abc_id', '-')}</td></tr>
+            <tr><td class="label">DEB ID</td><td class="value">{application_data.get('deb_id', '-')}</td></tr>
+        </table>
+        
+        <div class="section-title">Address</div>
+        <table>
+            <tr><td class="label" style="width: 40%;">Communication Address</td><td class="value">{application_data.get('communication_address', '-')}</td></tr>
+            <tr><td class="label">Permanent Address</td><td class="value">{application_data.get('permanent_address', '-')}</td></tr>
+        </table>
+        
+        <div class="section-title">Educational Qualification</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Course</th>
+                    <th>Institution</th>
+                    <th>Board</th>
+                    <th>Subjects</th>
+                    <th>Percentage</th>
+                    <th>Year</th>
+                </tr>
+            </thead>
+            <tbody>
+                {qualifications_html}
+            </tbody>
+        </table>
+        
+        <div class="section-title">Work Experience</div>
+        <table>
+            <tr><td class="label" style="width: 40%;">Current Designation</td><td class="value">{application_data.get('current_designation', 'N/A')}</td></tr>
+            <tr><td class="label">Current Institution</td><td class="value">{application_data.get('current_institution', 'N/A')}</td></tr>
+            <tr><td class="label">Years of Experience</td><td class="value">{application_data.get('work_experience_years', 'N/A')}</td></tr>
+            <tr><td class="label">Annual Income</td><td class="value">Rs. {application_data.get('annual_income', 'N/A')}</td></tr>
+        </table>
+        
+        <div class="section-title">Payment Details</div>
+        <table>
+            <tr><td class="label" style="width: 40%;">Order ID</td><td class="value">{application_data.get('order_id', '-')}</td></tr>
+            <tr><td class="label">Amount</td><td class="value">Rs. {application_data.get('amount', '236.00')}</td></tr>
+            <tr><td class="label">Payment Status</td><td class="value" style="color: green; font-weight: bold;">{application_data.get('payment_status_display', 'SUCCESS')}</td></tr>
+            <tr><td class="label">Payment Mode</td><td class="value">{application_data.get('payment_mode', 'UPI')}</td></tr>
+            <tr><td class="label">Bank Name</td><td class="value">{application_data.get('bank_name', '-')}</td></tr>
+            <tr><td class="label">Transaction Date</td><td class="value">{application_data.get('transaction_date', '-')}</td></tr>
+        </table>
+        
+        <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
+            <h3 style="margin: 0 0 10px 0; color: #856404;">Important Instructions:</h3>
+            <ul style="margin: 0; padding-left: 20px;">
+                <li>Login to the student portal to download and print your application form</li>
+                <li>Keep both digital and physical copies safe for future reference</li>
+                <li>Submit physical documents if required by the university</li>
+                <li>Check your application status regularly for updates</li>
+            </ul>
+        </div>
+        
+        <p style="text-align: center; margin: 20px 0;">
+            <a href="{getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')}/student-portal" 
+               style="display: inline-block; background: #8B008B; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                Access Student Portal
+            </a>
+        </p>
+        
+        <p>If you have any queries, please contact:<br>
+        <strong>Centre for Distance and Online Education (CDOE)</strong><br>
+        Periyar University<br>
+        Salem-636011, Tamilnadu, India<br>
+        Email: <a href="mailto:cdoe@periyaruniversity.ac.in">cdoe@periyaruniversity.ac.in</a></p>
+        
+        <p>Thank you for choosing Periyar University!</p>
+        
+        <p style="margin-top: 30px;">
+        Best Regards,<br>
+        <strong>Centre for Distance and Online Education (CDOE)</strong><br>
+        Periyar University
+        </p>
+    </div>
+    
+    <div class="footer">
+        <p style="margin: 0;">&copy; 2025 Periyar University. All Rights Reserved.</p>
+    </div>
+</body>
+</html>
+"""
+            
+            # Create email with HTML content (no PDF attachment)
+            email_message = EmailMessage(
+                subject=subject,
+                body=email_html,
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@periyaruniversity.ac.in'),
+                to=[email]
+            )
+            email_message.content_subtype = "html"  # Set email as HTML
+            
+            # Send email
+            email_message.send(fail_silently=False)
+            
+            logger.info(f"Application PDF email sent successfully to {email}")
+            
+            return Response({
+                "status": "success",
+                "message": f"Application form with PDF attachment sent to {email} successfully!"
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as email_error:
+            logger.error(f"Failed to send email to {email}: {str(email_error)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return Response(
+                {"status": "error", "message": f"Failed to send email: {str(email_error)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    except Exception as e:
+        logger.error(f"Error in send_application_email for user {user.email}: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return Response(
+            {"status": "error", "message": f"Failed to process email request: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def download_application_pdf(request):
+    """
+    Generate and return application form as PDF file for direct download.
+    """
+    try:
+        user = request.user
+        
+        # Get application data using the same logic as download_application
+        application = Application.objects.filter(user=user, status__in=['In Progress', 'Completed']).first()
+        if not application:
+            logger.warning(f"No application found for user: {user.email}")
+            return HttpResponse(
+                "No application found",
+                status=404
+            )
+        
+        # Get student details
+        student = Student.objects.filter(email=user.email).first()
+        student_details = StudentDetails.objects.filter(user=user).first()
+        payment = Payment.objects.filter(user=user, application_id=application.application_id).first()
+        fee_payment = ApplicationPayment.objects.filter(user=user, application_id=application.application_id).first()
+        
+        application_id = application.application_id or "Application"
+        submission_date = application.created_at.strftime('%d-%m-%Y') if hasattr(application, 'created_at') and application.created_at else 'N/A'
+        
+        # Prepare application data for PDF
+        lsc_code = student.lsc_code if student and student.lsc_code else ''
+        lsc_name = student.lsc_name if student and student.lsc_name else ''
+        
+        # Resolve photo and signature URLs
+        resolved_photo_url = ''
+        resolved_signature_url = ''
+        try:
+            if student_details and getattr(student_details, 'photo_url', None):
+                resolved_photo_url = student_details.photo_url or ''
+            elif hasattr(application, 'photo_url') and getattr(application, 'photo_url', None):
+                resolved_photo_url = application.photo_url or ''
+            
+            if student_details and getattr(student_details, 'signature_url', None):
+                resolved_signature_url = student_details.signature_url or ''
+        except Exception:
+            resolved_photo_url = ''
+            resolved_signature_url = ''
+
+        application_data = {
+            'application_id': application_id,
+            'enrollment_no': application.enrollment_no if hasattr(application, 'enrollment_no') else '',
+            'applied_date': submission_date,
+            'photo_url': resolved_photo_url,
+            'signature_url': resolved_signature_url,
+            'programme': application.programme_applied or 'DIPLOMA',
+            'course': application.course or '',
+            'medium': application.medium or '',
+            'mode_of_study': application.mode_of_study or '',
+            'academic_year': application.academic_year or '2025-26',
+            'lsc_code': lsc_code,
+            'lsc_name': lsc_name,
+            'student_name': student.name if student else '',
+            'name': student.name if student else '',
+            'dob': application.dob.strftime('%d-%m-%Y') if application.dob else '',
+            'gender': application.gender or '',
+            'father_name': application.father_name or '',
+            'mother_name': application.mother_name or '',
+            'guardian_name': application.guardian_name or '',
+            'parent_occupation': f"{application.father_occupation or 'N/A'} - {application.mother_occupation or 'N/A'}",
+            'mother_tongue': application.mother_tongue or '',
+            'nationality': application.nationality or 'Indian',
+            'religion': application.religion or '',
+            'community': application.community or '',
+            'email': user.email,
+            'phone': student.phone if student else '',
+            'communication_address': f"{application.comm_area or ''}, {application.comm_town or ''}, {application.comm_district or ''}, {application.comm_state or ''} - {application.comm_pincode or ''}, {application.comm_country or ''}".strip(', '),
+            'permanent_address': f"{application.perm_area or ''}, {application.perm_town or ''}, {application.perm_district or ''}, {application.perm_state or ''} - {application.perm_pincode or ''}, {application.perm_country or ''}".strip(', '),
+            'aadhaar_number': application.aadhaar_no or '',
+            'aadhaar_name': application.name_as_aadhaar or '',
+            'abc_id': application.abc_id or '',
+            'deb_id': application.deb_id or '',
+            'differently_abled': application.differently_abled or 'No',
+            'blood_group': application.blood_group or '',
+            'internet_access': application.access_internet or 'Yes',
+            'qualifications': student_details.qualifications if (student_details and student_details.qualifications) else [],
+            'current_designation': student_details.current_designation if student_details else '',
+            'current_institution': student_details.current_institute if student_details else '',
+            'work_experience_years': student_details.years_experience if student_details else '',
+            'annual_income': student_details.annual_income if student_details else '',
+            'payment_status_display': 'TXN_SUCCESS' if application.payment_status == 'P' else 'PENDING',
+            'order_id': fee_payment.order_id if fee_payment else '',
+            'amount': str(fee_payment.amount) if (fee_payment and fee_payment.amount) else '236.00',
+            'payment_mode': fee_payment.payment_mode if fee_payment else 'UPI',
+            'bank_name': fee_payment.bank_name if fee_payment else '',
+            'transaction_date': fee_payment.transaction_date.strftime('%Y-%m-%d %H:%M:%S') if (fee_payment and hasattr(fee_payment, 'transaction_date') and fee_payment.transaction_date) else '',
+        }
+        
+        # Return application data as JSON for client-side PDF generation with print preview
+        logger.info(f"Application data returned for print preview for user {user.email}")
+        return Response({
+            "status": "success",
+            "data": application_data
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error generating PDF for user {user.email}: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return HttpResponse(
+            f"Failed to generate PDF: {str(e)}",
+            status=500
         )
 
 

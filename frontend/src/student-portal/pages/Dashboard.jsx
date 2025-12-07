@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Toaster, toast } from 'react-hot-toast';
@@ -26,6 +26,7 @@ import InstructionsModal from '../components/InstructionsModal';
 import ApplicationProgress from '../components/ApplicationProgress';
 import PaymentHistory from './PaymentHistory';
 import ApplicationDownloadDashboard from '../components/ApplicationDownloadDashboard';
+import SemesterPayments from './SemesterPayments';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -46,6 +47,7 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
   const [paymentData, setPaymentData] = useState(null);
+  const updatesScrollRef = useRef(null);
 
   // Fetch payment status
   const fetchPaymentStatus = async () => {
@@ -177,6 +179,47 @@ const Dashboard = () => {
     };
   }, []);
 
+  // Auto-scroll important updates - infinite smooth scroll from bottom to top
+  useEffect(() => {
+    // Only run auto-scroll when on dashboard section
+    if (activeSection !== 'dashboard') return;
+
+    const scrollContainer = updatesScrollRef.current;
+    if (!scrollContainer) return;
+
+    let scrollSpeed = 0.5; // pixels per frame (slower for smoother effect)
+    let animationId = null;
+
+    // Small delay to ensure DOM is ready
+    const startScroll = () => {
+      // Start from bottom
+      scrollContainer.scrollTop = scrollContainer.scrollHeight;
+
+      const smoothScroll = () => {
+        if (scrollContainer.scrollTop <= 0) {
+          // When we reach the top, instantly jump to bottom for seamless loop
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        } else {
+          // Smooth scroll up
+          scrollContainer.scrollTop -= scrollSpeed;
+        }
+        animationId = requestAnimationFrame(smoothScroll);
+      };
+
+      // Start the animation
+      animationId = requestAnimationFrame(smoothScroll);
+    };
+
+    // Delay start to ensure content is rendered
+    setTimeout(startScroll, 100);
+
+    return () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+    };
+  }, [activeSection]); // Re-run when activeSection changes
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     toast.success('Logged out successfully!');
@@ -238,22 +281,22 @@ const Dashboard = () => {
                         Welcome back, {userData.name}!
                       </h1>
                       <p className="text-base sm:text-lg md:text-xl text-white/90">
-                        Your application is in progress
+                        Ready to start your academic journey!
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
                       <motion.div
                         whileHover={{ scale: 1.02, y: -2 }}
                         className="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/30 shadow-lg"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-green-500/30 rounded-xl flex items-center justify-center shadow-lg">
-                            <CheckCircleIcon className="h-6 w-6 text-green-200" />
+                          <div className="w-12 h-12 bg-blue-500/30 rounded-xl flex items-center justify-center shadow-lg">
+                            <ChartBarIcon className="h-6 w-6 text-blue-200" />
                           </div>
                           <div>
-                            <p className="text-xs text-green-100 uppercase tracking-wider font-medium mb-1">Application</p>
-                            <p className="text-lg md:text-xl font-semibold text-white">Submitted</p>
+                            <p className="text-xs text-blue-100 uppercase tracking-wider font-medium mb-1">Current Semester</p>
+                            <p className="text-lg md:text-xl font-semibold text-white">1st Semester</p>
                           </div>
                         </div>
                       </motion.div>
@@ -263,12 +306,27 @@ const Dashboard = () => {
                         className="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/30 shadow-lg"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-blue-500/30 rounded-xl flex items-center justify-center shadow-lg">
-                            <ClockIcon className="h-6 w-6 text-blue-200" />
+                          <div className="w-12 h-12 bg-green-500/30 rounded-xl flex items-center justify-center shadow-lg">
+                            <RocketLaunchIcon className="h-6 w-6 text-green-200" />
                           </div>
                           <div>
-                            <p className="text-xs text-blue-100 uppercase tracking-wider font-medium mb-1">Status</p>
-                            <p className="text-lg md:text-xl font-semibold text-white">Under Review</p>
+                            <p className="text-xs text-green-100 uppercase tracking-wider font-medium mb-1">Academic Status</p>
+                            <p className="text-lg md:text-xl font-semibold text-white">Active</p>
+                          </div>
+                        </div>
+                      </motion.div>
+
+                      <motion.div
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        className="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/30 shadow-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-orange-500/30 rounded-xl flex items-center justify-center shadow-lg">
+                            <ClockIcon className="h-6 w-6 text-orange-200" />
+                          </div>
+                          <div>
+                            <p className="text-xs text-orange-100 uppercase tracking-wider font-medium mb-1">Next Deadline</p>
+                            <p className="text-sm md:text-base font-semibold text-white">Dec 20, 2025</p>
                           </div>
                         </div>
                       </motion.div>
@@ -281,11 +339,9 @@ const Dashboard = () => {
                           <div className="w-12 h-12 bg-purple-500/30 rounded-xl flex items-center justify-center shadow-lg">
                             <DocumentTextIcon className="h-6 w-6 text-purple-200" />
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-purple-100 uppercase tracking-wider font-medium mb-0.5">App ID</p>
-                            <p className="text-sm md:text-base font-mono font-semibold text-white truncate">
-                              {paymentData?.application?.application_id || 'Processing...'}
-                            </p>
+                          <div>
+                            <p className="text-xs text-purple-100 uppercase tracking-wider font-medium mb-1">Pending Tasks</p>
+                            <p className="text-lg md:text-xl font-semibold text-white">2 Items</p>
                           </div>
                         </div>
                       </motion.div>
@@ -293,136 +349,168 @@ const Dashboard = () => {
                   </div>
                 </motion.div>
 
-                {/* Quick Actions Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    whileHover={{ scale: 1.03, y: -8 }}
-                    className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer border border-violet-100"
-                    onClick={() => setActiveSection('applicationProgress')}
-                  >
-                    <div className="h-1.5 bg-gradient-to-r from-violet-500 via-purple-500 to-purple-600"></div>
-                    <div className="p-6">
-                      <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
-                        <ChartBarIcon className="h-8 w-8 text-white" />
-                      </div>
-                      <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2 group-hover:text-violet-600 transition-colors">Track Progress</h3>
-                      <p className="text-sm md:text-base text-gray-600 mb-4 leading-relaxed">
-                        View your application verification status and timeline
-                      </p>
-                      <div className="flex items-center text-violet-600 font-medium text-sm group-hover:gap-2 transition-all">
-                        <span>View Status</span>
-                        <motion.span
-                          animate={{ x: [0, 5, 0] }}
-                          transition={{ repeat: Infinity, duration: 1.5 }}
-                          className="ml-2"
-                        >
-                          →
-                        </motion.span>
-                      </div>
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    whileHover={{ scale: 1.03, y: -8 }}
-                    className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer border border-blue-100"
-                    onClick={() => setActiveSection('applicationDownload')}
-                  >
-                    <div className="h-1.5 bg-gradient-to-r from-blue-500 via-cyan-500 to-cyan-600"></div>
-                    <div className="p-6">
-                      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
-                        <ArrowDownTrayIcon className="h-8 w-8 text-white" />
-                      </div>
-                      <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Download Form</h3>
-                      <p className="text-sm md:text-base text-gray-600 mb-4 leading-relaxed">
-                        Get your completed application form in PDF format
-                      </p>
-                      <div className="flex items-center text-blue-600 font-medium text-sm group-hover:gap-2 transition-all">
-                        <span>Download Now</span>
-                        <motion.span
-                          animate={{ x: [0, 5, 0] }}
-                          transition={{ repeat: Infinity, duration: 1.5 }}
-                          className="ml-2"
-                        >
-                          →
-                        </motion.span>
-                      </div>
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    whileHover={{ scale: 1.03, y: -8 }}
-                    className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer border border-green-100"
-                    onClick={() => setActiveSection('paymentHistory')}
-                  >
-                    <div className="h-1.5 bg-gradient-to-r from-green-500 via-emerald-500 to-emerald-600"></div>
-                    <div className="p-6">
-                      <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
-                        <BanknotesIcon className="h-8 w-8 text-white" />
-                      </div>
-                      <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2 group-hover:text-green-600 transition-colors">Payment Details</h3>
-                      <p className="text-sm md:text-base text-gray-600 mb-4 leading-relaxed">
-                        View your payment history and download receipt
-                      </p>
-                      <div className="flex items-center text-green-600 font-medium text-sm group-hover:gap-2 transition-all">
-                        <span>View History</span>
-                        <motion.span
-                          animate={{ x: [0, 5, 0] }}
-                          transition={{ repeat: Infinity, duration: 1.5 }}
-                          className="ml-2"
-                        >
-                          →
-                        </motion.span>
-                      </div>
-                    </div>
-                  </motion.div>
-                </div>
-
-                {/* Next Steps Card */}
+                {/* Important Updates Section */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="bg-gradient-to-br from-amber-50 via-orange-50 to-amber-50 rounded-2xl shadow-xl border border-amber-300/50 p-6 md:p-8 relative overflow-hidden"
+                  transition={{ delay: 0.1 }}
+                  className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 md:p-8"
                 >
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-amber-300/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
-                  <div className="relative z-10">
-                    <div className="flex items-start gap-4">
-                      <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                        <RocketLaunchIcon className="h-7 w-7 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          Next Steps
-                          <span className="text-xs bg-amber-200 text-amber-800 px-2 py-1 rounded-full font-medium">Important</span>
-                        </h3>
-                        <ul className="space-y-3 text-sm md:text-base text-gray-700 leading-relaxed">
-                          <li className="flex items-start gap-3 p-3 bg-white/60 rounded-xl hover:bg-white/80 transition-colors">
-                            <span className="flex-shrink-0 w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
-                            <span>Track your application progress from the sidebar menu</span>
-                          </li>
-                          <li className="flex items-start gap-3 p-3 bg-white/60 rounded-xl hover:bg-white/80 transition-colors">
-                            <span className="flex-shrink-0 w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
-                            <span>Download your application form for your records</span>
-                          </li>
-                          <li className="flex items-start gap-3 p-3 bg-white/60 rounded-xl hover:bg-white/80 transition-colors">
-                            <span className="flex-shrink-0 w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
-                            <span>Wait for document verification by college staff</span>
-                          </li>
-                          <li className="flex items-start gap-3 p-3 bg-white/60 rounded-xl hover:bg-white/80 transition-colors">
-                            <span className="flex-shrink-0 w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold">4</span>
-                            <span>Check your email regularly for updates</span>
-                          </li>
-                        </ul>
-                      </div>
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+                      <ChartBarIcon className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl md:text-2xl font-bold text-gray-900">Important Updates</h3>
+                      <p className="text-gray-600">Latest announcements and notifications</p>
+                    </div>
+                  </div>
+
+                  <div ref={updatesScrollRef} className="max-h-80 overflow-y-auto scrollbar pr-2">
+                    <div className="space-y-4">
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 p-4 rounded-r-xl hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-white text-sm font-bold">📅</span>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 mb-1">Semester Registration Opens</h4>
+                            <p className="text-sm text-gray-700 mb-2">Online registration for Odd Semester 2025-26 will begin from December 15, 2025. Complete your course selection before the deadline.</p>
+                            <span className="text-xs text-blue-600 font-medium">December 7, 2025</span>
+                          </div>
+                        </div>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 p-4 rounded-r-xl hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-white text-sm font-bold">💰</span>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 mb-1">Fee Payment Reminder</h4>
+                            <p className="text-sm text-gray-700 mb-2">Semester fee payments must be completed by December 20, 2025 to avoid late fees. Use the online payment portal for instant confirmation.</p>
+                            <span className="text-xs text-green-600 font-medium">December 6, 2025</span>
+                          </div>
+                        </div>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="bg-gradient-to-r from-purple-50 to-violet-50 border-l-4 border-purple-500 p-4 rounded-r-xl hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-white text-sm font-bold">📚</span>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 mb-1">Library Access Activated</h4>
+                            <p className="text-sm text-gray-700 mb-2">Your digital library access has been activated. You can now access e-books, journals, and research materials through the student portal.</p>
+                            <span className="text-xs text-purple-600 font-medium">December 5, 2025</span>
+                          </div>
+                        </div>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.4 }}
+                        className="bg-gradient-to-r from-orange-50 to-amber-50 border-l-4 border-orange-500 p-4 rounded-r-xl hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-white text-sm font-bold">🏫</span>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 mb-1">Orientation Program</h4>
+                            <p className="text-sm text-gray-700 mb-2">Freshers' orientation program scheduled for December 20, 2025 at 10:00 AM in the main auditorium. Attendance is mandatory for all new students.</p>
+                            <span className="text-xs text-orange-600 font-medium">December 4, 2025</span>
+                          </div>
+                        </div>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.5 }}
+                        className="bg-gradient-to-r from-red-50 to-rose-50 border-l-4 border-red-500 p-4 rounded-r-xl hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-white text-sm font-bold">⚠️</span>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 mb-1">Document Verification</h4>
+                            <p className="text-sm text-gray-700 mb-2">Please ensure all submitted documents are verified. Incomplete verifications may affect your admission process. Check status in your dashboard.</p>
+                            <span className="text-xs text-red-600 font-medium">December 3, 2025</span>
+                          </div>
+                        </div>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.6 }}
+                        className="bg-gradient-to-r from-teal-50 to-cyan-50 border-l-4 border-teal-500 p-4 rounded-r-xl hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-white text-sm font-bold">🎓</span>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 mb-1">ID Card Distribution</h4>
+                            <p className="text-sm text-gray-700 mb-2">Student ID cards will be distributed from December 18, 2025. Bring your enrollment number and payment receipt for collection.</p>
+                            <span className="text-xs text-teal-600 font-medium">December 2, 2025</span>
+                          </div>
+                        </div>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.7 }}
+                        className="bg-gradient-to-r from-indigo-50 to-blue-50 border-l-4 border-indigo-500 p-4 rounded-r-xl hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-white text-sm font-bold">📖</span>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 mb-1">Course Registration</h4>
+                            <p className="text-sm text-gray-700 mb-2">Course registration for Semester 1 is now open. Select your subjects before December 25, 2025 to avoid late registration fees.</p>
+                            <span className="text-xs text-indigo-600 font-medium">December 1, 2025</span>
+                          </div>
+                        </div>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.8 }}
+                        className="bg-gradient-to-r from-pink-50 to-rose-50 border-l-4 border-pink-500 p-4 rounded-r-xl hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span className="text-white text-sm font-bold">🏆</span>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 mb-1">Welcome Ceremony</h4>
+                            <p className="text-sm text-gray-700 mb-2">Join us for the annual welcome ceremony on January 5, 2026. Meet your faculty and fellow students in a grand celebration.</p>
+                            <span className="text-xs text-pink-600 font-medium">November 30, 2025</span>
+                          </div>
+                        </div>
+                      </motion.div>
                     </div>
                   </div>
                 </motion.div>
@@ -458,6 +546,22 @@ const Dashboard = () => {
         return <ApplicationDownloadDashboard />;
       case 'paymentHistory':
         return <PaymentHistory />;
+      case 'firstSemesterPayment':
+        return <SemesterPayments />;
+      case 'studentIdCard':
+        return <div className="text-center py-12"><h2 className="text-2xl font-bold">Student ID Card - Coming Soon</h2></div>;
+      case 'profile':
+        return <div className="text-center py-12"><h2 className="text-2xl font-bold">Profile & Settings - Coming Soon</h2></div>;
+      case 'payments':
+        return <SemesterPayments />;
+      case 'materials':
+        return <div className="text-center py-12"><h2 className="text-2xl font-bold">Study Materials - Coming Soon</h2></div>;
+      case 'videoLessons':
+        return <div className="text-center py-12"><h2 className="text-2xl font-bold">Video Lessons - Coming Soon</h2></div>;
+      case 'assignments':
+        return <div className="text-center py-12"><h2 className="text-2xl font-bold">Assignments - Coming Soon</h2></div>;
+      case 'feedback':
+        return <div className="text-center py-12"><h2 className="text-2xl font-bold">Feedback - Coming Soon</h2></div>;
       case 'programs':
         return <ProgramsTable programs={programs} />;
       case 'guidelines':

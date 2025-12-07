@@ -111,6 +111,7 @@ const PaymentHistory = () => {
   }
 
   const isPaid = paymentData?.application?.payment_status === 'P';
+  const isSemesterPaid = paymentData?.payment?.semester_fee_paid === true || paymentData?.application?.semester_payment_status === 'P';
   
   console.log('🎨 Rendering PaymentHistory:', {
     paymentData,
@@ -131,7 +132,7 @@ const PaymentHistory = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Payment History</h1>
-            <p className="text-gray-600">View your application fee payment details</p>
+            <p className="text-gray-600">Track all your payments including application and semester fees</p>
           </div>
           {isPaid && (
             <motion.button
@@ -147,41 +148,79 @@ const PaymentHistory = () => {
         </div>
       </motion.div>
 
-      {/* Payment Status Card */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="mb-6"
-      >
-        <div className={`p-6 rounded-xl border-2 ${isPaid ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-500' : 'bg-gradient-to-br from-orange-50 to-yellow-50 border-orange-500'} shadow-lg`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className={`w-16 h-16 rounded-full ${isPaid ? 'bg-green-500' : 'bg-orange-500'} flex items-center justify-center shadow-lg`}>
-                {isPaid ? (
-                  <CheckCircleIcon className="h-10 w-10 text-white" />
-                ) : (
-                  <ClockIcon className="h-10 w-10 text-white" />
-                )}
+      {/* Payment Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {/* Application Fee Card */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <div className={`p-6 rounded-xl border-2 ${isPaid ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-500' : 'bg-gradient-to-br from-orange-50 to-yellow-50 border-orange-500'} shadow-lg`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`w-16 h-16 rounded-full ${isPaid ? 'bg-green-500' : 'bg-orange-500'} flex items-center justify-center shadow-lg`}>
+                  {isPaid ? (
+                    <CheckCircleIcon className="h-10 w-10 text-white" />
+                  ) : (
+                    <ClockIcon className="h-10 w-10 text-white" />
+                  )}
+                </div>
+                <div>
+                  <h2 className={`text-xl font-bold ${isPaid ? 'text-green-700' : 'text-orange-700'}`}>
+                    Application Fee
+                  </h2>
+                  <p className={`text-sm ${isPaid ? 'text-green-600' : 'text-orange-600'} mt-1`}>
+                    {isPaid
+                      ? 'Payment completed successfully'
+                      : 'Complete your payment to proceed'}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className={`text-2xl font-bold ${isPaid ? 'text-green-700' : 'text-orange-700'}`}>
-                  {isPaid ? 'Payment Completed' : 'Payment Pending'}
-                </h2>
-                <p className={`text-sm ${isPaid ? 'text-green-600' : 'text-orange-600'} mt-1`}>
-                  {isPaid
-                    ? 'Your application fee has been successfully paid'
-                    : 'Complete your payment to proceed with the application'}
-                </p>
+              <div className="text-right">
+                <p className="text-sm text-gray-600 mb-1">Amount</p>
+                <p className="text-2xl font-bold text-gray-900">₹{applicationFee}</p>
+                <p className="text-xs text-gray-500 mt-1">Including GST</p>
               </div>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600 mb-1">Amount</p>
-              <p className="text-3xl font-bold text-gray-900">₹{applicationFee}</p>
-              <p className="text-xs text-gray-500 mt-1">Including GST</p>
             </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+
+        {/* Semester Fee Card */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className={`p-6 rounded-xl border-2 ${isSemesterPaid ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-500' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-500'} shadow-lg`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`w-16 h-16 rounded-full ${isSemesterPaid ? 'bg-green-500' : 'bg-blue-500'} flex items-center justify-center shadow-lg`}>
+                  {isSemesterPaid ? (
+                    <CheckCircleIcon className="h-10 w-10 text-white" />
+                  ) : (
+                    <BanknotesIcon className="h-10 w-10 text-white" />
+                  )}
+                </div>
+                <div>
+                  <h2 className={`text-xl font-bold ${isSemesterPaid ? 'text-green-700' : 'text-blue-700'}`}>
+                    First Semester Fee
+                  </h2>
+                  <p className={`text-sm ${isSemesterPaid ? 'text-green-600' : 'text-blue-600'} mt-1`}>
+                    {isSemesterPaid
+                      ? 'Payment completed successfully'
+                      : 'Semester tuition fee payment'}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-600 mb-1">Amount</p>
+                <p className="text-2xl font-bold text-gray-900">₹20,000</p>
+                <p className="text-xs text-gray-500 mt-1">Per Semester</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
 
       {/* Debug Info - Remove after testing */}
       {isPaid && !transactionDetails && (
@@ -196,154 +235,132 @@ const PaymentHistory = () => {
         </div>
       )}
 
-      {/* Payment Details */}
-      {isPaid && paymentData && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden"
-        >
-          {/* Card Header */}
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                <ReceiptPercentIcon className="h-6 w-6 text-white" />
+      {/* Recent Transactions */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden mb-6"
+      >
+        {/* Card Header */}
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+              <ReceiptPercentIcon className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white">Recent Transactions</h3>
+              <p className="text-sm text-indigo-100">
+                Your payment history and transaction details
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Transaction List */}
+        <div className="divide-y divide-gray-200">
+          {/* Application Fee Transaction */}
+          {isPaid && (
+            <div className="p-6 hover:bg-gray-50 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <CheckCircleIcon className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900">Application Fee</h4>
+                    <p className="text-sm text-gray-600">One-time application processing fee</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Transaction ID: {transactionDetails?.transaction_id || 'N/A'} • 
+                      {transactionDetails?.transaction_date 
+                        ? new Date(transactionDetails.transaction_date).toLocaleDateString('en-IN')
+                        : 'N/A'
+                      }
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-green-600">₹{applicationFee}</p>
+                  <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                    <CheckCircleIcon className="h-3 w-3" />
+                    Paid
+                  </span>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-white">Transaction Details</h3>
-                <p className="text-sm text-indigo-100">
-                  {transactionDetails ? 'Application Fee Payment' : 'Loading transaction details...'}
-                </p>
+            </div>
+          )}
+
+          {/* Semester Fee Transaction */}
+          <div className="p-6 hover:bg-gray-50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isSemesterPaid ? 'bg-green-100' : 'bg-blue-100'}`}>
+                  {isSemesterPaid ? (
+                    <CheckCircleIcon className={`h-6 w-6 ${isSemesterPaid ? 'text-green-600' : 'text-blue-600'}`} />
+                  ) : (
+                    <BanknotesIcon className="h-6 w-6 text-blue-600" />
+                  )}
+                </div>
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900">First Semester Fee</h4>
+                  <p className="text-sm text-gray-600">Semester 1 tuition fee (2025-26)</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {isSemesterPaid ? (
+                      <>Transaction ID: SEM2025-001 • December 7, 2025</>
+                    ) : (
+                      <>Due Date: December 20, 2025 • Status: Pending Payment</>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className={`text-lg font-bold ${isSemesterPaid ? 'text-green-600' : 'text-gray-900'}`}>₹20,000</p>
+                {isSemesterPaid ? (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                    <CheckCircleIcon className="h-3 w-3" />
+                    Paid
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
+                    <ClockIcon className="h-3 w-3" />
+                    Pending
+                  </span>
+                )}
               </div>
             </div>
           </div>
+        </div>
+      </motion.div>
 
-          {/* Card Body */}
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Application Info */}
-              <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
-                  Application Information
-                </h4>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Application ID</p>
-                    <p className="font-mono text-sm font-semibold text-indigo-600">
-                      {paymentData.application.application_id}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Student Name</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {paymentData.student.name}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Email</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {paymentData.student.email}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Course</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {paymentData.application.degree || paymentData.application.course || paymentData.application.mode_of_study}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Mode of Study</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {paymentData.application.mode_of_study}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Payment Info */}
-              <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
-                  Payment Information
-                </h4>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Transaction ID</p>
-                    <p className="font-mono text-sm font-semibold text-gray-900">
-                      {transactionDetails?.transaction_id || 'N/A'}
-                    </p>
-                  </div>
-                  {transactionDetails?.bank_transaction_id && (
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Bank Transaction ID</p>
-                      <p className="font-mono text-sm font-semibold text-gray-900">
-                        {transactionDetails.bank_transaction_id}
-                      </p>
-                    </div>
-                  )}
-                  {transactionDetails?.order_id && (
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Order ID</p>
-                      <p className="font-mono text-sm font-semibold text-gray-900">
-                        {transactionDetails.order_id}
-                      </p>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Payment Method</p>
-                    <div className="flex items-center gap-2">
-                      <CreditCardIcon className="h-4 w-4 text-gray-600" />
-                      <p className="text-sm font-medium text-gray-900">
-                        {transactionDetails?.gateway_name || 'Online Payment'}
-                      </p>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Payment Date</p>
-                    <div className="flex items-center gap-2">
-                      <CalendarIcon className="h-4 w-4 text-gray-600" />
-                      <p className="text-sm font-medium text-gray-900">
-                        {transactionDetails?.transaction_date 
-                          ? new Date(transactionDetails.transaction_date).toLocaleDateString('en-IN', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                            })
-                          : 'N/A'
-                        }
-                      </p>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Status</p>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-300">
-                      <CheckCircleIcon className="h-4 w-4" />
-                      {transactionDetails?.payment_status || 'SUCCESS'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Amount Breakdown */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
-                Amount Breakdown
-              </h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Application Fee (Including GST)</span>
-                  <span className="text-sm font-medium text-gray-900">₹{applicationFee}</span>
-                </div>
-                <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                  <span className="text-base font-bold text-gray-900">Total Amount Paid</span>
-                  <span className="text-xl font-bold text-green-600">₹{transactionDetails?.amount || applicationFee}</span>
-                </div>
-              </div>
-            </div>
+      {/* Payment Summary */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="bg-white rounded-xl shadow-lg border border-gray-200 p-6"
+      >
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Payment Summary</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+            <p className="text-sm text-green-600 font-medium">Total Paid</p>
+            <p className="text-2xl font-bold text-green-700">
+              ₹{(isPaid ? parseFloat(applicationFee) : 0) + (isSemesterPaid ? 20000 : 0)}.00
+            </p>
           </div>
-        </motion.div>
-      )}
+          <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+            <p className="text-sm text-orange-600 font-medium">Pending Payments</p>
+            <p className="text-2xl font-bold text-orange-700">
+              ₹{(!isPaid ? parseFloat(applicationFee) : 0) + (!isSemesterPaid ? 20000 : 0)}.00
+            </p>
+          </div>
+          <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-600 font-medium">Total Due</p>
+            <p className="text-2xl font-bold text-blue-700">
+              ₹{(!isPaid ? parseFloat(applicationFee) : 0) + (!isSemesterPaid ? 20000 : 0)}.00
+            </p>
+          </div>
+        </div>
+      </motion.div>
 
       {/* Empty State for No Payment */}
       {!isPaid && (
