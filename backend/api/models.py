@@ -319,3 +319,56 @@ class SemesterPayment(models.Model):
             user=user,
             payment_status='SUCCESS'
         ).values_list('semester_number', flat=True))
+
+
+class Material(models.Model):
+    """Study materials uploaded by LSC Admin for students"""
+    MATERIAL_TYPES = [
+        ('PDF', 'PDF Document'),
+        ('PPT', 'PowerPoint Presentation'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('ACTIVE', 'Active'),
+        ('ARCHIVED', 'Archived'),
+    ]
+    
+    # Material Information
+    title = models.CharField(max_length=255, help_text="Title of the material")
+    description = models.TextField(blank=True, null=True, help_text="Description of the material")
+    material_type = models.CharField(max_length=10, choices=MATERIAL_TYPES, default='PDF')
+    file = models.FileField(upload_to='materials/%Y/%m/', max_length=500, help_text="Upload PDF or PPT file (Max 30MB)")
+    file_size = models.IntegerField(help_text="File size in bytes")
+    
+    # Targeting Information
+    programme = models.CharField(max_length=100, help_text="Target programme (e.g., BBA, MBA)")
+    semester = models.IntegerField(help_text="Target semester (1-6)")
+    subject = models.CharField(max_length=200, blank=True, null=True, help_text="Subject name")
+    
+    # LSC Information
+    lsc_code = models.CharField(max_length=50, help_text="LSC Center Code")
+    lsc_name = models.CharField(max_length=200, help_text="LSC Center Name")
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='uploaded_materials')
+    uploaded_by_name = models.CharField(max_length=200, blank=True, null=True, help_text="Name of uploader")
+    
+    # Status and Metadata
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
+    views_count = models.IntegerField(default=0, help_text="Number of times viewed")
+    upload_date = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'materials'
+        ordering = ['-upload_date']
+        indexes = [
+            models.Index(fields=['lsc_code', 'programme', 'semester']),
+            models.Index(fields=['status', 'upload_date']),
+        ]
+    
+    def __str__(self):
+        return f"{self.title} - {self.programme} (Sem {self.semester})"
+    
+    def increment_views(self):
+        """Increment the view count"""
+        self.views_count += 1
+        self.save(update_fields=['views_count'])

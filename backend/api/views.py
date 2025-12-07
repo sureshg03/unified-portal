@@ -4238,3 +4238,343 @@ def download_receipt(request):
             {"status": "error", "message": f"Failed to fetch receipt data: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+# ===========================
+# Materials Management APIs
+# ===========================
+
+from .models import Material
+from .serializers import MaterialSerializer, MaterialUploadSerializer
+from django.core.files.storage import default_storage
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_student_materials(request):
+    """
+    Get materials relevant to the authenticated student
+    Based on their LSC code, programme, and semester
+    """
+    try:
+        user = request.user
+        
+        # Check if user is a Django User (students) not LSCAdmin
+        from django.contrib.auth.models import User
+        if not isinstance(user, User):
+            return Response({
+                'status': 'error',
+                'message': 'This endpoint is for students only'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        email = user.email or user.username
+        
+        # Get student details
+        student = Student.objects.filter(email=email).first()
+        if not student:
+            return Response({
+                'status': 'error',
+                'message': 'Student profile not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get application details for programme info
+        application = Application.objects.filter(user=user).first()
+        if not application:
+            # Return empty list if no application yet
+            return Response({
+                'status': 'success',
+                'data': [],
+                'count': 0,
+                'message': 'No application found. Materials will be available after applying.'
+            }, status=status.HTTP_200_OK)
+        
+        # Filter materials based on student's LSC code and programme
+        materials = Material.objects.filter(
+            lsc_code=student.lsc_code,
+            programme=application.programme_applied,
+            status='ACTIVE'
+        ).order_by('-upload_date')
+        
+        serializer = MaterialSerializer(materials, many=True, context={'request': request})
+        
+        return Response({
+            'status': 'success',
+            'data': serializer.data,
+            'count': materials.count()
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error fetching materials: {str(e)}", exc_info=True)
+        return Response({
+            'status': 'error',
+            'message': f'Failed to fetch materials: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def view_material(request, material_id):
+    """
+    View a specific material (increments view count)
+    Returns file URL for viewing only (no download)
+    """
+    try:
+        material = Material.objects.get(id=material_id, status='ACTIVE')
+        
+        # Verify student has access to this material
+        user = request.user
+        email = user.email or user.username
+        student = Student.objects.filter(email=email).first()
+        
+        if not student or student.lsc_code != material.lsc_code:
+            return Response({
+                'status': 'error',
+                'message': 'Access denied. This material is not available for your LSC.'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Increment view count
+        material.increment_views()
+        
+        # Return material details with file URL
+        serializer = MaterialSerializer(material, context={'request': request})
+        
+        return Response({
+            'status': 'success',
+            'data': serializer.data
+        }, status=status.HTTP_200_OK)
+        
+    except Material.DoesNotExist:
+        return Response({
+            'status': 'error',
+            'message': 'Material not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error viewing material: {str(e)}", exc_info=True)
+        return Response({
+            'status': 'error',
+            'message': f'Failed to view material: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def serve_material_file(request, material_id):
+    """
+    Serve material file with proper headers for browser viewing
+    """
+    try:
+        from django.http import FileResponse
+        import mimetypes
+        
+        material = Material.objects.get(id=material_id, status='ACTIVE')
+        
+        # Verify student has access
+        user = request.user
+        email = user.email or user.username
+        student = Student.objects.filter(email=email).first()
+        
+        if not student or student.lsc_code != material.lsc_code:
+            return Response({
+                'status': 'error',
+                'message': 'Access denied'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Serve file with proper headers
+        file_path = material.file.path
+        content_type, _ = mimetypes.guess_type(file_path)
+        
+        response = FileResponse(open(file_path, 'rb'), content_type=content_type or 'application/octet-stream')
+        response['Content-Disposition'] = 'inline; filename="{}"'.format(material.file.name.split('/')[-1])
+        response['X-Frame-Options'] = 'SAMEORIGIN'
+        response['Access-Control-Allow-Origin'] = '*'
+        
+        return response
+        
+    except Material.DoesNotExist:
+        return Response({'status': 'error', 'message': 'Material not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error serving material file: {str(e)}", exc_info=True)
+        return Response({'status': 'error', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def upload_material(request):
+    """
+    Upload study material (LSC Admin only)
+    """
+    try:
+        # Get user info - could be LSCAdmin or User
+        user = request.user
+        
+        serializer = MaterialUploadSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                'status': 'error',
+                'message': 'Validation failed',
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Determine uploader name based on user type
+        from lsc_auth.models import LSCAdmin
+        if isinstance(user, LSCAdmin):
+            uploader_name = user.admin_name or user.lsc_code
+        else:
+            uploader_name = user.username if hasattr(user, 'username') else 'Unknown'
+        
+        # Save the material - don't assign uploaded_by for LSCAdmin
+        material = serializer.save(
+            uploaded_by=None,  # LSCAdmin is not a User instance
+            uploaded_by_name=uploader_name,
+            file_size=request.FILES['file'].size
+        )
+        
+        # Return the created material
+        response_serializer = MaterialSerializer(material, context={'request': request})
+        
+        return Response({
+            'status': 'success',
+            'message': 'Material uploaded successfully',
+            'data': response_serializer.data
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        logger.error(f"Error uploading material: {str(e)}", exc_info=True)
+        return Response({
+            'status': 'error',
+            'message': f'Failed to upload material: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_lsc_materials(request):
+    """
+    Get all materials uploaded by LSC admin
+    For LSC admin dashboard
+    """
+    try:
+        user = request.user
+        
+        # Get LSC code from user (LSCAdmin or User)
+        from lsc_auth.models import LSCAdmin
+        if isinstance(user, LSCAdmin):
+            lsc_code = user.lsc_code
+        else:
+            # For regular users, try to get from profile
+            lsc_code = getattr(user, 'lsc_code', None)
+        
+        if not lsc_code:
+            return Response({
+                'status': 'error',
+                'message': 'LSC code not found for user'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get materials for this LSC code
+        materials = Material.objects.filter(
+            lsc_code=lsc_code
+        ).order_by('-upload_date')
+        
+        serializer = MaterialSerializer(materials, many=True, context={'request': request})
+        
+        return Response({
+            'status': 'success',
+            'data': serializer.data,
+            'count': materials.count()
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error fetching LSC materials: {str(e)}", exc_info=True)
+        return Response({
+            'status': 'error',
+            'message': f'Failed to fetch materials: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_material(request, material_id):
+    """
+    Update material details (LSC Admin only)
+    """
+    try:
+        # Get user's LSC code
+        user = request.user
+        from lsc_auth.models import LSCAdmin
+        if isinstance(user, LSCAdmin):
+            lsc_code = user.lsc_code
+        else:
+            lsc_code = getattr(user, 'lsc_code', None)
+        
+        # Get material and verify ownership by LSC code
+        material = Material.objects.get(id=material_id, lsc_code=lsc_code)
+        
+        # Update only allowed fields
+        allowed_fields = ['title', 'description', 'subject', 'status']
+        for field in allowed_fields:
+            if field in request.data:
+                setattr(material, field, request.data[field])
+        
+        material.save()
+        
+        serializer = MaterialSerializer(material, context={'request': request})
+        
+        return Response({
+            'status': 'success',
+            'message': 'Material updated successfully',
+            'data': serializer.data
+        }, status=status.HTTP_200_OK)
+        
+    except Material.DoesNotExist:
+        return Response({
+            'status': 'error',
+            'message': 'Material not found or access denied'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error updating material: {str(e)}", exc_info=True)
+        return Response({
+            'status': 'error',
+            'message': f'Failed to update material: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_material(request, material_id):
+    """
+    Delete material (LSC Admin only)
+    """
+    try:
+        # Get user's LSC code
+        user = request.user
+        from lsc_auth.models import LSCAdmin
+        if isinstance(user, LSCAdmin):
+            lsc_code = user.lsc_code
+        else:
+            lsc_code = getattr(user, 'lsc_code', None)
+        
+        # Get material and verify ownership by LSC code
+        material = Material.objects.get(id=material_id, lsc_code=lsc_code)
+        
+        # Delete the file from storage
+        if material.file:
+            default_storage.delete(material.file.name)
+        
+        # Delete the database record
+        material.delete()
+        
+        return Response({
+            'status': 'success',
+            'message': 'Material deleted successfully'
+        }, status=status.HTTP_200_OK)
+        
+    except Material.DoesNotExist:
+        return Response({
+            'status': 'error',
+            'message': 'Material not found or access denied'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error deleting material: {str(e)}", exc_info=True)
+        return Response({
+            'status': 'error',
+            'message': f'Failed to delete material: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

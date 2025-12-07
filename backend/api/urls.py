@@ -83,5 +83,17 @@ urlpatterns = [
     path('semester-payments/status/', views.get_payment_status_v2, name='get_payment_status_v2'),
     path('semester-payments/receipt/<int:semester_number>/', views.get_payment_receipt, name='get_payment_receipt'),
     path('semester-payments/check/<int:semester_number>/', views.check_semester_payment, name='check_semester_payment'),
+    
+    # Materials Management Endpoints
+    # Student endpoints
+    path('materials/', views.get_student_materials, name='get_student_materials'),
+    path('materials/<int:material_id>/view/', views.view_material, name='view_material'),
+    path('materials/<int:material_id>/file/', views.serve_material_file, name='serve_material_file'),
+    
+    # LSC Admin endpoints
+    path('lsc-admin/materials/', views.get_lsc_materials, name='get_lsc_materials'),
+    path('lsc-admin/materials/upload/', views.upload_material, name='upload_material'),
+    path('lsc-admin/materials/<int:material_id>/update/', views.update_material, name='update_material'),
+    path('lsc-admin/materials/<int:material_id>/delete/', views.delete_material, name='delete_material'),
   
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

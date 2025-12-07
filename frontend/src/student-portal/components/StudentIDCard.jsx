@@ -574,7 +574,7 @@ const StudentIDCard = () => {
                     <p className="text-white text-center text-[9px] sm:text-[10px] lg:text-xs font-bold uppercase tracking-wider" style={{
                       textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
                     }}>
-                      ⚠ This is a system generated ID card; no signature required.
+                      This is a system generated ID card; no signature required.
                     </p>
                   </div>
                   <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 py-1.5 sm:py-2 lg:py-2.5 px-3 sm:px-4 lg:px-6">

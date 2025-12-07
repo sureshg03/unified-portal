@@ -179,3 +179,65 @@ class SemesterPaymentSerializer(serializers.ModelSerializer):
             'card_last_four', 'payment_date', 'created_at'
         ]
         read_only_fields = ['id', 'created_at']
+
+
+from .models import Material
+
+class MaterialSerializer(serializers.ModelSerializer):
+    """Serializer for study materials"""
+    uploaded_by_name = serializers.SerializerMethodField()
+    file_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Material
+        fields = [
+            'id', 'title', 'description', 'material_type', 'file_url',
+            'file_size', 'programme', 'semester', 'subject',
+            'lsc_code', 'lsc_name', 'uploaded_by_name', 'status',
+            'views_count', 'upload_date', 'updated_at'
+        ]
+        read_only_fields = ['id', 'uploaded_by_name', 'file_url', 'views_count', 'upload_date', 'updated_at']
+    
+    def get_uploaded_by_name(self, obj):
+        # First check if uploaded_by_name field is set (for LSC Admins)
+        if obj.uploaded_by_name:
+            return obj.uploaded_by_name
+        # Fallback to uploaded_by User if available
+        if obj.uploaded_by:
+            return obj.uploaded_by.get_full_name() or obj.uploaded_by.username
+        return 'Unknown'
+    
+    def get_file_url(self, obj):
+        request = self.context.get('request')
+        if obj.file and request:
+            return request.build_absolute_uri(obj.file.url)
+        return None
+
+
+class MaterialUploadSerializer(serializers.ModelSerializer):
+    """Serializer for uploading materials (LSC Admin)"""
+    class Meta:
+        model = Material
+        fields = [
+            'title', 'description', 'material_type', 'file',
+            'programme', 'semester', 'subject', 'lsc_code', 'lsc_name'
+        ]
+    
+    def validate_file(self, value):
+        # Validate file size (max 30MB)
+        max_size = 30 * 1024 * 1024  # 30MB in bytes
+        if value.size > max_size:
+            raise serializers.ValidationError(f"File size exceeds 30MB limit. Current size: {value.size / (1024*1024):.2f}MB")
+        
+        # Validate file type
+        allowed_extensions = ['pdf', 'ppt', 'pptx']
+        file_name = value.name.lower()
+        if not any(file_name.endswith(ext) for ext in allowed_extensions):
+            raise serializers.ValidationError("Only PDF and PPT/PPTX files are allowed")
+        
+        return value
+    
+    def validate_semester(self, value):
+        if value < 1 or value > 6:
+            raise serializers.ValidationError("Semester must be between 1 and 6")
+        return value

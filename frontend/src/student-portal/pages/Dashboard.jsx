@@ -29,6 +29,7 @@ import ApplicationDownloadDashboard from '../components/ApplicationDownloadDashb
 import SemesterPayments from './SemesterPayments';
 import StudentIDCard from '../components/StudentIDCard';
 import StudentProfile from '../components/StudentProfile';
+import Materials from '../components/Materials';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -616,7 +617,7 @@ const Dashboard = () => {
       case 'payments':
         return <SemesterPayments />;
       case 'materials':
-        return <div className="text-center py-12"><h2 className="text-2xl font-bold">Study Materials - Coming Soon</h2></div>;
+        return <Materials />;
       case 'videoLessons':
         return <div className="text-center py-12"><h2 className="text-2xl font-bold">Video Lessons - Coming Soon</h2></div>;
       case 'assignments':
