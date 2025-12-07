@@ -21,11 +21,33 @@ const PaymentHistory = () => {
   const [semesterPayments, setSemesterPayments] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
   const [semesterStudentData, setSemesterStudentData] = useState(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
-  useEffect(() => {
-    fetchPaymentHistory();
-    fetchUserProfile(); // Fetch user profile for LSC information
-  }, []);
+  // Utility function to fetch LSC data directly from API
+  const fetchLSCData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return null;
+
+      console.log('🔄 Fetching LSC data directly from API...');
+      const response = await axios.get(
+        'http://localhost:8000/api/semester-payments/',
+        { headers: { Authorization: `Token ${token}` } }
+      );
+
+      if (response.data.status === 'success' && response.data.student) {
+        const studentData = response.data.student;
+        console.log('✅ LSC data fetched:', { lsc_code: studentData.lsc_code, lsc_name: studentData.lsc_name });
+        return {
+          lsc_code: studentData.lsc_code,
+          lsc_name: studentData.lsc_name
+        };
+      }
+    } catch (error) {
+      console.warn('❌ Failed to fetch LSC data:', error);
+    }
+    return null;
+  };
 
   const fetchUserProfile = async () => {
     try {
@@ -47,15 +69,20 @@ const PaymentHistory = () => {
     }
   };
 
+  useEffect(() => {
+    fetchPaymentHistory();
+    fetchUserProfile();
+  }, []);
+
   const fetchPaymentHistory = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       if (!token) {
         toast.error('Please log in again.');
+        setLoading(false);
         return;
       }
-
-      console.log('📊 Fetching complete payment history from database...');
 
       // Fetch application payment history
       const appResponse = await axios.get(
@@ -69,27 +96,21 @@ const PaymentHistory = () => {
         { headers: { Authorization: `Token ${token}` } }
       );
 
-      console.log('📨 Application payment response:', appResponse.data);
-      console.log('📨 Semester payments response:', semesterResponse.data);
-
       if (appResponse.data.status === 'success') {
         const data = appResponse.data.data;
         setPaymentData(data);
-        console.log('✅ Application payment data set:', data);
         
-        // Set dynamic application fee
         if (data.payment?.application_fee) {
-          const fee = data.payment.application_fee.toFixed(2);
-          setApplicationFee(fee);
-          console.log('💰 Application fee set:', fee);
+          setApplicationFee(data.payment.application_fee.toFixed(2));
         }
 
-        // Set transaction details directly from response
         if (data.transaction) {
           setTransactionDetails(data.transaction);
-          console.log('✅ Transaction details loaded:', data.transaction);
-        } else {
-          console.log('ℹ️ No transaction details found in database');
+        }
+
+        // Log student data from payment history API
+        if (data.student) {
+          console.log('✅ Payment history student data:', data.student);
         }
       }
 
@@ -98,20 +119,18 @@ const PaymentHistory = () => {
         const semesterData = semesterResponse.data.payments || [];
         setSemesterPayments(semesterData);
         
-        // Store student data from semester payments API (includes LSC information)
+        // Store student data from semester payments API
         if (semesterResponse.data.student) {
           setSemesterStudentData(semesterResponse.data.student);
-          console.log('✅ Semester student data with LSC info loaded:', semesterResponse.data.student);
+          console.log('✅ Semester student data stored:', semesterResponse.data.student);
         }
-        
-        console.log('✅ Semester payments loaded:', semesterData);
       }
 
-      // Combine all transactions for display
+      // Combine all transactions
       const allTxns = [];
 
       // Add application payment if exists
-      if (appResponse.data.status === 'success' && appResponse.data.data.transaction) {
+      if (appResponse.data.status === 'success' && appResponse.data.data?.transaction) {
         allTxns.push({
           id: appResponse.data.data.transaction.transaction_id,
           type: 'application',
@@ -146,13 +165,14 @@ const PaymentHistory = () => {
       // Sort transactions by date (newest first)
       allTxns.sort((a, b) => new Date(b.date) - new Date(a.date));
       setAllTransactions(allTxns);
-      console.log('✅ All transactions combined:', allTxns);
+
+      setDataLoaded(true);
+      console.log('✅ Data loading completed. dataLoaded = true');
 
     } catch (error) {
-      console.error('❌ Error fetching payment history:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error message:', error.message);
-      toast.error(error.response?.data?.message || 'Failed to load payment history');
+      console.error('Error fetching payment history:', error);
+      toast.error('Failed to load payment history.');
+      setDataLoaded(false);
     } finally {
       setLoading(false);
     }
@@ -188,11 +208,43 @@ const PaymentHistory = () => {
     }
   };
 
-  const handleDownloadIndividualReceipt = (transaction) => {
+  const handleDownloadIndividualReceipt = async (transaction) => {
+    if (loading || !dataLoaded) {
+      toast.error('Please wait for data to load before generating receipts.');
+      return;
+    }
+    
     try {
-      // Get LSC information - prioritize semester payments API data
-      let lscCode = semesterStudentData?.lsc_code || paymentData?.student?.lsc_code || '';
-      let lscName = semesterStudentData?.lsc_name || paymentData?.student?.lsc_name || '';
+      console.log('🧾 Starting individual receipt generation...');
+      console.log('Current loading state:', loading);
+      console.log('Current dataLoaded state:', dataLoaded);
+      console.log('Current semesterStudentData:', semesterStudentData);
+      console.log('Current paymentData:', paymentData);
+      console.log('Current paymentData.student:', paymentData?.student);
+      
+      // Get LSC information - try direct API fetch first
+      console.log('🔍 Getting LSC data for receipt...');
+      let lscData = await fetchLSCData();
+      
+      let lscCode = lscData?.lsc_code || semesterStudentData?.lsc_code || paymentData?.student?.lsc_code || '';
+      let lscName = lscData?.lsc_name || semesterStudentData?.lsc_name || paymentData?.student?.lsc_name || '';
+
+      // Fallback to localStorage if still no data
+      if (!lscCode || !lscName) {
+        const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+        lscCode = userProfile.lsc_code || lscCode;
+        lscName = userProfile.lsc_name || lscName;
+      }
+
+      console.log('Selected LSC Code:', lscCode);
+      console.log('Selected LSC Name:', lscName);
+
+      // If we still don't have LSC data, show an error
+      if (!lscCode || !lscName) {
+        console.error('❌ No LSC data available for receipt generation');
+        toast.error('LSC information not available. Please refresh the page and try again.');
+        return;
+      }
 
       // If not available from API data, try to get from localStorage user profile
       if (!lscCode || !lscName) {
@@ -234,15 +286,43 @@ const PaymentHistory = () => {
     }
   };
 
-  const handleDownloadOverallReceipt = () => {
+  const handleDownloadOverallReceipt = async () => {
+    if (loading || !dataLoaded) {
+      toast.error('Please wait for data to load before generating receipts.');
+      return;
+    }
+    
     try {
-      // Get LSC information - prioritize semester payments API data
-      let studentData = { ...(semesterStudentData || paymentData?.student) };
-      if ((!studentData?.lsc_code || !studentData?.lsc_name) && (semesterStudentData || paymentData?.student)) {
-        // Try to get from user profile data if stored
+      console.log('🧾 Starting overall receipt generation...');
+      console.log('Current semesterStudentData:', semesterStudentData);
+      console.log('Current paymentData.student:', paymentData?.student);
+      
+      // Get LSC information - try direct API fetch first
+      console.log('🔍 Getting LSC data for overall receipt...');
+      let lscData = await fetchLSCData();
+      
+      let studentData = { 
+        ...(semesterStudentData || paymentData?.student),
+        lsc_code: lscData?.lsc_code || semesterStudentData?.lsc_code || paymentData?.student?.lsc_code || '',
+        lsc_name: lscData?.lsc_name || semesterStudentData?.lsc_name || paymentData?.student?.lsc_name || ''
+      };
+
+      // Fallback to localStorage if still no data
+      if (!studentData.lsc_code || !studentData.lsc_name) {
         const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
         studentData.lsc_code = userProfile.lsc_code || studentData.lsc_code || '';
         studentData.lsc_name = userProfile.lsc_name || studentData.lsc_name || '';
+      }
+
+      console.log('Final student data for receipt:', studentData);
+      console.log('Final LSC Code:', studentData.lsc_code);
+      console.log('Final LSC Name:', studentData.lsc_name);
+
+      // If we still don't have LSC data, show an error
+      if (!studentData.lsc_code || !studentData.lsc_name) {
+        console.error('❌ No LSC data available for receipt generation');
+        toast.error('LSC information not available. Please refresh the page and try again.');
+        return;
       }
 
       // Prepare overall receipt data
@@ -280,6 +360,13 @@ const PaymentHistory = () => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-indigo-600"></div>
+      </div>
+    );
+  }
+  if (!loading && (!paymentData || allTransactions.length === 0)) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] text-gray-500">
+        No payment history found. Please check your connection or try again later.
       </div>
     );
   }

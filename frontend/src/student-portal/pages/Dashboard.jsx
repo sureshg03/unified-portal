@@ -27,6 +27,8 @@ import ApplicationProgress from '../components/ApplicationProgress';
 import PaymentHistory from './PaymentHistory';
 import ApplicationDownloadDashboard from '../components/ApplicationDownloadDashboard';
 import SemesterPayments from './SemesterPayments';
+import StudentIDCard from '../components/StudentIDCard';
+import StudentProfile from '../components/StudentProfile';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -47,6 +49,14 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
   const [paymentData, setPaymentData] = useState(null);
+  const [verificationStatus, setVerificationStatus] = useState({
+    eligibility_verified: false,
+    eligibility_status: 'Pending',
+    admission_confirmed: false,
+    enrollment_no: null,
+    application_id: null,
+    first_semester_paid: false
+  });
   const updatesScrollRef = useRef(null);
 
   // Fetch payment status
@@ -69,6 +79,34 @@ const Dashboard = () => {
       console.error('Error fetching payment status:', error);
       // If no application exists yet, that's fine
       setIsPaid(false);
+    }
+  };
+
+  // Fetch verification status
+  const fetchVerificationStatus = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await axios.get('http://localhost:8000/api/user-profile/', {
+        headers: { Authorization: `Token ${token}` },
+      });
+
+      if (response.data.status === 'success' && response.data.data) {
+        const firstSemesterPaid = response.data.data.first_semester_paid || false;
+
+        const newStatus = {
+          eligibility_verified: response.data.data.eligibility_verified || false,
+          eligibility_status: response.data.data.eligibility_status || 'Pending',
+          admission_confirmed: response.data.data.admission_confirmed || false,
+          enrollment_no: response.data.data.enrollment_no || null,
+          application_id: response.data.data.application_id || null,
+          first_semester_paid: firstSemesterPaid
+        };
+        setVerificationStatus(newStatus);
+      }
+    } catch (error) {
+      console.error('Error fetching verification status:', error);
     }
   };
 
@@ -133,6 +171,7 @@ const Dashboard = () => {
     fetchUserData();
     fetchApplicationSettings(); // Initial fetch
     fetchPaymentStatus(); // Fetch payment status
+    fetchVerificationStatus(); // Fetch verification status
   }, [navigate]);
 
   // Silent auto-refresh every 5 seconds
@@ -336,12 +375,34 @@ const Dashboard = () => {
                         className="bg-white/15 backdrop-blur-md rounded-xl p-4 border border-white/30 shadow-lg"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-purple-500/30 rounded-xl flex items-center justify-center shadow-lg">
-                            <DocumentTextIcon className="h-6 w-6 text-purple-200" />
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${
+                            verificationStatus.eligibility_verified && verificationStatus.enrollment_no
+                              ? 'bg-green-500/30'
+                              : 'bg-purple-500/30'
+                          }`}>
+                            {verificationStatus.eligibility_verified && verificationStatus.enrollment_no ? (
+                              <CheckCircleIcon className="h-6 w-6 text-green-200" />
+                            ) : (
+                              <DocumentTextIcon className="h-6 w-6 text-purple-200" />
+                            )}
                           </div>
                           <div>
-                            <p className="text-xs text-purple-100 uppercase tracking-wider font-medium mb-1">Pending Tasks</p>
-                            <p className="text-lg md:text-xl font-semibold text-white">2 Items</p>
+                            <p className={`text-xs uppercase tracking-wider font-medium mb-1 ${
+                              verificationStatus.eligibility_verified && verificationStatus.enrollment_no
+                                ? 'text-green-100'
+                                : 'text-purple-100'
+                            }`}>
+                              {verificationStatus.eligibility_verified && verificationStatus.enrollment_no
+                                ? 'Enrollment Number'
+                                : 'Pending Tasks'
+                              }
+                            </p>
+                            <p className="text-lg md:text-xl font-semibold text-white">
+                              {verificationStatus.eligibility_verified && verificationStatus.enrollment_no
+                                ? verificationStatus.enrollment_no
+                                : '2 Items'
+                              }
+                            </p>
                           </div>
                         </div>
                       </motion.div>
@@ -549,9 +610,9 @@ const Dashboard = () => {
       case 'firstSemesterPayment':
         return <SemesterPayments />;
       case 'studentIdCard':
-        return <div className="text-center py-12"><h2 className="text-2xl font-bold">Student ID Card - Coming Soon</h2></div>;
+        return <StudentIDCard />;
       case 'profile':
-        return <div className="text-center py-12"><h2 className="text-2xl font-bold">Profile & Settings - Coming Soon</h2></div>;
+        return <StudentProfile />;
       case 'payments':
         return <SemesterPayments />;
       case 'materials':

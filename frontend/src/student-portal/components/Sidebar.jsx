@@ -331,20 +331,33 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
 
   const menuItems = getMenuItems();
 
+  // Defensive: fallback for missing userData
+  const safeUserData = userData || { name: '', email: '', photo_url: '' };
+
   return (
     <AnimatePresence>
       {isSidebarOpen && (
-        // @ts-ignore
-        <motion.aside
-          className="fixed sm:static top-0 left-0 w-full max-w-[320px] sm:w-64 lg:w-80 min-h-screen bg-gradient-to-br from-purple-900 via-purple-900 to-purple-900 flex flex-col z-40 overflow-y-auto shadow-2xl backdrop-blur-2xl sm:shadow-none sm:z-20 border-r border-purple-500/20"
-          variants={sidebarVariants}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-          style={{
-            background: 'linear-gradient(135deg, #220435ff  0%, #270442ff 50%, #230238ff  100%)',
-          }}
-        >
+        <>
+          {/* Mobile Overlay */}
+          <motion.div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 sm:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsSidebarOpen(false)}
+          />
+
+          {/* Sidebar */}
+          <motion.aside
+            className="fixed sm:static top-0 left-0 w-4/5 max-w-xs sm:w-56 md:w-60 lg:w-64 xl:w-72 min-h-screen max-h-screen bg-gradient-to-br from-purple-900 via-purple-900 to-purple-900 flex flex-col z-40 overflow-visible sm:overflow-y-auto shadow-2xl backdrop-blur-2xl sm:shadow-none sm:z-20 border-r border-purple-500/20 transition-all duration-300"
+            variants={sidebarVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            style={{
+              background: 'linear-gradient(135deg, #220435ff  0%, #270442ff 50%, #230238ff  100%)',
+            }}
+          >
           {/* Animated Background Effects */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             <motion.div
@@ -390,9 +403,9 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
           </div>
 
           {/* Header Section with Enhanced Design */}
-          <div className="relative px-4 sm:px-5 lg:px-6 pt-2 sm:pt-2 lg:pt-2 pb-6">
+          <div className="relative px-3 sm:px-4 md:px-5 lg:px-6 pt-2 sm:pt-3 md:pt-4 pb-4 sm:pb-5 md:pb-6 flex-shrink-0">
             <motion.div
-              className="flex items-center space-x-4 bg-gradient-to-r from-purple-800/30 to-purple-800/30 backdrop-blur-xl rounded-2xl p-4 border border-purple-400/20 shadow-lg"
+              className="flex items-center space-x-3 sm:space-x-4 bg-gradient-to-r from-purple-800/30 to-purple-800/30 backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-purple-400/20 shadow-lg"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -406,13 +419,13 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
                 <img
                   src="/Logo.png"
                   alt="Periyar University Logo"
-                  className="relative w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full shadow-2xl border-2 border-purple-400 object-cover"
+                  className="relative w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-full shadow-2xl border-2 border-purple-400 object-cover"
                   onError={(e) => (e.target.src = 'https://via.placeholder.com/64?text=PU')}
                 />
               </motion.div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <motion.h1 
-                  className="text-base sm:text-lg lg:text-sm font-bold font-poppins bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent tracking-wide"
+                  className="text-sm sm:text-base md:text-lg lg:text-xl font-bold font-poppins bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent tracking-wide"
                   animate={{
                     backgroundPosition: ['0%', '100%', '0%'],
                   }}
@@ -427,14 +440,14 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
                 >
                   Periyar University
                 </motion.h1>
-                <p className="text-xs text-purple-300/80 font-medium mt-0.5">Student Portal</p>
+                <p className="text-xs sm:text-sm text-purple-300/80 font-medium mt-0.5">Student Portal</p>
               </div>
               
             </motion.div>
           </div>
 
           {/* Navigation Menu with Modern Design */}
-          <nav className="flex-1 space-y-2 px-3 sm:px-4 lg:px-5 py-2">
+          <nav className="flex-1 space-y-1.5 sm:space-y-2 px-2 sm:px-3 md:px-4 lg:px-5 py-2 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500/30 scrollbar-track-transparent hover:scrollbar-thumb-purple-500/50">
             {menuItems.map((item, index) => {
               const isActive = activeSection === item.name;
               const isHovered = hoveredItem === item.name;
@@ -458,8 +471,8 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
                       if (window.innerWidth < 640) setIsSidebarOpen(false);
                     }}
                     className={`
-                      relative w-full px-4 py-3.5 rounded-xl font-poppins font-semibold text-sm 
-                      flex items-center gap-3 transition-all duration-300 overflow-hidden group
+                      relative w-full px-3 sm:px-4 py-3 sm:py-3.5 rounded-lg sm:rounded-xl font-poppins font-semibold text-xs sm:text-sm 
+                      flex items-center gap-2 sm:gap-3 transition-all duration-300 overflow-hidden group
                       ${isActive 
                         ? 'text-white shadow-lg' 
                         : 'text-purple-200 hover:text-white'
@@ -501,8 +514,8 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
                     {/* Icon Container with Enhanced Styling */}
                     <motion.div
                       className={`
-                        relative z-10 p-2 rounded-lg bg-gradient-to-br ${item.iconBg}
-                        shadow-lg flex items-center justify-center
+                        relative z-10 p-1.5 sm:p-2 rounded-lg bg-gradient-to-br ${item.iconBg}
+                        shadow-lg flex items-center justify-center flex-shrink-0
                         ${isActive ? 'ring-2 ring-white/40' : 'ring-1 ring-white/20'}
                       `}
                       animate={isActive ? {
@@ -514,11 +527,11 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
                         ease: "easeInOut"
                       }}
                     >
-                      <item.icon className="w-5 h-5 text-white drop-shadow-lg" />
+                      <item.icon className="w-4 h-4 sm:w-5 sm:h-5 text-white drop-shadow-lg" />
                     </motion.div>
 
                     {/* Label */}
-                    <span className="relative z-10 font-semibold tracking-wide flex-1 text-left">
+                    <span className="relative z-10 font-semibold tracking-wide flex-1 text-left text-xs sm:text-sm truncate">
                       {item.label}
                     </span>
 
@@ -528,7 +541,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
                       if (badge) {
                         return (
                           <motion.div
-                            className={`relative z-10 ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold text-white ${badge.color} shadow-lg flex items-center gap-1 flex-shrink-0`}
+                            className={`relative z-10 ml-auto px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold text-white ${badge.color} shadow-lg flex items-center gap-1 flex-shrink-0`}
                             initial={{ scale: 0, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ duration: 0.3 }}
@@ -568,7 +581,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
 
           {/* Enhanced Profile Section */}
           <motion.div
-            className="relative mt-auto mx-3 sm:mx-4 lg:mx-5 mb-3 sm:mb-4 lg:mb-5"
+            className="relative mt-auto mx-2 sm:mx-3 md:mx-4 lg:mx-5 mb-2 sm:mb-3 md:mb-4 lg:mb-5 flex-shrink-0"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
@@ -595,7 +608,7 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
             </div>
 
             <motion.div
-              className="relative bg-gradient-to-br from-purple-800/40 via-purple-800/40 to-purple-900/40 backdrop-blur-xl rounded-2xl p-4 shadow-2xl border border-purple-400/30 overflow-hidden"
+              className="relative bg-gradient-to-br from-purple-800/40 via-purple-800/40 to-purple-900/40 backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xl border border-purple-400/30 overflow-hidden"
               whileHover={{ 
                 scale: 1.02,
                 boxShadow: '0 20px 40px rgba(139, 92, 246, 0.3)'
@@ -626,11 +639,11 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
                       scale: { duration: 2, repeat: Infinity, ease: "easeInOut" },
                     }}
                   />
-                  <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-purple-600 via-purple-500 to-purple-700 flex items-center justify-center shadow-xl ring-2 ring-white/50 ring-offset-2 ring-offset-purple-900 overflow-hidden">
-                    {userData.photo_url ? (
+                  <div className="relative w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-purple-600 via-purple-500 to-purple-700 flex items-center justify-center shadow-xl ring-2 ring-white/50 ring-offset-2 ring-offset-purple-900 overflow-hidden">
+                    {safeUserData.photo_url ? (
                       <img
-                        src={userData.photo_url}
-                        alt={userData.name}
+                        src={safeUserData.photo_url}
+                        alt={safeUserData.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           e.target.style.display = 'none';
@@ -639,8 +652,8 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
                       />
                     ) : null}
                     <UserCircleIcon 
-                      className="w-7 h-7 sm:w-8 sm:h-8 text-white drop-shadow-lg" 
-                      style={{ display: userData.photo_url ? 'none' : 'block' }}
+                      className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white drop-shadow-lg" 
+                      style={{ display: safeUserData.photo_url ? 'none' : 'block' }}
                     />
                   </div>
                 </motion.div>
@@ -652,118 +665,47 @@ const Sidebar = ({ activeSection, setActiveSection, userData, isProfileOpen, set
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
                   >
-                    <h3 className="font-poppins font-bold text-sm sm:text-base text-white truncate drop-shadow-lg">
-                      {userData.name}
+                    <h3 className="font-poppins font-bold text-xs sm:text-sm md:text-base text-white truncate drop-shadow-lg">
+                      {safeUserData.name}
                     </h3>
-                    <p className="text-xs text-purple-300 font-medium truncate flex items-center gap-1">
-                      <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                      {userData.email}
+                    <p className="text-[10px] sm:text-xs text-purple-300 font-medium truncate flex items-center gap-1">
+                      <span>{safeUserData.email}</span>
+                      {isProfileOpen ? <ChevronUpIcon className="w-3 h-3" /> : <ChevronDownIcon className="w-3 h-3" />}
                     </p>
                   </motion.div>
                 </div>
-
-                {/* Chevron Icon */}
-                <motion.div
-                  animate={{ rotate: isProfileOpen ? 180 : 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-purple-700/50 p-2 rounded-lg"
-                >
-                  <ChevronDownIcon className="w-4 h-4 text-purple-200" />
-                </motion.div>
               </motion.div>
 
-              {/* Dropdown Menu */}
+              {/* Expanded Profile Section */}
               <AnimatePresence>
                 {isProfileOpen && (
                   <motion.div
-                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                    animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
-                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                    className="overflow-hidden"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="mt-3 pt-3 border-t border-purple-400/30"
                   >
-                    <div className="space-y-2 pt-3 border-t border-purple-400/30">
-                      {/* Logout Button */}
-                      <motion.button
-                        whileHover={{ 
-                          scale: 1.03,
-                          boxShadow: '0 8px 20px rgba(239, 68, 68, 0.4)'
-                        }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() => {
-                          handleLogout();
-                          if (window.innerWidth < 640) setIsSidebarOpen(false);
-                        }}
-                        className="relative w-full px-4 py-3 bg-gradient-to-r from-red-600 via-red-500 to-red-600 text-white rounded-xl font-poppins font-bold text-sm flex items-center justify-center gap-2 shadow-lg overflow-hidden group"
-                      >
-                        <motion.div
-                          className="absolute inset-0 bg-gradient-to-r from-red-700 via-red-600 to-red-700"
-                          initial={{ x: '-100%' }}
-                          whileHover={{ x: '100%' }}
-                          transition={{ duration: 0.6, ease: "easeInOut" }}
-                        />
-                        <ArrowLeftOnRectangleIcon className="relative z-10 w-5 h-5" />
-                        <span className="relative z-10">Sign Out</span>
-                      </motion.button>
-
-                      {/* Additional Info */}
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.1 }}
-                        className="space-y-2"
-                      >
-                        <div className="px-3 py-2 bg-purple-900/40 rounded-lg border border-purple-400/20">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-purple-300">Status:</span>
-                            <span className="flex items-center gap-1 text-green-400 font-semibold">
-                              <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
-                              Active
-                            </span>
-                          </div>
-                        </div>
-                        
-                        {/* Verification Status */}
-                        {isPaid && (
-                          <div className="px-3 py-2 bg-purple-900/40 rounded-lg border border-purple-400/20">
-                            <div className="text-xs space-y-1">
-                              <div className="flex items-center justify-between">
-                                <span className="text-purple-300">Verification:</span>
-                                <span className={`flex items-center gap-1 font-semibold ${
-                                  verificationStatus.eligibility_verified ? 'text-green-400' : 
-                                  verificationStatus.eligibility_status === 'Eligible' ? 'text-yellow-400' :
-                                  verificationStatus.eligibility_status === 'Not Eligible' ? 'text-red-400' :
-                                  'text-gray-400'
-                                }`}>
-                                  <span className={`w-1.5 h-1.5 rounded-full ${
-                                    verificationStatus.eligibility_verified ? 'bg-green-400 animate-pulse' : 
-                                    verificationStatus.eligibility_status === 'Eligible' ? 'bg-yellow-400 animate-pulse' :
-                                    verificationStatus.eligibility_status === 'Not Eligible' ? 'bg-red-400' :
-                                    'bg-gray-400'
-                                  }`}></span>
-                                  {verificationStatus.eligibility_verified ? 'Verified' : verificationStatus.eligibility_status}
-                                </span>
-                              </div>
-                              {verificationStatus.enrollment_no && (
-                                <div className="flex items-center justify-between pt-1 border-t border-purple-400/20">
-                                  <span className="text-purple-300">Enrollment:</span>
-                                  <span className="text-white font-semibold text-[10px]">{verificationStatus.enrollment_no}</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </motion.div>
-                    </div>
+                    <motion.button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 hover:text-red-200 transition-all duration-200"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <ArrowLeftOnRectangleIcon className="w-4 h-4" />
+                      <span className="text-sm font-medium">Logout</span>
+                    </motion.button>
                   </motion.div>
                 )}
               </AnimatePresence>
             </motion.div>
           </motion.div>
         </motion.aside>
-      )}
-    </AnimatePresence>
-  );
+      </>
+    )}
+  </AnimatePresence>
+);
+
 };
 
 export default Sidebar;
