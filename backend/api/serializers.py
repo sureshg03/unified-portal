@@ -241,3 +241,37 @@ class MaterialUploadSerializer(serializers.ModelSerializer):
         if value < 1 or value > 6:
             raise serializers.ValidationError("Semester must be between 1 and 6")
         return value
+
+
+from .models import Feedback
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    """Serializer for student feedback"""
+    
+    class Meta:
+        model = Feedback
+        fields = [
+            'id', 'student_name', 'student_email', 'lsc_code',
+            'category', 'rating', 'title', 'message',
+            'status', 'is_flagged', 'admin_notes', 'reviewed_by', 'reviewed_at',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'status', 'is_flagged', 'admin_notes', 'reviewed_by', 'reviewed_at', 'created_at', 'updated_at']
+    
+    def validate_rating(self, value):
+        if value < 1 or value > 5:
+            raise serializers.ValidationError("Rating must be between 1 and 5")
+        return value
+    
+    def validate_message(self, value):
+        if len(value.strip()) < 10:
+            raise serializers.ValidationError("Feedback message must be at least 10 characters long")
+        return value
+
+
+class FeedbackAdminSerializer(serializers.ModelSerializer):
+    """Serializer for admin feedback management"""
+    class Meta:
+        model = Feedback
+        fields = '__all__'
+        read_only_fields = ['id', 'user', 'created_at', 'updated_at']

@@ -29,9 +29,14 @@ const Materials = () => {
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [pdfLoadError, setPdfLoadError] = useState(false);
+  const [selectedSemester, setSelectedSemester] = useState('all');
+  const [viewedMaterials, setViewedMaterials] = useState(new Set());
 
   useEffect(() => {
     fetchMaterials();
+    // Load viewed materials from localStorage
+    const viewed = JSON.parse(localStorage.getItem('viewedMaterials') || '[]');
+    setViewedMaterials(new Set(viewed));
   }, []);
 
   const fetchMaterials = async () => {
@@ -71,16 +76,22 @@ const Materials = () => {
     try {
       const token = localStorage.getItem('token');
       
-      console.log('Opening material:', material.id, material.title);
+      console.log('========================================');
+      console.log('Opening material:', material.id, material.title, material.material_type);
+      console.log('Current view count:', material.views_count);
+      console.log('========================================');
       
       const response = await axios.get(
         `http://localhost:8000/api/materials/${material.id}/view/`,
         { headers: { Authorization: `Token ${token}` } }
       );
 
+      console.log('API Response:', response.data);
+
       if (response.data.status === 'success') {
         const materialData = response.data.data;
         console.log('Material data received:', materialData);
+        console.log('NEW view count from API:', materialData.views_count);
         console.log('File URL:', materialData.file_url);
         
         // Verify file URL is valid
@@ -96,6 +107,17 @@ const Materials = () => {
         setSelectedMaterial(materialData);
         setViewerOpen(true);
         setPdfLoadError(false);
+        
+        // Always refresh materials to show updated view count from backend
+        // Backend handles "once per user" logic via MaterialView table
+        console.log('Refreshing materials list to show latest view count from backend');
+        fetchMaterials();
+        
+        // Mark as viewed locally for UI feedback only
+        const newViewed = new Set(viewedMaterials);
+        newViewed.add(material.id);
+        setViewedMaterials(newViewed);
+        localStorage.setItem('viewedMaterials', JSON.stringify([...newViewed]));
         
       } else {
         toast.error('Failed to open material');
@@ -161,7 +183,24 @@ const Materials = () => {
           <p className="text-gray-600 mt-2 ml-15">Access course materials uploaded by your LSC</p>
         </motion.div>
 
-        {/* Materials Grid */}
+        {/* Filter Controls */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Semester</label>
+            <select
+              value={selectedSemester}
+              onChange={(e) => setSelectedSemester(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Semesters</option>
+              {Array.from({length: 8}, (_, i) => i + 1).map(sem => (
+                <option key={sem} value={sem}>Semester {sem}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Materials Organized by Semester */}
         {materials.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
@@ -174,96 +213,153 @@ const Materials = () => {
               Your LSC hasn't uploaded any study materials yet. Check back later!
             </p>
           </motion.div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {materials.map((material, index) => {
-              const Icon = getMaterialIcon(material.material_type);
-              return (
+        ) : (() => {
+          // Group materials by semester
+          const filteredMaterials = materials.filter(m => {
+            const semesterMatch = selectedSemester === 'all' || m.semester === parseInt(selectedSemester);
+            return semesterMatch;
+          });
+
+          const groupedBySemester = filteredMaterials.reduce((acc, material) => {
+            const sem = material.semester || 'Other';
+            if (!acc[sem]) acc[sem] = [];
+            acc[sem].push(material);
+            return acc;
+          }, {});
+
+          const sortedSemesters = Object.keys(groupedBySemester).sort((a, b) => {
+            if (a === 'Other') return 1;
+            if (b === 'Other') return -1;
+            return parseInt(a) - parseInt(b);
+          });
+
+          if (filteredMaterials.length === 0) {
+            return (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+                <BookOpenIcon className="w-20 h-20 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">No Materials Found</h3>
+                <p className="text-gray-500">No materials match your selected filters.</p>
+              </div>
+            );
+          }
+
+          return (
+            <div className="space-y-6">
+              {sortedSemesters.map(semester => (
                 <motion.div
-                  key={material.id}
+                  key={semester}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 overflow-hidden group"
+                  className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
                 >
-                  {/* Material Type Badge */}
-                  <div className={`h-2 ${material.material_type === 'PDF' ? 'bg-red-500' : 'bg-orange-500'}`} />
-                  
-                  <div className="p-6">
-                    {/* Icon and Type */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className={`w-14 h-14 rounded-lg flex items-center justify-center ${
-                        material.material_type === 'PDF' ? 'bg-red-50' : 'bg-orange-50'
-                      }`}>
-                        <Icon className={`w-8 h-8 ${
-                          material.material_type === 'PDF' ? 'text-red-600' : 'text-orange-600'
-                        }`} />
-                      </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        material.material_type === 'PDF' 
-                          ? 'bg-red-100 text-red-700' 
-                          : 'bg-orange-100 text-orange-700'
-                      }`}>
-                        {material.material_type}
+                  {/* Semester Header */}
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-300 border-b border-gray-200 px-6 py-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                          <span className="text-white font-bold">{semester === 'Other' ? '?' : semester}</span>
+                        </div>
+                        {semester === 'Other' ? 'Other Materials' : `Semester ${semester}`}
+                      </h2>
+                      <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
+                        {groupedBySemester[semester].length} {groupedBySemester[semester].length === 1 ? 'Material' : 'Materials'}
                       </span>
                     </div>
+                  </div>
 
-                    {/* Title */}
-                    <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 min-h-[56px]">
-                      {material.title}
-                    </h3>
+                  {/* Materials Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+                    {groupedBySemester[semester].map((material, index) => {
+                      const Icon = getMaterialIcon(material.material_type);
+                      return (
+                        <motion.div
+                          key={material.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 overflow-hidden group"
+                        >
+                          {/* Material Type Badge */}
+                          <div className={`h-2 ${material.material_type === 'PDF' ? 'bg-red-500' : 'bg-orange-500'}`} />
 
-                    {/* Description */}
-                    {material.description && (
-                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                        {material.description}
-                      </p>
-                    )}
+                          <div className="p-6">
+                            {/* Icon and Type */}
+                            <div className="flex items-start justify-between mb-4">
+                              <div className={`w-14 h-14 rounded-lg flex items-center justify-center ${
+                                material.material_type === 'PDF' ? 'bg-red-50' : 'bg-orange-50'
+                              }`}>
+                                <Icon className={`w-8 h-8 ${
+                                  material.material_type === 'PDF' ? 'text-red-600' : 'text-orange-600'
+                                }`} />
+                              </div>
+                              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                material.material_type === 'PDF'
+                                  ? 'bg-red-100 text-red-700'
+                                  : 'bg-orange-100 text-orange-700'
+                              }`}>
+                                {material.material_type}
+                              </span>
+                            </div>
 
-                    {/* Details */}
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center gap-2 text-sm text-gray-700">
-                        <AcademicCapIcon className="w-4 h-4 text-blue-600" />
-                        <span className="font-medium">{material.programme}</span>
-                        <span className="text-gray-400">•</span>
-                        <span>Semester {material.semester}</span>
-                      </div>
-                      
-                      {material.subject && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <BookOpenIcon className="w-4 h-4 text-green-600" />
-                          <span>{material.subject}</span>
-                        </div>
-                      )}
+                            {/* Title */}
+                            <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 min-h-[56px]">
+                              {material.title}
+                            </h3>
 
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <CalendarIcon className="w-4 h-4" />
-                        <span>{formatDate(material.upload_date)}</span>
-                        <span className="text-gray-400">•</span>
-                        <span>{formatFileSize(material.file_size)}</span>
-                      </div>
+                            {/* Description */}
+                            {material.description && (
+                              <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                                {material.description}
+                              </p>
+                            )}
 
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <EyeIcon className="w-4 h-4" />
-                        <span>{material.views_count} views</span>
-                      </div>
-                    </div>
+                            {/* Details */}
+                            <div className="space-y-2 mb-4">
+                              <div className="flex items-center gap-2 text-sm text-gray-700">
+                                <AcademicCapIcon className="w-4 h-4 text-blue-600" />
+                                <span className="font-medium">{material.programme}</span>
+                                <span className="text-gray-400">•</span>
+                                <span>Semester {material.semester}</span>
+                              </div>
 
-                    {/* Action Button */}
-                    <button
-                      onClick={() => handleViewMaterial(material)}
-                      className="w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-3 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 group-hover:shadow-lg"
-                    >
-                      <EyeIcon className="w-5 h-5" />
-                      View Material
-                    </button>
+                              {material.subject && (
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <BookOpenIcon className="w-4 h-4 text-green-600" />
+                                  <span>{material.subject}</span>
+                                </div>
+                              )}
+
+                              <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <CalendarIcon className="w-4 h-4" />
+                                <span>{formatDate(material.upload_date)}</span>
+                                <span className="text-gray-400">•</span>
+                                <span>{formatFileSize(material.file_size)}</span>
+                              </div>
+
+                              <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <EyeIcon className="w-4 h-4" />
+                                <span>{material.views_count} views</span>
+                              </div>
+                            </div>
+
+                            {/* Action Button */}
+                            <button
+                              onClick={() => handleViewMaterial(material)}
+                              className="w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-3 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 group-hover:shadow-lg"
+                            >
+                              <EyeIcon className="w-5 h-5" />
+                              View Material
+                            </button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </motion.div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          );
+        })()}
 
       {/* Material Viewer Modal */}
       {viewerOpen && selectedMaterial && ReactDOM.createPortal(
@@ -392,6 +488,7 @@ const Materials = () => {
         </AnimatePresence>,
         document.body
       )}
+      </div>
     </div>
   );
 };

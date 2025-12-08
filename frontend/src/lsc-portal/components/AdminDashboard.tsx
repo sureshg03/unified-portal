@@ -39,6 +39,7 @@ import { AddCourses } from './modules/AddCourses';
 import { LSCManagement } from './modules/LSCManagement';
 import { NewStudentApplication } from '@/components/modules/NewStudentApplication';
 import { MaterialsManagement } from './modules/MaterialsManagement';
+import FeedbackManagement from './modules/FeedbackManagement';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,7 +51,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type ActivePage = 'dashboard' | 'settings' | 'users' | 'lsc-management' | 'reports' | 'system' | 'password' | 'admissions' | 'applications' | 'materials' | 'counselor' | 'attendance' | 'assignments' | 'admission-management' | 'add-courses' | 'admissions-verify' | 'id-card';
+type ActivePage = 'dashboard' | 'settings' | 'users' | 'lsc-management' | 'reports' | 'system' | 'password' | 'admissions' | 'applications' | 'materials' | 'feedbacks' | 'counselor' | 'attendance' | 'assignments' | 'admission-management' | 'add-courses' | 'admissions-verify' | 'id-card';
 
 export const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -140,6 +141,7 @@ export const AdminDashboard = () => {
     { id: 'users', label: 'User Management', icon: Users, color: 'text-purple-600', path: '/lsc/dashboard/admin/users' },
     { id: 'reports', label: 'Reports & Analytics', icon: FileText, color: 'text-teal-600', path: '/lsc/dashboard/admin/reports' },
     { id: 'materials', label: 'Materials', icon: BookOpen, color: 'text-green-600', path: '/lsc/dashboard/admin/materials' },
+    { id: 'feedbacks', label: 'Feedbacks', icon: FileText, color: 'text-indigo-600', path: '/lsc/dashboard/admin/feedbacks' },
     { id: 'counselor', label: 'Counselor Information', icon: User, color: 'text-pink-600', path: '/lsc/dashboard/admin/counselor' },
     { id: 'attendance', label: 'Attendance', icon: Calendar, color: 'text-yellow-600', path: '/lsc/dashboard/admin/attendance' },
     { id: 'assignments', label: 'Assignment Marks', icon: FileText, color: 'text-red-600', path: '/lsc/dashboard/admin/assignments' },
@@ -412,6 +414,8 @@ export const AdminDashboard = () => {
         return <ReportsModule />;
       case 'materials':
         return <MaterialsManagement />;
+      case 'feedbacks':
+        return <FeedbackManagement />;
       case 'counselor':
         return <CounsellorInformation />;
       case 'attendance':

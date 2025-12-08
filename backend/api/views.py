@@ -4,11 +4,13 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import status
 from rest_framework.authtoken.models import Token
+from rest_framework.decorators import authentication_classes
+from lsc_auth.authentication import LSCJWTAuthentication
 from django.core.mail import send_mail, EmailMessage
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from .models import Student, Application, StudentDetails, Payment, ApplicationPayment, Courses, SemesterPayment
+from .models import Student, Application, StudentDetails, Payment, ApplicationPayment, Courses, SemesterPayment, Material, MaterialView
 from .serializers import ApplicationSerializer, StudentDetailsSerializer, AddCourseSerializer
 from .utils import get_real_academic_year
 from .models import StudentDetails, MarksheetUpload
@@ -4314,25 +4316,49 @@ def get_student_materials(request):
 @permission_classes([IsAuthenticated])
 def view_material(request, material_id):
     """
-    View a specific material (increments view count)
+    View a specific material (increments view count only once per user)
     Returns file URL for viewing only (no download)
     """
     try:
+        logger.info(f"view_material called by user: {request.user}, user_type: {type(request.user)}, material_id: {material_id}")
+        
         material = Material.objects.get(id=material_id, status='ACTIVE')
+        logger.info(f"Found material: {material.title} for LSC: {material.lsc_code}")
         
         # Verify student has access to this material
         user = request.user
         email = user.email or user.username
-        student = Student.objects.filter(email=email).first()
+        logger.info(f"User email/username: {email}")
         
-        if not student or student.lsc_code != material.lsc_code:
+        student = Student.objects.filter(email=email).first()
+        logger.info(f"Found student: {student}")
+        
+        if not student:
+            logger.warning(f"No student found for user {email}")
+            return Response({
+                'status': 'error',
+                'message': 'Student profile not found'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        if student.lsc_code != material.lsc_code:
+            logger.warning(f"LSC code mismatch: student={student.lsc_code}, material={material.lsc_code}")
             return Response({
                 'status': 'error',
                 'message': 'Access denied. This material is not available for your LSC.'
             }, status=status.HTTP_403_FORBIDDEN)
         
-        # Increment view count
-        material.increment_views()
+        # Increment view count ONLY if user hasn't viewed this material before
+        material_view, created = MaterialView.objects.get_or_create(
+            material=material,
+            user=user
+        )
+        
+        if created:
+            # First time viewing - increment the counter
+            material.increment_views()
+            logger.info(f"INCREMENTED view count for material {material_id} by user {user.email}. New count: {material.views_count}")
+        else:
+            logger.info(f"User {user.email} already viewed material {material_id} before. View count not incremented.")
         
         # Return material details with file URL
         serializer = MaterialSerializer(material, context={'request': request})
@@ -4343,12 +4369,13 @@ def view_material(request, material_id):
         }, status=status.HTTP_200_OK)
         
     except Material.DoesNotExist:
+        logger.error(f"Material {material_id} not found")
         return Response({
             'status': 'error',
             'message': 'Material not found'
         }, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        logger.error(f"Error viewing material: {str(e)}", exc_info=True)
+        logger.error(f"Error viewing material {material_id}: {str(e)}", exc_info=True)
         return Response({
             'status': 'error',
             'message': f'Failed to view material: {str(e)}'
@@ -4578,3 +4605,265 @@ def delete_material(request, material_id):
             'status': 'error',
             'message': f'Failed to delete material: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ===========================
+# Feedback Management APIs
+# ===========================
+
+from .models import Feedback
+from .serializers import FeedbackSerializer, FeedbackAdminSerializer
+from django.utils import timezone
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def submit_feedback(request):
+    """
+    Submit feedback (Student)
+    """
+    try:
+        user = request.user
+        
+        # Get student details
+        student = Student.objects.filter(email=user.email).first()
+        if not student:
+            return Response({
+                'status': 'error',
+                'message': 'Student profile not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Prepare feedback data
+        data = request.data.copy()
+        data['student_name'] = student.name
+        data['student_email'] = student.email
+        data['lsc_code'] = student.lsc_code or 'LC2101'
+        
+        serializer = FeedbackSerializer(data=data)
+        if not serializer.is_valid():
+            return Response({
+                'status': 'error',
+                'message': 'Validation failed',
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Save feedback
+        feedback = serializer.save()
+        
+        logger.info(f"Feedback submitted by {student.email}: {feedback.id}")
+        
+        return Response({
+            'status': 'success',
+            'message': 'Thank you for your feedback! We appreciate your input.',
+            'data': FeedbackSerializer(feedback).data
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        logger.error(f"Error submitting feedback: {str(e)}", exc_info=True)
+        return Response({
+            'status': 'error',
+            'message': f'Failed to submit feedback: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_my_feedbacks(request):
+    """
+    Get feedback history for authenticated student
+    """
+    try:
+        user = request.user
+        
+        feedbacks = Feedback.objects.filter(student_email=user.email).order_by('-created_at')
+        serializer = FeedbackSerializer(feedbacks, many=True)
+        
+        return Response({
+            'status': 'success',
+            'data': serializer.data,
+            'count': feedbacks.count()
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error fetching feedbacks: {str(e)}", exc_info=True)
+        return Response({
+            'status': 'error',
+            'message': f'Failed to fetch feedbacks: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([LSCJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def get_all_feedbacks(request):
+    """
+    Get all feedbacks (LSC Admin)
+    Filter by LSC code, status, rating, etc.
+    """
+    try:
+        user = request.user
+        
+        # Get LSC code from user (LSCAdmin or LSCUser)
+        from lsc_auth.models import LSCAdmin, LSCUser
+        lsc_code = None
+        
+        if isinstance(user, (LSCAdmin, LSCUser)):
+            lsc_code = user.lsc_code
+        else:
+            # For regular users, try to get from profile
+            lsc_code = getattr(user, 'lsc_code', None)
+        
+        logger.info(f"Fetching feedbacks for user: {user}, LSC code: {lsc_code}")
+        
+        # Base query
+        feedbacks = Feedback.objects.all()
+        
+        # Filter by LSC code if available
+        if lsc_code:
+            feedbacks = feedbacks.filter(lsc_code=lsc_code)
+            logger.info(f"Filtered feedbacks by LSC code: {lsc_code}, count: {feedbacks.count()}")
+        
+        # Apply filters from query params
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            feedbacks = feedbacks.filter(status=status_filter)
+        
+        rating_filter = request.query_params.get('rating')
+        if rating_filter:
+            feedbacks = feedbacks.filter(rating=int(rating_filter))
+        
+        category_filter = request.query_params.get('category')
+        if category_filter:
+            feedbacks = feedbacks.filter(category=category_filter)
+        
+        flagged_filter = request.query_params.get('flagged')
+        if flagged_filter and flagged_filter.lower() == 'true':
+            feedbacks = feedbacks.filter(is_flagged=True)
+        
+        # Order by flagged first, then by created_at
+        feedbacks = feedbacks.order_by('-is_flagged', '-created_at')
+        
+        serializer = FeedbackAdminSerializer(feedbacks, many=True)
+        
+        # Calculate statistics
+        stats = {
+            'total': feedbacks.count(),
+            'pending': feedbacks.filter(status='PENDING').count(),
+            'reviewed': feedbacks.filter(status='REVIEWED').count(),
+            'flagged': feedbacks.filter(is_flagged=True).count(),
+            'average_rating': feedbacks.aggregate(models.Avg('rating'))['rating__avg'] or 0,
+        }
+        
+        return Response({
+            'status': 'success',
+            'data': serializer.data,
+            'stats': stats
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error fetching all feedbacks: {str(e)}", exc_info=True)
+        return Response({
+            'status': 'error',
+            'message': f'Failed to fetch feedbacks: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['PATCH'])
+@authentication_classes([LSCJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def update_feedback_status(request, feedback_id):
+    """
+    Update feedback status (LSC Admin)
+    """
+    try:
+        user = request.user
+        
+        # Get LSC code if LSC Admin or LSCUser
+        from lsc_auth.models import LSCAdmin, LSCUser
+        lsc_code = None
+        admin_name = 'Admin'
+        
+        if isinstance(user, (LSCAdmin, LSCUser)):
+            lsc_code = user.lsc_code
+            if isinstance(user, LSCAdmin):
+                admin_name = user.admin_name or user.lsc_code
+            else:
+                admin_name = getattr(user, 'username', None) or user.lsc_code
+        
+        # Get feedback
+        feedback = Feedback.objects.get(id=feedback_id)
+        
+        # Verify access if LSC Admin
+        if lsc_code and feedback.lsc_code != lsc_code:
+            return Response({
+                'status': 'error',
+                'message': 'Access denied'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Update fields
+        if 'status' in request.data:
+            feedback.status = request.data['status']
+        
+        if 'is_flagged' in request.data:
+            feedback.is_flagged = request.data['is_flagged']
+        
+        if 'admin_notes' in request.data:
+            feedback.admin_notes = request.data['admin_notes']
+        
+        # Mark as reviewed
+        if feedback.status in ['REVIEWED', 'RESOLVED']:
+            feedback.reviewed_by = admin_name
+            feedback.reviewed_at = timezone.now()
+        
+        feedback.save()
+        
+        logger.info(f"Feedback {feedback_id} updated by {admin_name}")
+        
+        return Response({
+            'status': 'success',
+            'message': 'Feedback updated successfully',
+            'data': FeedbackAdminSerializer(feedback).data
+        }, status=status.HTTP_200_OK)
+        
+    except Feedback.DoesNotExist:
+        return Response({
+            'status': 'error',
+            'message': 'Feedback not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error updating feedback: {str(e)}", exc_info=True)
+        return Response({
+            'status': 'error',
+            'message': f'Failed to update feedback: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['DELETE'])
+@authentication_classes([LSCJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def delete_feedback(request, feedback_id):
+    """
+    Delete feedback (Admin only)
+    """
+    try:
+        feedback = Feedback.objects.get(id=feedback_id)
+        feedback.delete()
+        
+        logger.info(f"Feedback {feedback_id} deleted")
+        
+        return Response({
+            'status': 'success',
+            'message': 'Feedback deleted successfully'
+        }, status=status.HTTP_200_OK)
+        
+    except Feedback.DoesNotExist:
+        return Response({
+            'status': 'error',
+            'message': 'Feedback not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error deleting feedback: {str(e)}", exc_info=True)
+        return Response({
+            'status': 'error',
+            'message': f'Failed to delete feedback: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

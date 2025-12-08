@@ -30,6 +30,7 @@ import SemesterPayments from './SemesterPayments';
 import StudentIDCard from '../components/StudentIDCard';
 import StudentProfile from '../components/StudentProfile';
 import Materials from '../components/Materials';
+import FeedbackPage from '../components/FeedbackPage';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -623,7 +624,7 @@ const Dashboard = () => {
       case 'assignments':
         return <div className="text-center py-12"><h2 className="text-2xl font-bold">Assignments - Coming Soon</h2></div>;
       case 'feedback':
-        return <div className="text-center py-12"><h2 className="text-2xl font-bold">Feedback - Coming Soon</h2></div>;
+        return <FeedbackPage />;
       case 'programs':
         return <ProgramsTable programs={programs} />;
       case 'guidelines':

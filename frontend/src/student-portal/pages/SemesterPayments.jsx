@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BanknotesIcon, CheckCircleIcon, ClockIcon, CreditCardIcon, DocumentArrowDownIcon, LockClosedIcon } from '@heroicons/react/24/outline';
+import { BanknotesIcon, CheckCircleIcon, ClockIcon, CreditCardIcon, DocumentArrowDownIcon, LockClosedIcon, ExclamationTriangleIcon, ShieldCheckIcon, CalendarIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import PaymentGateway from '../components/PaymentGateway';
@@ -48,10 +48,10 @@ const SemesterPayments = () => {
           prevFees.map((fee, index) => {
             const isPaid = paidSemesterNumbers.includes(fee.semester_number);
             const previousSemesterPaid = index === 0 || paidSemesterNumbers.includes(fee.semester_number - 1);
-            
+
             let status = fee.status;
             let locked = fee.locked;
-            
+
             if (isPaid) {
               status = 'paid';
               locked = false;
@@ -62,7 +62,7 @@ const SemesterPayments = () => {
               status = 'locked';
               locked = true;
             }
-            
+
             return { ...fee, status, locked };
           })
         );
@@ -101,14 +101,14 @@ const SemesterPayments = () => {
     } finally {
       setLoading(false);
     }
-  };  const handlePayment = (semester, amount) => {
+  }; const handlePayment = (semester, amount) => {
     setCurrentPayment({ semester, amount });
     setPaymentGatewayOpen(true);
   };
 
   const handlePaymentSuccess = async (cardNumber, cardHolderName) => {
     const { semester, amount } = currentPayment;
-    
+
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -244,9 +244,8 @@ const SemesterPayments = () => {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.1 }}
-                className={`p-5 rounded-xl border-2 shadow-lg transition-all duration-300 hover:shadow-xl ${getColorClasses()} ${
-                  fee.locked ? 'cursor-not-allowed' : ''
-                }`}
+                className={`p-5 rounded-xl border-2 shadow-lg transition-all duration-300 hover:shadow-xl ${getColorClasses()} ${fee.locked ? 'cursor-not-allowed' : ''
+                  }`}
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -255,17 +254,16 @@ const SemesterPayments = () => {
                       <LockClosedIcon className="h-5 w-5 text-gray-500" title="Complete previous semester payment to unlock" />
                     )}
                   </div>
-                  <div className={`w-3 h-3 rounded-full shadow-md ${
-                    fee.status === 'paid'
-                      ? 'bg-green-500'
-                      : fee.status === 'pending' && fee.color === 'red'
+                  <div className={`w-3 h-3 rounded-full shadow-md ${fee.status === 'paid'
+                    ? 'bg-green-500'
+                    : fee.status === 'pending' && fee.color === 'red'
                       ? 'bg-red-500 animate-pulse'
                       : fee.status === 'pending' && fee.color === 'yellow'
-                      ? 'bg-yellow-500 animate-pulse'
-                      : fee.status === 'locked'
-                      ? 'bg-gray-400'
-                      : 'bg-gray-300'
-                  }`} />
+                        ? 'bg-yellow-500 animate-pulse'
+                        : fee.status === 'locked'
+                          ? 'bg-gray-400'
+                          : 'bg-gray-300'
+                    }`} />
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-2xl font-bold text-gray-900">
@@ -309,7 +307,7 @@ const SemesterPayments = () => {
         className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6"
       >
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Make Payment</h2>
-        
+
         {/* Mandatory First Semester Payment - Highlighted */}
         {semesterFees.find(fee => fee.mandatory && fee.status === 'pending') && (
           <motion.div
@@ -318,7 +316,7 @@ const SemesterPayments = () => {
             className="mb-6 p-6 bg-red-50 border-2 border-red-400 rounded-2xl shadow-lg"
           >
             <div className="flex items-center gap-3 mb-4">
-              <motion.div 
+              <motion.div
                 animate={{ scale: [1, 1.1, 1] }}
                 transition={{ repeat: Infinity, duration: 2 }}
                 className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center shadow-lg"
@@ -361,7 +359,7 @@ const SemesterPayments = () => {
           {semesterFees
             .filter(fee => fee.status === 'pending' && fee.amount > 0 && !fee.mandatory)
             .map((fee, index) => {
-              const gradientClass = fee.color === 'yellow' 
+              const gradientClass = fee.color === 'yellow'
                 ? 'bg-yellow-50 border-yellow-300'
                 : 'bg-blue-50 border-blue-300';
               const buttonClass = fee.color === 'yellow'
@@ -380,7 +378,7 @@ const SemesterPayments = () => {
                   className={`flex items-center justify-between p-5 bg-gradient-to-r ${gradientClass} rounded-2xl border-2 shadow-lg hover:shadow-xl transition-all duration-300`}
                 >
                   <div className="flex items-center gap-4">
-                    <motion.div 
+                    <motion.div
                       whileHover={{ rotate: 360 }}
                       transition={{ duration: 0.5 }}
                       className={`w-12 h-12 ${iconBgClass} rounded-xl flex items-center justify-center shadow-lg`}
@@ -432,7 +430,7 @@ const SemesterPayments = () => {
                       <h3 className="font-bold text-gray-700 text-lg">{fee.semester} Fee Payment</h3>
                       <p className="text-sm text-gray-600 font-medium">Amount: ₹{fee.amount.toLocaleString()}</p>
                       <p className="text-xs text-red-600 mt-1 font-semibold">
-                         Complete SEM-{fee.semester_number - 1} payment to unlock
+                        Complete SEM-{fee.semester_number - 1} payment to unlock
                       </p>
                     </div>
                   </div>
@@ -491,59 +489,111 @@ const SemesterPayments = () => {
         </motion.div>
       )}
 
-      {/* Important Notes */}
+      {/* Important Payment Information */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl border-2 border-blue-300 p-8 shadow-lg"
+        className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6"
       >
-        <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-            <span className="text-white text-xl">ℹ️</span>
-          </div>
-          Important Payment Information
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          Payment Information
         </h2>
-        <div className="space-y-4 text-sm text-gray-700">
-          <div className="flex items-start gap-3 p-4 bg-red-50 rounded-xl border-2 border-red-300 shadow-md">
-            <div className="w-3 h-3 bg-red-500 rounded-full mt-2 flex-shrink-0 shadow-lg"></div>
-            <div>
-              <p className="font-bold text-red-900 text-base mb-2">🔴 MANDATORY: First Semester Payment Required</p>
-              <p className="text-red-800 leading-relaxed">Payment of ₹20,000 for the first semester is <span className="font-bold">mandatory</span> to unlock and access the complete student portal including ID Card, Profile, Study Materials, Video Lessons, Assignments, and Feedback sections.</p>
+        <p className="text-gray-600 mb-6">Everything you need to know about semester payments</p>
+
+        <div className="space-y-4">
+          {/* Critical Alert */}
+          <motion.div
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            className="bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-5 border-l-4 border-red-500 shadow-sm"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 flex items-center justify-center bg-red-100 rounded-lg">
+                <ExclamationTriangleIcon className="h-7 w-7 text-red-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-red-900 text-lg mb-2">First Semester Payment is Required</h3>
+                <p className="text-red-800 leading-relaxed">
+                  You must pay <span className="font-bold">₹20,000</span> for your first semester to unlock all portal features like ID Card, Study Materials, Video Lessons, Assignments, and more.
+                </p>
+              </div>
             </div>
-          </div>
-          
-          <div className="flex items-start gap-3 p-4 bg-yellow-50 rounded-xl border-2 border-yellow-300 shadow-md">
-            <div className="w-3 h-3 bg-yellow-500 rounded-full mt-2 flex-shrink-0 shadow-lg"></div>
-            <div>
-              <p className="font-bold text-yellow-900 text-base mb-2">🔓 Progressive Unlock System</p>
-              <p className="text-yellow-800 leading-relaxed">Semester payments unlock one-by-one in sequence. You must complete the previous semester's payment before the next semester becomes available for payment. This ensures systematic payment progression.</p>
+          </motion.div>
+
+          {/* How It Works */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border-l-4 border-blue-500 shadow-sm">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 flex items-center justify-center bg-blue-100 rounded-lg">
+                <LockClosedIcon className="h-7 w-7 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-blue-900 text-lg mb-2">How Payments Work</h3>
+                <p className="text-blue-800 leading-relaxed mb-3">
+                  Semesters unlock one at a time. Complete each payment to unlock the next semester.
+                </p>
+                <div className="flex items-center gap-2 text-sm font-medium text-blue-900 bg-white/60 rounded-lg p-3">
+                  <span className="px-2 py-1 bg-red-500 text-white rounded">SEM-1</span>
+                  <span>→</span>
+                  <span className="px-2 py-1 bg-yellow-500 text-white rounded">SEM-2</span>
+                  <span>→</span>
+                  <span className="px-2 py-1 bg-yellow-500 text-white rounded">SEM-3</span>
+                  <span>→</span>
+                  <span className="px-2 py-1 bg-yellow-500 text-white rounded">SEM-4</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-start gap-4 p-3 bg-white rounded-xl border border-blue-200">
-            <div className="w-2.5 h-2.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-            <p className="leading-relaxed"><span className="font-semibold">Payment Sequence:</span> SEM-1 (Red) → SEM-2 (Yellow) → SEM-3 (Yellow) → SEM-4 (Yellow). Each semester unlocks only after the previous one is paid.</p>
-          </div>
+          {/* Quick Tips Grid */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 flex items-center justify-center bg-green-100 rounded-lg">
+                  <CheckCircleIcon className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-green-900 mb-1">Enrollment Status</h4>
+                  <p className="text-sm text-green-800">Pay before each semester starts to stay enrolled</p>
+                </div>
+              </div>
+            </div>
 
-          <div className="flex items-start gap-4 p-3 bg-white rounded-xl border border-blue-200">
-            <div className="w-2.5 h-2.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-            <p className="leading-relaxed"><span className="font-semibold">Enrollment Status:</span> Semester fees must be paid before the start of each semester to maintain active enrollment status.</p>
-          </div>
-          
-          <div className="flex items-start gap-4 p-3 bg-white rounded-xl border border-blue-200">
-            <div className="w-2.5 h-2.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-            <p className="leading-relaxed"><span className="font-semibold">Late Payments:</span> Late payment fees may apply after the due date. Please check your email regularly for payment deadlines and reminders.</p>
-          </div>
-          
-          <div className="flex items-start gap-4 p-3 bg-white rounded-xl border border-blue-200">
-            <div className="w-2.5 h-2.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-            <p className="leading-relaxed"><span className="font-semibold">Secure Payments:</span> All payments are processed securely through our encrypted payment gateway. Digital receipts are automatically sent to your registered email.</p>
-          </div>
-          
-          <div className="flex items-start gap-4 p-3 bg-white rounded-xl border border-blue-200">
-            <div className="w-2.5 h-2.5 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
-            <p className="leading-relaxed"><span className="font-semibold">Support:</span> For any payment-related queries, contact the accounts department or use the feedback section in your student portal.</p>
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-200">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 flex items-center justify-center bg-orange-100 rounded-lg">
+                  <ClockIcon className="h-6 w-6 text-orange-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-orange-900 mb-1">Avoid Late Fees</h4>
+                  <p className="text-sm text-orange-800">Pay on time to avoid additional charges</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-4 border border-purple-200">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 flex items-center justify-center bg-purple-100 rounded-lg">
+                  <ShieldCheckIcon className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-purple-900 mb-1">Secure & Safe</h4>
+                  <p className="text-sm text-purple-800">Encrypted gateway with instant receipts via email</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-cyan-50 to-sky-50 rounded-xl p-4 border border-cyan-200">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 flex items-center justify-center bg-cyan-100 rounded-lg">
+                  <ChatBubbleLeftRightIcon className="h-6 w-6 text-cyan-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-cyan-900 mb-1">Need Help?</h4>
+                  <p className="text-sm text-cyan-800">Contact accounts or use the feedback section</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </motion.div>

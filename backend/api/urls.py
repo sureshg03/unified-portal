@@ -95,5 +95,15 @@ urlpatterns = [
     path('lsc-admin/materials/upload/', views.upload_material, name='upload_material'),
     path('lsc-admin/materials/<int:material_id>/update/', views.update_material, name='update_material'),
     path('lsc-admin/materials/<int:material_id>/delete/', views.delete_material, name='delete_material'),
+    
+    # Feedback Management Endpoints
+    # Student endpoints
+    path('feedback/submit/', views.submit_feedback, name='submit_feedback'),
+    path('feedback/my-feedbacks/', views.get_my_feedbacks, name='get_my_feedbacks'),
+    
+    # LSC Admin endpoints
+    path('lsc-admin/feedbacks/', views.get_all_feedbacks, name='get_all_feedbacks'),
+    path('lsc-admin/feedbacks/<int:feedback_id>/update/', views.update_feedback_status, name='update_feedback_status'),
+    path('lsc-admin/feedbacks/<int:feedback_id>/delete/', views.delete_feedback, name='delete_feedback'),
   
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -372,3 +372,82 @@ class Material(models.Model):
         """Increment the view count"""
         self.views_count += 1
         self.save(update_fields=['views_count'])
+
+
+class MaterialView(models.Model):
+    """Track which users have viewed which materials"""
+    material = models.ForeignKey(Material, on_delete=models.CASCADE, related_name='material_views')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='viewed_materials')
+    viewed_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'material_views'
+        unique_together = ('material', 'user')
+        ordering = ['-viewed_at']
+        indexes = [
+            models.Index(fields=['material', 'user']),
+            models.Index(fields=['viewed_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} viewed {self.material.title}"
+
+
+class Feedback(models.Model):
+    """Student feedback for the education portal"""
+    RATING_CHOICES = [
+        (1, '1 Star - Poor'),
+        (2, '2 Stars - Fair'),
+        (3, '3 Stars - Good'),
+        (4, '4 Stars - Very Good'),
+        (5, '5 Stars - Excellent'),
+    ]
+    
+    CATEGORY_CHOICES = [
+        ('COURSE_CONTENT', 'Course Content'),
+        ('PORTAL_EXPERIENCE', 'Portal Experience'),
+        ('SUPPORT', 'Support Services'),
+        ('LSC_EXPERIENCE', 'LSC Center Experience'),
+        ('GENERAL', 'General Feedback'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending Review'),
+        ('REVIEWED', 'Reviewed'),
+        ('FLAGGED', 'Flagged'),
+        ('RESOLVED', 'Resolved'),
+    ]
+    
+    # Student Information
+    student_name = models.CharField(max_length=200)
+    student_email = models.EmailField()
+    lsc_code = models.CharField(max_length=50, help_text="LSC Center Code")
+    
+    # Feedback Details
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='GENERAL')
+    rating = models.IntegerField(choices=RATING_CHOICES, help_text="Rating out of 5")
+    title = models.CharField(max_length=200, help_text="Feedback title/subject")
+    message = models.TextField(help_text="Detailed feedback message")
+    
+    # Admin Management
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    is_flagged = models.BooleanField(default=False, help_text="Flag for priority review")
+    admin_notes = models.TextField(blank=True, null=True, help_text="Admin's internal notes")
+    reviewed_by = models.CharField(max_length=200, blank=True, null=True, help_text="Admin who reviewed")
+    reviewed_at = models.DateTimeField(blank=True, null=True, help_text="Review timestamp")
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'feedbacks'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['lsc_code', 'status']),
+            models.Index(fields=['rating', 'created_at']),
+            models.Index(fields=['is_flagged', 'status']),
+        ]
+    
+    def __str__(self):
+        return f"{self.student_name} - {self.rating} stars - {self.category}"

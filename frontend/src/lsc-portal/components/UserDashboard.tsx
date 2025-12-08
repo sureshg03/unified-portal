@@ -26,6 +26,7 @@ import { AssignmentMarks } from './modules/AssignmentMarks';
 import { ReportsModule } from './modules/ReportsModule';
 import { ChangePassword } from './modules/ChangePassword';
 import { SettingsModule } from './modules/SettingsModule';
+import FeedbackManagement from './modules/FeedbackManagement';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,7 +38,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type ActivePage = 'dashboard' | 'settings' | 'admissions' | 'applications' | 'reports' | 'materials' | 'counselor' | 'attendance' | 'assignments' | 'password';
+type ActivePage = 'dashboard' | 'settings' | 'admissions' | 'applications' | 'reports' | 'materials' | 'feedbacks' | 'counselor' | 'attendance' | 'assignments' | 'password';
 
 export const UserDashboard = () => {
   const navigate = useNavigate();
@@ -80,6 +81,7 @@ export const UserDashboard = () => {
     { id: 'applications', label: 'New Student Application', icon: UserPlus, color: 'text-education-orange' },
     { id: 'reports', label: 'Reports', icon: FileText, color: 'text-primary' },
     { id: 'materials', label: 'Materials', icon: BookOpen, color: 'text-education-blue' },
+    { id: 'feedbacks', label: 'Feedbacks', icon: FileText, color: 'text-primary' },
     { id: 'counselor', label: 'Counselor Information', icon: User, color: 'text-education-purple' },
     { id: 'attendance', label: 'Attendance', icon: Calendar, color: 'text-education-orange' },
     { id: 'assignments', label: 'Assignment Marks', icon: FileText, color: 'text-primary' },
@@ -193,6 +195,9 @@ export const UserDashboard = () => {
       
       case 'reports':
         return <ReportsModule />;
+      
+      case 'feedbacks':
+        return <FeedbackManagement />;
       
       case 'password':
         return <ChangePassword />;
