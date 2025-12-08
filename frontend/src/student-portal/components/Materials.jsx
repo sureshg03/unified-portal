@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import DocViewer, { DocViewerRenderers } from '@cyntler/react-doc-viewer';
+import FileViewer from 'react-file-viewer';
 import {
   DocumentTextIcon,
   PresentationChartBarIcon,
@@ -80,7 +82,6 @@ const Materials = () => {
         const materialData = response.data.data;
         console.log('Material data received:', materialData);
         console.log('File URL:', materialData.file_url);
-        console.log('Material Type:', materialData.material_type);
         
         // Verify file URL is valid
         if (!materialData.file_url) {
@@ -88,19 +89,19 @@ const Materials = () => {
           return;
         }
         
-        // Convert to direct media URL like in Preview page
+        // Convert to direct media URL
         materialData.file_url = getDirectUrl(materialData.file_url);
-        console.log('Direct file URL:', materialData.file_url);
+        console.log('Direct URL for modal:', materialData.file_url);
         
         setSelectedMaterial(materialData);
         setViewerOpen(true);
         setPdfLoadError(false);
+        
       } else {
         toast.error('Failed to open material');
       }
     } catch (error) {
       console.error('Error viewing material:', error);
-      console.error('Error response:', error.response);
       toast.error(error.response?.data?.message || 'Failed to open material');
     }
   };
@@ -300,58 +301,76 @@ const Materials = () => {
                 </button>
               </div>
 
-              {/* PDF/PPT Viewer - View Only */}
-              <div className="flex-1 bg-white relative">
+              {/* PDF/PPT Viewer */}
+              <div className="flex-1 bg-white relative overflow-auto">
                 {selectedMaterial.material_type === 'PDF' ? (
-                  pdfLoadError ? (
-                    <div className="flex items-center justify-center h-full bg-gray-50">
-                      <div className="text-center p-8 max-w-md">
-                        <DocumentTextIcon className="w-20 h-20 text-red-500 mx-auto mb-4" />
-                        <h3 className="text-2xl font-bold text-gray-900 mb-3">Unable to Load PDF</h3>
-                        <p className="text-sm text-gray-600 mb-4">The PDF preview could not be loaded in the browser.</p>
-                        <a
-                          href={selectedMaterial.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-800 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-                        >
-                          <EyeIcon className="w-5 h-5" />
-                          Open in New Tab
-                        </a>
-                      </div>
-                    </div>
-                  ) : (
-                    <iframe
-                      src={selectedMaterial.file_url}
-                      className="w-full h-full border-0"
-                      title={selectedMaterial.title}
-                      style={{ width: '100%', height: '100%' }}
-                      allow="fullscreen"
-                      onLoad={() => {
-                        console.log('PDF loaded successfully:', selectedMaterial.file_url);
-                      }}
-                      onError={(e) => {
-                        console.error('PDF load error:', e);
-                        setPdfLoadError(true);
-                      }}
-                    />
-                  )
+                  // PDF Viewer using DocViewer
+                  <DocViewer
+                    documents={[
+                      {
+                        uri: selectedMaterial.file_url,
+                        fileName: selectedMaterial.title,
+                        fileType: 'pdf'
+                      }
+                    ]}
+                    pluginRenderers={DocViewerRenderers}
+                    config={{
+                      header: {
+                        disableHeader: true,
+                        disableFileName: true,
+                        retainURLParams: false
+                      },
+                      pdfZoom: {
+                        defaultZoom: 1.0,
+                        zoomJump: 0.1,
+                      },
+                      pdfVerticalScrollByDefault: true
+                    }}
+                    style={{ 
+                      height: '100%', 
+                      width: '100%',
+                      overflow: 'auto'
+                    }}
+                  />
                 ) : (
-                  <div className="flex items-center justify-center h-full bg-gray-50">
-                    <div className="text-center p-8 max-w-md">
-                      <PresentationChartBarIcon className="w-20 h-20 text-orange-500 mx-auto mb-4" />
-                      <h3 className="text-2xl font-bold text-gray-900 mb-3">PowerPoint Presentation</h3>
-                      <p className="text-lg text-gray-700 mb-2 font-semibold">{selectedMaterial.title}</p>
-                      <p className="text-sm text-gray-600 mb-2">
-                        Subject: {selectedMaterial.subject || 'General'}
+                  // PPT File Information and View Option
+                  <div className="flex items-center justify-center h-full bg-gradient-to-br from-orange-50 to-amber-50 p-8">
+                    <div className="text-center max-w-2xl">
+                      <div className="mb-6">
+                        <PresentationChartBarIcon className="w-24 h-24 text-orange-600 mx-auto mb-4" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                        {selectedMaterial.title}
+                      </h3>
+                      <p className="text-base text-gray-700 mb-2">
+                        <span className="font-semibold">Subject:</span> {selectedMaterial.subject || 'General'}
+                      </p>
+                      <p className="text-base text-gray-700 mb-2">
+                        <span className="font-semibold">Programme:</span> {selectedMaterial.programme} • Semester {selectedMaterial.semester}
                       </p>
                       <p className="text-sm text-gray-600 mb-6">
                         Uploaded: {formatDate(selectedMaterial.upload_date)}
                       </p>
-                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
-                        <p className="text-sm text-orange-800">
-                          PowerPoint files cannot be previewed in the browser. Please view using Microsoft PowerPoint or compatible software.
+                      
+                      <div className="bg-white border-2 border-orange-200 rounded-xl p-6 mb-6 shadow-lg">
+                        <p className="text-sm text-gray-700 mb-4">
+                          PowerPoint presentations cannot be previewed directly in the browser. 
+                          Please open the file in a new tab to view using your browser's built-in viewer.
                         </p>
+                        <a
+                          href={selectedMaterial.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors shadow-md hover:shadow-lg"
+                        >
+                          <EyeIcon className="w-5 h-5" />
+                          Open PowerPoint in New Tab
+                        </a>
+                      </div>
+                      
+                      <div className="text-xs text-gray-500">
+                        <p className="mb-1">💡 Tip: The file will open in a new browser tab</p>
+                        <p>You can view, zoom, and navigate through the slides</p>
                       </div>
                     </div>
                   </div>

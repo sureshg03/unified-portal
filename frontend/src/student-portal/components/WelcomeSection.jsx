@@ -21,9 +21,10 @@ const WelcomeSection = ({
   };
 
   // Determine card color based on status
+  // Professional, formal gradients for open/closed states
   const cardGradient = isApplicationOpen
-    ? 'from-emerald-600 via-green-600 to-teal-600'
-    : 'from-red-600 via-rose-600 to-pink-600';
+    ? 'from-emerald-900 via-emerald-800 to-emerald-700'
+    : 'from-rose-900 via-rose-800 to-rose-700';
 
   return (
     <motion.section

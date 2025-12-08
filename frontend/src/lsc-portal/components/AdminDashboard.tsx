@@ -404,9 +404,7 @@ export const AdminDashboard = () => {
         return <StudentIDCard />;
       case 'applications':
         return (
-          <div className="w-full p-8 bg-white">
-            <h1 className="text-3xl font-bold text-red-600 mb-4">TEST - Applications Route Works!</h1>
-            <p className="text-gray-700 mb-4">If you see this, the route is working correctly.</p>
+          <div className="w-fu">
             <NewStudentApplication />
           </div>
         );

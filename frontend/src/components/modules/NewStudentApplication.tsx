@@ -104,16 +104,14 @@ export const NewStudentApplication = () => {
           // Status changed! Show notification
           if (currentStatus === 'OPEN') {
             toast({
-              title: "🎉 Applications Now Open!",
+              title: " Applications Now Open!",
               description: `Applications for ${activeSetting.admission_year} are now accepting submissions. You can guide students to apply.`,
-              variant: "default",
               className: "bg-green-50 border-green-500",
             });
           } else {
             toast({
               title: "Applications Closed",
               description: `The application period for ${activeSetting.admission_year} has been closed by admin.`,
-              variant: "default",
               className: "bg-red-50 border-red-500",
             });
           }
@@ -246,86 +244,78 @@ export const NewStudentApplication = () => {
   const isOpen = settings.is_open || settings.status === 'OPEN';
 
   return (
-    <div className="w-full space-y-6">
-      <div className="max-w-5xl mx-auto space-y-8">
-        {/* Modern Header with Refresh */}
-        <div className="relative">
+    <div className="w-full space-y-6 bg-gray-50 min-h-screen p-6">
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Professional Header */}
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-2xl ${isOpen ? 'bg-gradient-to-br from-green-500 to-emerald-600' : 'bg-gradient-to-br from-gray-400 to-gray-500'} shadow-lg`}>
-                <Sparkles className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                  Student Applications
-                </h1>
-                <p className="text-gray-600 mt-1 flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  Last updated: {lastRefresh.toLocaleTimeString()}
-                </p>
-              </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Student Application Management
+              </h1>
+              <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Last updated: {lastRefresh.toLocaleTimeString()}
+              </p>
             </div>
             <div className="flex items-center gap-3">
               <Badge
                 variant="outline"
-                className={`${isOpen ? 'border-green-500 bg-green-50 text-green-700' : 'border-red-500 bg-red-50 text-red-700'} text-lg px-4 py-2 font-semibold shadow-md`}
+                className={`${isOpen ? 'border-green-600 bg-green-50 text-green-700' : 'border-red-600 bg-red-50 text-red-700'} text-sm px-4 py-1.5 font-semibold`}
               >
                 {isOpen ? (
-                  <><CheckCircle2 className="w-5 h-5 mr-2" /> OPEN</>
+                  <><CheckCircle2 className="w-4 h-4 mr-1.5" /> OPEN</>
                 ) : (
-                  <><XCircle className="w-5 h-5 mr-2" /> CLOSED</>
+                  <><XCircle className="w-4 h-4 mr-1.5" /> CLOSED</>
                 )}
               </Badge>
               <Button
                 onClick={handleManualRefresh}
                 variant="outline"
-                size="icon"
-                className="rounded-full shadow-md hover:shadow-lg transition-all"
+                size="sm"
+                className="border-gray-300 hover:bg-gray-50"
                 title="Refresh status"
               >
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw className="w-4 h-4 mr-1.5" />
+                Refresh
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Status Card */}
-        <Card className={`border shadow-lg overflow-hidden ${isOpen ? 'bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-green-200' : 'bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100 border-gray-300'}`}>
-          <div className={`h-2 ${isOpen ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500' : 'bg-gradient-to-r from-gray-400 via-slate-400 to-gray-500'}`} />
-
-          <CardHeader className="pb-4">
+        {/* Application Details Card */}
+        <Card className="border border-gray-200 shadow-sm bg-white">
+          <CardHeader className="border-b border-gray-200 bg-gray-50">
             <div className="flex items-start justify-between">
               <div>
-                <CardTitle className="text-2xl font-bold flex items-center gap-3">
-                  <Calendar className={`w-6 h-6 ${isOpen ? 'text-green-600' : 'text-gray-600'}`} />
+                <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-blue-600" />
                   {settings.admission_year} Academic Year
                 </CardTitle>
-                <CardDescription className="text-base mt-2">
-                  Application Code: <span className="font-semibold">{settings.admission_code}</span> — Type: <span className="font-semibold">{settings.admission_type}</span>
+                <CardDescription className="text-sm mt-2 text-gray-600">
+                  Application Code: <span className="font-semibold text-gray-900">{settings.admission_code}</span> • Type: <span className="font-semibold text-gray-900">{settings.admission_type}</span>
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 pt-6">
             {/* Application Period Timeline */}
-            <div className={`${isOpen ? 'bg-white/60' : 'bg-white/40'} backdrop-blur-sm rounded-xl p-6 border ${isOpen ? 'border-green-200' : 'border-gray-200'} shadow-sm`}>
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Opening Date</p>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+              <h3 className="text-sm font-semibold text-gray-700 mb-4">Application Period</h3>
+              <div className="grid grid-cols-2 gap-8">
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Opening Date</p>
                   <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${isOpen ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
-                    <p className="text-lg font-bold text-gray-900">{formatDate(settings.opening_date)}</p>
+                    <div className={`w-2.5 h-2.5 rounded-full ${isOpen ? 'bg-green-600' : 'bg-gray-400'}`} />
+                    <p className="text-base font-semibold text-gray-900">{formatDate(settings.opening_date)}</p>
                   </div>
                 </div>
-                <div className="flex-shrink-0 px-4">
-                  <div className={`h-1 w-24 rounded-full ${isOpen ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gray-300'}`} />
-                </div>
-                <div className="flex-1 text-right">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Closing Date</p>
-                  <div className="flex items-center justify-end gap-2">
-                    <p className="text-lg font-bold text-gray-900">{formatDate(settings.closing_date)}</p>
-                    <div className={`w-3 h-3 rounded-full ${isOpen ? 'bg-green-500' : 'bg-red-500'}`} />
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Closing Date</p>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2.5 h-2.5 rounded-full ${isOpen ? 'bg-green-600' : 'bg-red-600'}`} />
+                    <p className="text-base font-semibold text-gray-900">{formatDate(settings.closing_date)}</p>
                   </div>
                 </div>
               </div>
@@ -333,82 +323,81 @@ export const NewStudentApplication = () => {
 
             {/* Main Action Section - Conditional on Status */}
             {isOpen ? (
-              <div className="space-y-6">
-                {/* Success Alert with Animation */}
-                <Alert className="bg-gradient-to-r from-green-500 to-emerald-600 border-0 text-white shadow-xl">
-                  <CheckCircle2 className="h-5 w-5 text-white animate-pulse" />
-                  <AlertDescription className="text-white font-medium text-base">
-                    🎉 <strong>Great News!</strong> Applications are now OPEN for {settings.admission_year}. Help students start their journey today!
+              <div className="space-y-4">
+                {/* Success Alert */}
+                <Alert className="bg-green-50 border-green-600 border-l-4">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800 font-medium text-sm">
+                    Applications are now open for {settings.admission_year}. You can guide students to apply.
                   </AlertDescription>
                 </Alert>
 
-                {/* Professional Call-to-Action Card */}
-                <Card className="border-2 border-purple-200 bg-white dark:bg-gray-900 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                  <CardContent className="p-8">
-                    <div className="flex items-start gap-6">
+                {/* Action Card */}
+                <Card className="border border-gray-200 bg-white shadow-sm">
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-4">
                       <div className="flex-shrink-0">
-                        <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
-                          <UserPlus className="w-8 h-8 text-white" />
+                        <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
+                          <UserPlus className="w-6 h-6 text-white" />
                         </div>
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-                          Help Students Apply Now
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">
+                          Guide Students to Apply
                         </h3>
-                        <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
-                          Click the button below to open the student signup portal. Guide prospective students through the application process and help them secure their admission for the {settings.admission_year} academic year.
+                        <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                          Open the student signup portal to help prospective students create accounts and submit their applications for the {settings.admission_year} academic year.
                         </p>
 
                         <Button
                           onClick={handleNavigateToStudentSignup}
                           size="lg"
-                          className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 text-lg px-8 py-6 rounded-xl"
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
                         >
-                          <ExternalLink className="w-5 h-5 mr-3" />
+                          <ExternalLink className="w-4 h-4 mr-2" />
                           Open Student Signup Portal
-
                         </Button>
 
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-4 flex items-center gap-2">
-                          <AlertCircle className="w-4 h-4" />
-                          Opens in a new tab — Students can create account and apply instantly
+                        <p className="text-xs text-gray-500 mt-3 flex items-center gap-1.5">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          Opens in a new tab
                         </p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Share URL Card with Unique Referral Link */}
-                <Card className="border border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 shadow-md">
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <ExternalLink className="w-5 h-5 text-indigo-600" />
-                      Your Unique Referral Link
+                {/* Share URL Card */}
+                <Card className="border border-gray-200 bg-white shadow-sm">
+                  <CardHeader className="border-b border-gray-200 bg-gray-50">
+                    <CardTitle className="text-base font-bold text-gray-900 flex items-center gap-2">
+                      <ExternalLink className="w-4 h-4 text-blue-600" />
+                      Your Referral Link
                     </CardTitle>
-                    <CardDescription className="text-xs">
+                    <CardDescription className="text-xs text-gray-600">
                       {(() => {
                         const { lscCode, lscName } = getLSCInfo();
-                        return lscCode ? `Personalized for ${lscName} (${lscCode})` : 'Share this link with students';
+                        return lscCode ? `For ${lscName} (${lscCode})` : 'Share this link with students';
                       })()}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 rounded-lg p-3 border-2 border-purple-300 dark:border-purple-700">
-                      <p className="text-xs font-semibold text-purple-900 dark:text-purple-100 mb-2">
-                        ⭐ Unique URL for Your Center
+                  <CardContent className="space-y-4 pt-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <p className="text-xs font-medium text-blue-900 mb-1">
+                        Unique URL for Your Center
                       </p>
-                      <p className="text-xs text-purple-700 dark:text-purple-300">
+                      <p className="text-xs text-blue-700">
                         Students who register through this link will be automatically linked to your LSC center.
                       </p>
                     </div>
 
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border-2 border-indigo-300 shadow-inner">
-                      <code className="text-indigo-600 dark:text-indigo-400 font-mono text-sm break-all">
+                    <div className="bg-gray-50 border border-gray-300 rounded-lg p-3">
+                      <code className="text-blue-600 font-mono text-xs break-all">
                         {generateReferralURL()}
                       </code>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       <Button
                         variant="outline"
                         size="sm"
@@ -416,13 +405,13 @@ export const NewStudentApplication = () => {
                           const url = generateReferralURL();
                           navigator.clipboard.writeText(url);
                           toast({
-                            title: "📋 Link Copied!",
-                            description: "Your unique referral link copied to clipboard",
+                            title: "Link Copied",
+                            description: "Your referral link copied to clipboard",
                           });
                         }}
-                        className="border-indigo-300 hover:bg-indigo-100"
+                        className="border-gray-300 hover:bg-gray-50 text-sm"
                       >
-                        📋 Copy Link
+                        Copy Link
                       </Button>
                       <Button
                         variant="outline"
@@ -430,41 +419,41 @@ export const NewStudentApplication = () => {
                         onClick={() => {
                           const url = generateReferralURL();
                           const { lscName } = getLSCInfo();
-                          const message = `🎓 Apply for admission at ${lscName}!\n\nRegister here: ${url}`;
+                          const message = `Apply for admission at ${lscName}!\n\nRegister here: ${url}`;
                           navigator.clipboard.writeText(message);
                           toast({
-                            title: "📋 Message Copied!",
-                            description: "Share this message on WhatsApp, SMS, or social media",
+                            title: "Message Copied",
+                            description: "Share on WhatsApp or social media",
                           });
                         }}
-                        className="border-green-300 hover:bg-green-100"
+                        className="border-gray-300 hover:bg-gray-50 text-sm"
                       >
-                        📱 Copy Message
+                        Copy Message
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {/* Closed Status Alert */}
-                <Alert variant="destructive" className="bg-gradient-to-r from-red-500 to-rose-600 border-0 text-white shadow-xl">
-                  <XCircle className="h-5 w-5 text-white" />
-                  <AlertDescription className="text-white font-medium text-base">
-                    <strong>Applications Closed.</strong> The application period has ended. Students cannot submit new applications at this time.
+                <Alert className="bg-red-50 border-red-600 border-l-4">
+                  <XCircle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-800 font-medium text-sm">
+                    Applications are closed. The application period has ended. Students cannot submit new applications at this time.
                   </AlertDescription>
                 </Alert>
 
                 {/* Closed State Card */}
-                <Card className="border border-gray-300 bg-gradient-to-br from-gray-100 to-slate-100 dark:from-gray-800 dark:to-slate-800 shadow-lg">
-                  <CardContent className="p-12 text-center">
-                    <div className="inline-flex p-6 bg-gray-300 dark:bg-gray-700 rounded-full mb-6">
-                      <XCircle className="w-16 h-16 text-gray-600 dark:text-gray-400" />
+                <Card className="border border-gray-200 bg-white shadow-sm">
+                  <CardContent className="p-8 text-center">
+                    <div className="inline-flex p-4 bg-gray-100 rounded-lg mb-4">
+                      <XCircle className="w-12 h-12 text-gray-500" />
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">
                       Application Period Ended
                     </h3>
-                    <p className="text-gray-600 dark:text-gray-300 max-w-md mx-auto leading-relaxed">
+                    <p className="text-sm text-gray-600 max-w-md mx-auto">
                       The admission application window for {settings.admission_year} ({settings.admission_code}) is currently closed.
                       Please check back when applications reopen.
                     </p>
@@ -472,16 +461,16 @@ export const NewStudentApplication = () => {
                 </Card>
 
                 {/* Info Card */}
-                <Card className="border border-blue-200 bg-blue-50 dark:bg-blue-950/20 shadow-md">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <AlertCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                <Card className="border border-blue-200 bg-blue-50 shadow-sm">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                        <p className="text-sm font-semibold text-blue-900 mb-1">
                           Waiting for Applications to Open?
                         </p>
-                        <p className="text-sm text-blue-700 dark:text-blue-300">
-                          This page automatically refreshes every 5 seconds. You'll see the status change instantly when admin opens applications!
+                        <p className="text-xs text-blue-700">
+                          This page automatically refreshes every 5 seconds. You'll see the status change instantly when admin opens applications.
                         </p>
                       </div>
                     </div>

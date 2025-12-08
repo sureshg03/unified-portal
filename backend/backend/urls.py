@@ -5,9 +5,34 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 from django.views.static import serve
 import os
+import mimetypes
+
+def serve_media_with_headers(request, path):
+    """Serve media files with proper headers for iframe embedding"""
+    file_path = os.path.join(settings.MEDIA_ROOT, path)
+    
+    if not os.path.exists(file_path):
+        return HttpResponse("File not found", status=404)
+    
+    # Determine content type
+    content_type, _ = mimetypes.guess_type(file_path)
+    if content_type is None:
+        content_type = 'application/octet-stream'
+    
+    # Create response with file
+    response = FileResponse(open(file_path, 'rb'), content_type=content_type)
+    
+    # Set headers to allow iframe embedding from same origin
+    response['X-Frame-Options'] = 'SAMEORIGIN'
+    response['Content-Disposition'] = f'inline; filename="{os.path.basename(file_path)}"'
+    response['Access-Control-Allow-Origin'] = '*'
+    response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+    response['Access-Control-Allow-Headers'] = 'Content-Type'
+    
+    return response
 
 def serve_spa(request):
     """Serve the React SPA for all non-API routes"""
@@ -34,8 +59,8 @@ urlpatterns = [
     # Note: These endpoints don't conflict with Student Portal
     path('api/', include('portal.urls')),  # LSC portal management endpoints
     
-    # Serve media files (uploaded documents)
-    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    # Serve media files (uploaded documents) with proper headers for iframe
+    re_path(r'^media/(?P<path>.*)$', serve_media_with_headers),
     
     # Serve static files from frontend dist
     re_path(r'^(?P<path>.*\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))$', 

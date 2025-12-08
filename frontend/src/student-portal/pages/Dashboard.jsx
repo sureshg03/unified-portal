@@ -652,7 +652,7 @@ const Dashboard = () => {
       <div className="relative z-10 flex-1">
         {/* Hamburger Toggle Button for Mobile */}
         <motion.button
-          className="md:hidden fixed top-4 left-4 z-50 p-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full shadow-2xl hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-purple-300 animate-neon-glow pointer-events-auto"
+          className="md:hidden fixed top-4 left-4 z-50 p-3 bg-gradient-to-r from-purple-600 to-purple-600 text-white rounded-full shadow-2xl hover:from-purple-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300  pointer-events-auto"
           onClick={toggleSidebar}
           whileHover={{ scale: 1.2, rotate: 360 }}
           whileTap={{ scale: 0.8, transition: { type: 'spring', stiffness: 300 } }}

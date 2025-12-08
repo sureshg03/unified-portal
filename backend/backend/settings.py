@@ -235,6 +235,9 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
+# X-Frame-Options - Allow same origin iframes for PDF preview
+X_FRAME_OPTIONS = 'SAMEORIGIN'
+
 # Media files configuration (for Student Admission Portal)
 import os
 MEDIA_URL = '/media/'
